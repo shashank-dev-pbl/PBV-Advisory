@@ -1,6 +1,6 @@
 export type DocStatus = "pending" | "uploaded" | "accepted" | "query";
 export type DeliverableStatus = "blocked" | "ready" | "in_progress" | "delivered";
-export type Role = "founder" | "practitioner";
+export type Role = "founder" | "practitioner" | "admin";
 
 export type Company = {
   id: string;
