@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { getCurrentAppUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { currentPeriod } from "@/lib/period";
+import { currentPeriod, formatPeriodLabel } from "@/lib/period";
 import { getFinancialsHistory } from "@/app/practitioner/financials-actions";
 import FinancialTiles from "@/app/dashboard/FinancialTiles";
 import { UserMenu } from "@/app/founder/FounderView";
@@ -21,8 +23,17 @@ export default async function FounderDashboardPage() {
     <div className="min-h-screen" style={{ background: "var(--paper)" }}>
       <header className="flex items-center justify-between border-b px-5 py-4 md:px-8" style={{ borderColor: "var(--rule)" }}>
         <div>
+          <Link
+            href="/founder"
+            className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold"
+            style={{ color: "var(--ink-secondary)" }}
+          >
+            <ArrowLeft size={13} strokeWidth={1.75} />
+            Back to checklist
+          </Link>
           <p className="eyebrow mb-1">Dashboard</p>
           <h1 className="text-[22px] font-extrabold">{company?.name}</h1>
+          <p className="mt-0.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>{formatPeriodLabel(currentPeriod())}</p>
         </div>
         <UserMenu user={{ email: appUser.email, role: "founder" }} />
       </header>

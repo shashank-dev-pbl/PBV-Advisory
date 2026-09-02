@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { formatPeriodLabel } from "@/lib/period";
 import { saveDraft, publish } from "../financials-actions";
 import FinancialTiles from "@/app/dashboard/FinancialTiles";
@@ -144,6 +146,14 @@ export default function PractitionerDashboardView({
     <div className="min-h-screen" style={{ background: "var(--paper)" }}>
       <header className="flex items-center justify-between border-b px-5 py-4 md:px-8" style={{ borderColor: "var(--rule)" }}>
         <div>
+          <Link
+            href="/practitioner"
+            className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold"
+            style={{ color: "var(--ink-secondary)" }}
+          >
+            <ArrowLeft size={13} strokeWidth={1.75} />
+            Back to practitioner desk
+          </Link>
           <p className="eyebrow mb-1">Dashboard</p>
           <h1 className="text-[22px] font-extrabold">{company.name}</h1>
           <p className="mt-0.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>

@@ -80,12 +80,13 @@ export default function PractitionerView({
           <div className="flex items-center gap-4">
             <Link
               href="/practitioner/dashboard"
-              className="flex items-center gap-1.5 text-[12px] font-semibold"
-              style={{ color: "var(--ink-secondary)" }}
+              className="btn-small"
+              style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)", gap: 6 }}
             >
-              <LayoutDashboard size={15} strokeWidth={1.75} />
+              <LayoutDashboard size={13} strokeWidth={1.75} />
               Dashboard
             </Link>
+            <div style={{ width: 1, height: 28, background: "var(--rule)" }} />
             <UserMenu user={currentUser} />
           </div>
         </header>
