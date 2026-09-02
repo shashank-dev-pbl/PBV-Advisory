@@ -15,14 +15,13 @@ export async function acceptItem(docItemId: string) {
   revalidatePath("/founder");
 }
 
-export async function acceptWithWaiver(docItemId: string, note: string) {
+export async function markNotApplicable(docItemId: string, reason: string) {
   const supabase = await createClient();
   const { error } = await supabase
     .from("doc_item")
     .update({
-      status: "accepted",
-      accepted_at: new Date().toISOString(),
-      reply_text: `Waived — ${note}`,
+      status: "not_applicable",
+      na_reason: reason,
       query_text: null,
     })
     .eq("id", docItemId);
@@ -44,7 +43,7 @@ export async function sendPractitionerMessage(docItemId: string, body: string) {
     .from("doc_item")
     .update({ status: "query", practitioner_last_read_at: new Date().toISOString() })
     .eq("id", docItemId)
-    .neq("status", "accepted");
+    .not("status", "in", "(accepted,not_applicable)");
   if (error) throw error;
 
   revalidatePath("/practitioner");

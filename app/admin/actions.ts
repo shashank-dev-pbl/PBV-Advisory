@@ -106,7 +106,7 @@ export async function listCompaniesWithStats() {
       .from("doc_item")
       .select("*", { count: "exact", head: true })
       .eq("company_id", c.id)
-      .in("status", ["uploaded", "accepted"]);
+      .in("status", ["uploaded", "accepted", "not_applicable"]);
     const { data: users } = await supabase.from("app_user").select("*").eq("company_id", c.id);
     result.push({ company: c, total: total ?? 0, received: received ?? 0, users: users ?? [] });
   }

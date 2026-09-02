@@ -15,7 +15,12 @@ const STATUS_LABEL: Record<string, string> = {
   uploaded: "Uploaded",
   accepted: "Accepted",
   query: "Question",
+  not_applicable: "Not applicable",
 };
+
+export function isResolved(status: DocItem["status"]): boolean {
+  return status === "accepted" || status === "not_applicable";
+}
 
 export function sortedFiles(files: DocItem["doc_file"]) {
   if (!files || files.length === 0) return [];
@@ -59,7 +64,7 @@ export default function FounderView({
 }) {
   const [items, setItems] = useState(docItems);
   const grouped = useMemo(() => groupItems(items), [items]);
-  const received = items.filter((i) => i.status === "uploaded" || i.status === "accepted" || i.status === "query").length;
+  const received = items.filter((i) => i.status === "uploaded" || i.status === "accepted" || i.status === "query" || i.status === "not_applicable").length;
   const total = items.length;
   const pct = total > 0 ? Math.round((received / total) * 100) : 0;
   const questionCount = items.filter((i) => i.status === "query").length;
@@ -225,6 +230,16 @@ function StatusCheckbox({ status }: { status: DocItem["status"] }) {
         style={{ background: "var(--bottomline-green)", color: "var(--paper)" }}
       >
         ✓
+      </span>
+    );
+  }
+  if (status === "not_applicable") {
+    return (
+      <span
+        className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+        style={{ background: "var(--ink-secondary)", color: "var(--paper)" }}
+      >
+        —
       </span>
     );
   }
@@ -539,13 +554,21 @@ function ChecklistRow({
         <StatusCheckbox status={item.status} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <StrikeText text={item.title} active={hasFile} />
+            <StrikeText text={item.title} active={hasFile || item.status === "not_applicable"} />
             {item.status !== "pending" && (
               <span
                 className="pill flex-shrink-0"
                 style={{
-                  background: item.status === "accepted" ? "rgba(0,77,0,0.08)" : item.status === "query" ? "rgba(140,26,26,0.08)" : "rgba(184,134,11,0.1)",
-                  color: item.status === "accepted" ? "var(--status-accepted)" : item.status === "query" ? "var(--status-query)" : "var(--status-uploaded)",
+                  background:
+                    item.status === "accepted" ? "rgba(0,77,0,0.08)"
+                    : item.status === "query" ? "rgba(140,26,26,0.08)"
+                    : item.status === "not_applicable" ? "rgba(107,99,87,0.12)"
+                    : "rgba(184,134,11,0.1)",
+                  color:
+                    item.status === "accepted" ? "var(--status-accepted)"
+                    : item.status === "query" ? "var(--status-query)"
+                    : item.status === "not_applicable" ? "var(--ink-secondary)"
+                    : "var(--status-uploaded)",
                 }}
               >
                 {STATUS_LABEL[item.status]}
@@ -579,8 +602,12 @@ function ChecklistRow({
               <FileRow
                 filename={latestFile.filename}
                 storagePath={latestFile.storage_path}
-                onDelete={item.status === "accepted" ? undefined : handleDelete}
+                onDelete={isResolved(item.status) ? undefined : handleDelete}
               />
+            ) : item.status === "not_applicable" ? (
+              <p className="py-2 text-[12px]" style={{ color: "var(--ink-secondary)" }}>
+                Marked not applicable{item.na_reason ? ` — ${item.na_reason}` : ""}.
+              </p>
             ) : (
               item.status === "accepted" && (
                 <p className="py-2 text-[12px]" style={{ color: "var(--ink-secondary)" }}>
@@ -590,7 +617,7 @@ function ChecklistRow({
             )}
             {olderFiles.length > 0 && <VersionHistory files={olderFiles} />}
 
-            {item.status !== "accepted" && (
+            {!isResolved(item.status) && (
               <div className="mt-2 flex items-center gap-2 p-3" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>
                 <label className="flex-1 cursor-pointer">
                   <span className="btn-ghost" style={{ minHeight: 36, padding: "8px 16px", fontSize: 12 }}>

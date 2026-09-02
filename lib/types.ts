@@ -1,4 +1,4 @@
-export type DocStatus = "pending" | "uploaded" | "accepted" | "query";
+export type DocStatus = "pending" | "uploaded" | "accepted" | "query" | "not_applicable";
 export type DeliverableStatus = "blocked" | "ready" | "in_progress" | "delivered";
 export type Role = "founder" | "practitioner" | "admin";
 
@@ -50,6 +50,7 @@ export type DocItem = {
   status: DocStatus;
   query_text: string | null;
   reply_text: string | null;
+  na_reason: string | null;
   requested_at: string;
   uploaded_at: string | null;
   accepted_at: string | null;

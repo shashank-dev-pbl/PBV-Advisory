@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import { Circle, CircleCheck, ArrowRight } from "lucide-react";
 import { currentPeriod, formatPeriodLabel } from "@/lib/period";
 import type { Company, DocItem, DocItemMessage, Deliverable } from "@/lib/types";
-import { acceptItem, acceptWithWaiver, sendPractitionerMessage, markPractitionerRead } from "./actions";
-import { FileRow, VersionHistory, latestOf, sortedFiles, sortedMessages, hasUnreadFor, ChatPopover, MessageButton, type ChatMessage } from "../founder/FounderView";
+import { acceptItem, markNotApplicable, sendPractitionerMessage, markPractitionerRead } from "./actions";
+import { FileRow, VersionHistory, latestOf, sortedFiles, sortedMessages, hasUnreadFor, isResolved, ChatPopover, MessageButton, type ChatMessage } from "../founder/FounderView";
 
 function daysAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -30,11 +30,11 @@ export default function PractitionerView({
     return m;
   }, [items]);
 
-  const received = items.filter((i) => i.status === "uploaded" || i.status === "accepted" || i.status === "query").length;
+  const received = items.filter((i) => i.status === "uploaded" || i.status === "accepted" || i.status === "query" || i.status === "not_applicable").length;
   const total = items.length;
 
   const inbox = items.filter((i) => i.status === "uploaded" || i.status === "query");
-  const outstanding = items.filter((i) => i.status !== "accepted");
+  const outstanding = items.filter((i) => !isResolved(i.status));
   const oldest = outstanding.length > 0
     ? [...outstanding].sort((a, b) => new Date(a.requested_at).getTime() - new Date(b.requested_at).getTime())[0]
     : null;
@@ -43,11 +43,11 @@ export default function PractitionerView({
   // Recomputing it locally means "What I can work on" updates the instant an item is accepted,
   // instead of waiting for a full page reload to see the server-side trigger's result.
   const derivedDeliverables = useMemo(() => {
-    const acceptedCodes = new Set(items.filter((i) => i.status === "accepted").map((i) => i.code));
+    const resolvedCodes = new Set(items.filter((i) => isResolved(i.status)).map((i) => i.code));
     return dlvs.map((d) => {
       if (d.status === "in_progress" || d.status === "delivered") return d;
-      const allAccepted = d.input_codes.every((c) => acceptedCodes.has(c));
-      return { ...d, status: allAccepted ? "ready" : "blocked" } as Deliverable;
+      const allResolved = d.input_codes.every((c) => resolvedCodes.has(c));
+      return { ...d, status: allResolved ? "ready" : "blocked" } as Deliverable;
     });
   }, [dlvs, items]);
 
@@ -140,7 +140,7 @@ export default function PractitionerView({
                       </div>
                       <div className="mt-2 flex flex-col gap-1">
                         {inputs.map((m) => {
-                          const done = m.status === "accepted";
+                          const done = isResolved(m.status);
                           return (
                             <p
                               key={m.id}
@@ -208,7 +208,7 @@ function InboxRow({
   companyId: string;
   onPatch: (id: string, patch: Partial<DocItem>) => void;
 }) {
-  const [waiving, setWaiving] = useState(false);
+  const [markingNa, setMarkingNa] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -245,13 +245,13 @@ function InboxRow({
     }
   }
 
-  async function handleWaive() {
+  async function handleMarkNa() {
     if (!text) return;
     setBusy(true);
-    await acceptWithWaiver(item.id, text);
-    onPatch(item.id, { status: "accepted", accepted_at: new Date().toISOString(), reply_text: `Waived — ${text}` });
+    await markNotApplicable(item.id, text);
+    onPatch(item.id, { status: "not_applicable", na_reason: text });
     setBusy(false);
-    setWaiving(false);
+    setMarkingNa(false);
   }
 
   const messages = sortedMessages(item);
@@ -302,12 +302,12 @@ function InboxRow({
               />
             )}
           </div>
-          <button onClick={() => setWaiving((v) => !v)} className="btn-small" style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)" }}>
-            Waive
+          <button onClick={() => setMarkingNa((v) => !v)} className="btn-small" style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)" }}>
+            Not applicable
           </button>
         </div>
       </div>
-      {waiving && (
+      {markingNa && (
         <div className="mt-3 flex gap-2">
           <input
             className="input-field"
@@ -317,12 +317,12 @@ function InboxRow({
             onChange={(e) => setText(e.target.value)}
           />
           <button
-            onClick={handleWaive}
+            onClick={handleMarkNa}
             disabled={busy || !text}
             className="btn-small"
             style={{ background: "var(--ink)", color: "var(--paper)", border: "1px solid var(--ink)" }}
           >
-            Confirm waiver
+            Confirm not applicable
           </button>
         </div>
       )}
@@ -353,12 +353,22 @@ function ReadyDeliverableRow({
       <div className="mt-2 flex flex-col gap-1.5">
         {inputs.map((i) => {
           const f = latestOf(i.doc_file);
-          return f ? (
-            <div key={i.id}>
-              <p className="mb-0.5 text-[10px] font-semibold" style={{ color: "var(--ink-secondary)" }}>{i.title}</p>
-              <FileRow filename={f.filename} storagePath={f.storage_path} />
-            </div>
-          ) : null;
+          if (f) {
+            return (
+              <div key={i.id}>
+                <p className="mb-0.5 text-[10px] font-semibold" style={{ color: "var(--ink-secondary)" }}>{i.title}</p>
+                <FileRow filename={f.filename} storagePath={f.storage_path} />
+              </div>
+            );
+          }
+          if (i.status === "not_applicable") {
+            return (
+              <p key={i.id} className="text-[11px]" style={{ color: "var(--ink-secondary)" }}>
+                {i.title} — not applicable{i.na_reason ? `: ${i.na_reason}` : ""}
+              </p>
+            );
+          }
+          return null;
         })}
       </div>
     </div>
