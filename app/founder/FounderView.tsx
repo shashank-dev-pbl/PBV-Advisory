@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { currentPeriod, formatPeriodLabel } from "@/lib/period";
 import { safeStorageSegment } from "@/lib/storagePath";
 import type { Company, DocItem, DocItemMessage, Deliverable } from "@/lib/types";
-import { recordUpload, deleteUpload, sendFounderMessage, markFounderRead, saveRevenueInfo, getSignedDownloadUrl } from "./actions";
+import { recordUpload, deleteUpload, deleteFile, markNilReturn, sendFounderMessage, markFounderRead, saveRevenueInfo, getSignedDownloadUrl } from "./actions";
 
 const STRIKE_MS = 420;
 
@@ -53,6 +53,63 @@ function groupItems(items: DocItem[]) {
   return groups;
 }
 
+function PrioritySection({
+  title,
+  items,
+  defaultOpen,
+  companyId,
+  onPatch,
+}: {
+  title: string;
+  items: DocItem[];
+  defaultOpen: boolean;
+  companyId: string;
+  onPatch: (id: string, patch: Partial<DocItem>) => void;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const grouped = useMemo(() => groupItems(items), [items]);
+  const resolvedCount = items.filter((i) => isResolved(i.status)).length;
+
+  if (items.length === 0) return null;
+
+  return (
+    <section className="mb-6 border-b" style={{ borderColor: "var(--rule)" }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between py-3 text-left"
+        style={{ background: "none", border: "none", cursor: "pointer" }}
+      >
+        <p className="text-[13px] font-extrabold" style={{ color: "var(--ink)" }}>{title}</p>
+        <span className="flex items-center gap-2 text-[11px] tnum" style={{ color: "var(--ink-secondary)" }}>
+          {resolvedCount} of {items.length}
+          <span style={{ transform: open ? "rotate(90deg)" : "none", transition: "transform 150ms ease" }}>›</span>
+        </span>
+      </button>
+      <div
+        className="grid"
+        style={{ gridTemplateRows: open ? "1fr" : "0fr", transition: "grid-template-rows 280ms ease" }}
+      >
+        <div className="overflow-hidden">
+          <div className="flex flex-col gap-6 pb-5">
+            {[...grouped.entries()].map(([groupName, groupItemsList]) => (
+              <div key={groupName}>
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: "var(--ink-secondary)" }}>
+                  {groupName}
+                </p>
+                <div className="flex flex-col gap-0.5">
+                  {groupItemsList.map((item) => (
+                    <ChecklistRow key={item.id} item={item} companyId={companyId} onPatch={onPatch} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export type CurrentUser = { email: string; role: "founder" | "practitioner" | "admin" };
 
 export default function FounderView({
@@ -67,7 +124,6 @@ export default function FounderView({
   currentUser: CurrentUser;
 }) {
   const [items, setItems] = useState(docItems);
-  const grouped = useMemo(() => groupItems(items), [items]);
   const received = items.filter((i) => i.status === "uploaded" || i.status === "accepted" || i.status === "query" || i.status === "not_applicable").length;
   const total = items.length;
 
@@ -129,19 +185,28 @@ export default function FounderView({
           <p className="text-[13px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>Docs checklist</p>
         </div>
 
-        <div className="flex flex-col gap-8">
-          {[...grouped.entries()].map(([groupName, groupItemsList], idx) => (
-            <section key={groupName}>
-              <p className="mb-3 text-[13px] font-extrabold" style={{ color: "var(--ink)" }}>
-                {idx + 1}. {groupName}
-              </p>
-              <div className="flex flex-col gap-0.5">
-                {groupItemsList.map((item) => (
-                  <ChecklistRow key={item.id} item={item} companyId={company.id} onPatch={patchItem} />
-                ))}
-              </div>
-            </section>
-          ))}
+        <div className="flex flex-col">
+          <PrioritySection
+            title="Essentials"
+            items={items.filter((i) => i.priority === "must")}
+            defaultOpen
+            companyId={company.id}
+            onPatch={patchItem}
+          />
+          <PrioritySection
+            title="Good to have"
+            items={items.filter((i) => i.priority === "good")}
+            defaultOpen
+            companyId={company.id}
+            onPatch={patchItem}
+          />
+          <PrioritySection
+            title="Cosmetic"
+            items={items.filter((i) => i.priority === "cosmetic")}
+            defaultOpen={false}
+            companyId={company.id}
+            onPatch={patchItem}
+          />
         </div>
 
         {deliveredItems.length > 0 && (
@@ -516,10 +581,11 @@ function ChecklistRow({
   const [uploading, setUploading] = useState(false);
   const [expanded, setExpanded] = useState(item.status === "query");
   const [chatOpen, setChatOpen] = useState(false);
+  const [confirmingNil, setConfirmingNil] = useState(false);
+  const [nilBusy, setNilBusy] = useState(false);
+  const [label, setLabel] = useState("");
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  async function uploadFile(file: File, fileLabel?: string) {
     setUploading(true);
     const supabase = createClient();
     const path = `${companyId}/${item.id}/${Date.now()}-${safeStorageSegment(file.name)}`;
@@ -529,15 +595,40 @@ function ChecklistRow({
       setUploading(false);
       return;
     }
-    await recordUpload(item.id, path, file.name);
+    await recordUpload(item.id, path, file.name, fileLabel);
+    setUploading(false);
+    return path;
+  }
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const path = await uploadFile(file);
+    e.target.value = "";
+    if (!path) return;
     onPatch(item.id, {
       status: "uploaded",
-      doc_file: [{ id: path, doc_item_id: item.id, storage_path: path, filename: file.name, uploaded_at: new Date().toISOString() }],
+      doc_file: [{ id: path, doc_item_id: item.id, storage_path: path, filename: file.name, label: null, uploaded_at: new Date().toISOString() }],
     });
-    setUploading(false);
-    e.target.value = "";
     // let the strike-through animation play out while still expanded, then settle closed
     window.setTimeout(() => setExpanded(false), STRIKE_MS + 150);
+  }
+
+  async function handleAddLabeledFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || (item.needs_label && !label.trim())) return;
+    const fileLabel = label.trim() || undefined;
+    const path = await uploadFile(file, fileLabel);
+    e.target.value = "";
+    if (!path) return;
+    onPatch(item.id, {
+      status: "uploaded",
+      doc_file: [
+        ...(item.doc_file ?? []),
+        { id: path, doc_item_id: item.id, storage_path: path, filename: file.name, label: fileLabel ?? null, uploaded_at: new Date().toISOString() },
+      ],
+    });
+    setLabel("");
   }
 
   async function handleDelete() {
@@ -545,6 +636,24 @@ function ChecklistRow({
     if (!latestFile) return;
     await deleteUpload(item.id);
     onPatch(item.id, { status: "pending", doc_file: [] });
+    setExpanded(false);
+  }
+
+  async function handleDeleteOne(fileId: string) {
+    await deleteFile(fileId, item.id);
+    const remaining = (item.doc_file ?? []).filter((f) => f.id !== fileId);
+    onPatch(item.id, remaining.length > 0 ? { doc_file: remaining } : { doc_file: remaining, status: "pending" });
+  }
+
+  async function handleNilReturn() {
+    if (!confirmingNil) {
+      setConfirmingNil(true);
+      return;
+    }
+    setNilBusy(true);
+    await markNilReturn(item.id);
+    onPatch(item.id, { status: "not_applicable", na_reason: "Founder confirmed — none to report" });
+    setNilBusy(false);
     setExpanded(false);
   }
 
@@ -577,6 +686,7 @@ function ChecklistRow({
   const latestFile = files[0] ?? null;
   const olderFiles = files.slice(1);
   const hasFile = !!latestFile;
+  const hasAnyFile = files.length > 0;
   const messages = sortedMessages(item);
   const hasMessages = messages.length > 0;
   const unread = hasUnreadFor(item, "founder");
@@ -595,18 +705,7 @@ function ChecklistRow({
         <StatusCheckbox status={item.status} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <StrikeText text={item.title} active={hasFile || item.status === "not_applicable"} />
-            {item.priority !== "must" && (
-              <span
-                className="pill flex-shrink-0"
-                style={{
-                  background: item.priority === "good" ? "rgba(0,77,0,0.06)" : "rgba(107,99,87,0.1)",
-                  color: item.priority === "good" ? "var(--green-soft)" : "var(--ink-secondary)",
-                }}
-              >
-                {item.priority === "good" ? "Good to have" : "Cosmetic"}
-              </span>
-            )}
+            <StrikeText text={item.title} active={hasAnyFile || item.status === "not_applicable"} />
             {item.status !== "pending" && (
               <span
                 className="pill flex-shrink-0"
@@ -655,33 +754,109 @@ function ChecklistRow({
       >
         <div className="overflow-hidden">
           <div className="pb-4 pl-8">
-            {latestFile ? (
-              <FileRow
-                filename={latestFile.filename}
-                storagePath={latestFile.storage_path}
-                onDelete={isResolved(item.status) ? undefined : handleDelete}
-              />
-            ) : item.status === "not_applicable" ? (
+            {item.status === "not_applicable" ? (
               <p className="py-2 text-[12px]" style={{ color: "var(--ink-secondary)" }}>
                 Marked not applicable{item.na_reason ? ` — ${item.na_reason}` : ""}.
               </p>
+            ) : item.allows_multiple ? (
+              <>
+                {files.length === 0 && item.status === "accepted" && (
+                  <p className="py-2 text-[12px]" style={{ color: "var(--ink-secondary)" }}>
+                    No file on record for this item.
+                  </p>
+                )}
+                {files.length > 0 && (
+                  <div className="flex flex-col gap-1">
+                    {files.map((f) => (
+                      <div key={f.id}>
+                        {f.label && (
+                          <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.04em]" style={{ color: "var(--ink-secondary)" }}>
+                            {f.label}
+                          </p>
+                        )}
+                        <FileRow
+                          filename={f.filename}
+                          storagePath={f.storage_path}
+                          onDelete={isResolved(item.status) ? undefined : () => handleDeleteOne(f.id)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             ) : (
-              item.status === "accepted" && (
-                <p className="py-2 text-[12px]" style={{ color: "var(--ink-secondary)" }}>
-                  No file on record for this item.
-                </p>
-              )
+              <>
+                {latestFile ? (
+                  <FileRow
+                    filename={latestFile.filename}
+                    storagePath={latestFile.storage_path}
+                    onDelete={isResolved(item.status) ? undefined : handleDelete}
+                  />
+                ) : (
+                  item.status === "accepted" && (
+                    <p className="py-2 text-[12px]" style={{ color: "var(--ink-secondary)" }}>
+                      No file on record for this item.
+                    </p>
+                  )
+                )}
+                {olderFiles.length > 0 && <VersionHistory files={olderFiles} />}
+              </>
             )}
-            {olderFiles.length > 0 && <VersionHistory files={olderFiles} />}
 
             {!isResolved(item.status) && (
-              <div className="mt-2 flex items-center gap-2 p-3" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>
-                <label className="flex-1 cursor-pointer">
-                  <span className="btn-ghost" style={{ minHeight: 36, padding: "8px 16px", fontSize: 12 }}>
-                    {uploading ? "Uploading…" : hasFile ? "Replace file" : "Choose file"}
-                  </span>
-                  <input type="file" className="hidden" onChange={handleFile} disabled={uploading} />
-                </label>
+              <div className="mt-2 flex flex-col gap-2">
+                {item.allows_multiple ? (
+                  <div className="flex items-center gap-2 p-3" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>
+                    {item.needs_label && (
+                      <input
+                        className="input-field"
+                        style={{ minHeight: 36, padding: "8px 10px", fontSize: 12, flex: 1 }}
+                        placeholder="Label (e.g. HDFC Bank, or Founder A)"
+                        value={label}
+                        onChange={(e) => setLabel(e.target.value)}
+                      />
+                    )}
+                    <label className={item.needs_label ? "flex-shrink-0 cursor-pointer" : "flex-1 cursor-pointer"}>
+                      <span
+                        className="btn-ghost"
+                        style={{
+                          minHeight: 36,
+                          padding: "8px 16px",
+                          fontSize: 12,
+                          opacity: item.needs_label && !label.trim() ? 0.5 : 1,
+                        }}
+                      >
+                        {uploading ? "Uploading…" : "Add file"}
+                      </span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={handleAddLabeledFile}
+                        disabled={uploading || (item.needs_label && !label.trim())}
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 p-3" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>
+                    <label className="flex-1 cursor-pointer">
+                      <span className="btn-ghost" style={{ minHeight: 36, padding: "8px 16px", fontSize: 12 }}>
+                        {uploading ? "Uploading…" : hasFile ? "Replace file" : "Choose file"}
+                      </span>
+                      <input type="file" className="hidden" onChange={handleFile} disabled={uploading} />
+                    </label>
+                  </div>
+                )}
+
+                {item.nil_return_allowed && !hasAnyFile && (
+                  <button
+                    onClick={handleNilReturn}
+                    disabled={nilBusy}
+                    className="self-start text-[11px] font-semibold"
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-secondary)", padding: "2px 0" }}
+                  >
+                    {nilBusy ? "Saving…" : confirmingNil ? "Confirm — we have none" : "We have none"}
+                  </button>
+                )}
               </div>
             )}
           </div>

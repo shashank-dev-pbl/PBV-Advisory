@@ -26,6 +26,7 @@ export type DocFile = {
   doc_item_id: string;
   storage_path: string;
   filename: string;
+  label: string | null;
   uploaded_at: string;
 };
 

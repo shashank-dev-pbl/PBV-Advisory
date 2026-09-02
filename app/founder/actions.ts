@@ -3,14 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-export async function recordUpload(docItemId: string, storagePath: string, filename: string) {
+export async function recordUpload(docItemId: string, storagePath: string, filename: string, label?: string) {
   const supabase = await createClient();
 
   // Per spec: a replaced upload is superseded, never deleted — old file rows stay in the
   // database as the audit trail, the UI just shows the latest one (see latestOf()).
+  // For allows_multiple items there is no "superseding" — every row is a concurrently
+  // active file (e.g. one bank statement per account), distinguished by its label.
   const { error: fileError } = await supabase
     .from("doc_file")
-    .insert({ doc_item_id: docItemId, storage_path: storagePath, filename });
+    .insert({ doc_item_id: docItemId, storage_path: storagePath, filename, label: label ?? null });
   if (fileError) throw fileError;
 
   const { error: statusError } = await supabase
@@ -20,6 +22,42 @@ export async function recordUpload(docItemId: string, storagePath: string, filen
     .in("status", ["pending", "query"]);
   if (statusError) throw statusError;
 
+  revalidatePath("/founder");
+  revalidatePath("/practitioner");
+}
+
+export async function deleteFile(docFileId: string, docItemId: string) {
+  const supabase = await createClient();
+
+  const { data: file } = await supabase.from("doc_file").select("storage_path").eq("id", docFileId).single();
+  if (file) {
+    await supabase.storage.from("docs").remove([file.storage_path]);
+    await supabase.from("doc_file").delete().eq("id", docFileId);
+  }
+
+  const { count } = await supabase
+    .from("doc_file")
+    .select("*", { count: "exact", head: true })
+    .eq("doc_item_id", docItemId);
+
+  if (!count) {
+    await supabase
+      .from("doc_item")
+      .update({ status: "pending", uploaded_at: null })
+      .eq("id", docItemId)
+      .in("status", ["uploaded", "query"]);
+  }
+
+  revalidatePath("/founder");
+  revalidatePath("/practitioner");
+}
+
+export async function markNilReturn(docItemId: string) {
+  const supabase = await createClient();
+  await supabase
+    .from("doc_item")
+    .update({ status: "not_applicable", na_reason: "Founder confirmed — none to report", query_text: null })
+    .eq("id", docItemId);
   revalidatePath("/founder");
   revalidatePath("/practitioner");
 }
