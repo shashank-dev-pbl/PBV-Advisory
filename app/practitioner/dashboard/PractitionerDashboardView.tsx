@@ -146,21 +146,22 @@ export default function PractitionerDashboardView({
     <div className="min-h-screen" style={{ background: "var(--paper)" }}>
       <header className="flex items-center justify-between border-b px-5 py-4 md:px-8" style={{ borderColor: "var(--rule)" }}>
         <div>
+          <p className="eyebrow mb-1">Dashboard</p>
+          <h1 className="text-[22px] font-extrabold">{company.name}</h1>
+          <p className="mt-0.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>{formatPeriodLabel(period)}</p>
+        </div>
+        <div className="flex items-center gap-4">
           <Link
             href="/practitioner"
-            className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold"
-            style={{ color: "var(--ink-secondary)" }}
+            className="btn-small"
+            style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)", gap: 6 }}
           >
             <ArrowLeft size={13} strokeWidth={1.75} />
             Back to practitioner desk
           </Link>
-          <p className="eyebrow mb-1">Dashboard</p>
-          <h1 className="text-[22px] font-extrabold">{company.name}</h1>
-          <p className="mt-0.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>
-            {formatPeriodLabel(period)} · {existing ? (existing.status === "published" ? `published, v${existing.version}` : "draft") : "not started"}
-          </p>
+          <div style={{ width: 1, height: 28, background: "var(--rule)" }} />
+          <UserMenu user={currentUser} />
         </div>
-        <UserMenu user={currentUser} />
       </header>
 
       <main className="mx-auto w-full max-w-[900px] px-5 py-8 md:px-8">
@@ -272,10 +273,7 @@ export default function PractitionerDashboardView({
           )}
         </section>
 
-        <section>
-          <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>Dashboard</p>
-          <FinancialTiles history={publishedHistory} isPractitioner />
-        </section>
+        <FinancialTiles history={publishedHistory} isPractitioner />
       </main>
     </div>
   );

@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { previousPeriods } from "@/lib/period";
+import { previousPeriods, formatPeriodLabel } from "@/lib/period";
+import { runwayMonths } from "@/lib/dashboardCalc";
+import { sendEmail } from "@/lib/resend";
+import { ADMIN_EMAILS } from "@/lib/admin";
 import type { MonthlyFinancials } from "@/lib/types";
 
 export async function getFinancialsHistory(companyId: string, period: string, months = 6) {
@@ -123,6 +126,20 @@ export async function publish(companyId: string, period: string, fields: Financi
     version: nextVersion,
     snapshot: fullRow,
   });
+
+  // Runway below 4 months fires an email alert to the founder(s) and PBA, immediately, per spec.
+  const history = await getFinancialsHistory(companyId, period, 3);
+  const published = history.filter((m) => m.status === "published");
+  const { months } = runwayMonths(published);
+  if (months !== null && months < 4) {
+    const { data: founders } = await supabase.from("app_user").select("email").eq("company_id", companyId).eq("role", "founder");
+    const founderEmails = (founders ?? []).map((f) => f.email);
+    await sendEmail({
+      to: [...founderEmails, ...ADMIN_EMAILS],
+      subject: `Runway alert — ${months.toFixed(1)} months (${formatPeriodLabel(period)})`,
+      html: `<p>Runway is ${months.toFixed(1)} months as of the ${formatPeriodLabel(period)} close, below the 4-month threshold.</p>`,
+    });
+  }
 
   revalidatePath("/practitioner/dashboard");
   revalidatePath("/founder/dashboard");
