@@ -63,17 +63,14 @@ function groupItems(items: DocItem[]) {
 function PrioritySection({
   title,
   items,
-  defaultOpen,
   companyId,
   onPatch,
 }: {
   title: string;
   items: DocItem[];
-  defaultOpen: boolean;
   companyId: string;
   onPatch: (id: string, patch: Partial<DocItem>) => void;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
   const grouped = useMemo(() => groupItems(items), [items]);
   const resolvedCount = items.filter((i) => isReceived(i.status)).length;
 
@@ -81,37 +78,25 @@ function PrioritySection({
 
   return (
     <section className="mb-6 border-b" style={{ borderColor: "var(--rule)" }}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between py-3 text-left"
-        style={{ background: "none", border: "none", cursor: "pointer" }}
-      >
+      <div className="flex w-full items-center justify-between py-3">
         <p className="text-[13px] font-extrabold" style={{ color: "var(--ink)" }}>{title}</p>
-        <span className="flex items-center gap-2 text-[11px] tnum" style={{ color: "var(--ink-secondary)" }}>
+        <span className="text-[11px] tnum" style={{ color: "var(--ink-secondary)" }}>
           {resolvedCount} of {items.length}
-          <span style={{ transform: open ? "rotate(90deg)" : "none", transition: "transform 150ms ease" }}>›</span>
         </span>
-      </button>
-      <div
-        className="grid"
-        style={{ gridTemplateRows: open ? "1fr" : "0fr", transition: "grid-template-rows 280ms ease" }}
-      >
-        <div className="overflow-hidden">
-          <div className="flex flex-col gap-6 pb-5">
-            {[...grouped.entries()].map(([groupName, groupItemsList]) => (
-              <div key={groupName}>
-                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: "var(--ink-secondary)" }}>
-                  {groupName}
-                </p>
-                <div className="flex flex-col gap-0.5">
-                  {groupItemsList.map((item) => (
-                    <ChecklistRow key={item.id} item={item} companyId={companyId} onPatch={onPatch} />
-                  ))}
-                </div>
-              </div>
-            ))}
+      </div>
+      <div className="flex flex-col gap-6 pb-5">
+        {[...grouped.entries()].map(([groupName, groupItemsList]) => (
+          <div key={groupName}>
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: "var(--ink-secondary)" }}>
+              {groupName}
+            </p>
+            <div className="flex flex-col gap-0.5">
+              {groupItemsList.map((item) => (
+                <ChecklistRow key={item.id} item={item} companyId={companyId} onPatch={onPatch} />
+              ))}
+            </div>
           </div>
-        </div>
+        ))}
       </div>
     </section>
   );
@@ -133,7 +118,6 @@ export default function FounderView({
   const [items, setItems] = useState(docItems);
   const received = items.filter((i) => isReceived(i.status)).length;
   const total = items.length;
-  const naCount = items.filter((i) => i.status === "not_applicable").length;
 
   const mustItems = items.filter((i) => i.priority === "must");
   const mustResolved = mustItems.filter((i) => isReceived(i.status)).length;
@@ -165,9 +149,6 @@ export default function FounderView({
             <div>
               <p className="text-[12px] font-bold tnum" style={{ color: "var(--ink)" }}>{mustResolved} of {mustTotal} essentials</p>
               <p className="mt-0.5 text-[11px] tnum" style={{ color: "var(--ink-secondary)" }}>{received} of {total} in total</p>
-              {naCount > 0 && (
-                <p className="mt-0.5 text-[11px] tnum" style={{ color: "var(--ink-secondary)" }}>{naCount} marked not applicable</p>
-              )}
             </div>
           </div>
           <UserMenu user={currentUser} />
@@ -200,21 +181,18 @@ export default function FounderView({
           <PrioritySection
             title="Essentials"
             items={items.filter((i) => i.priority === "must")}
-            defaultOpen
             companyId={company.id}
             onPatch={patchItem}
           />
           <PrioritySection
             title="Good to have"
             items={items.filter((i) => i.priority === "good")}
-            defaultOpen
             companyId={company.id}
             onPatch={patchItem}
           />
           <PrioritySection
             title="Cosmetic"
             items={items.filter((i) => i.priority === "cosmetic")}
-            defaultOpen={false}
             companyId={company.id}
             onPatch={patchItem}
           />
