@@ -22,6 +22,13 @@ export function isResolved(status: DocItem["status"]): boolean {
   return status === "accepted" || status === "not_applicable";
 }
 
+// A genuine submission — a file actually came in (or was accepted). Deliberately excludes
+// not_applicable: for progress *counts* an N/A item hasn't produced anything, even though it
+// still satisfies a deliverable's dependency (see isResolved, used for that instead).
+export function isReceived(status: DocItem["status"]): boolean {
+  return status === "uploaded" || status === "accepted" || status === "query";
+}
+
 export function sortedFiles(files: DocItem["doc_file"]) {
   if (!files || files.length === 0) return [];
   return [...files].sort((a, b) => new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime());
@@ -68,7 +75,7 @@ function PrioritySection({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const grouped = useMemo(() => groupItems(items), [items]);
-  const resolvedCount = items.filter((i) => isResolved(i.status)).length;
+  const resolvedCount = items.filter((i) => isReceived(i.status)).length;
 
   if (items.length === 0) return null;
 
@@ -124,11 +131,12 @@ export default function FounderView({
   currentUser: CurrentUser;
 }) {
   const [items, setItems] = useState(docItems);
-  const received = items.filter((i) => i.status === "uploaded" || i.status === "accepted" || i.status === "query" || i.status === "not_applicable").length;
+  const received = items.filter((i) => isReceived(i.status)).length;
   const total = items.length;
+  const naCount = items.filter((i) => i.status === "not_applicable").length;
 
   const mustItems = items.filter((i) => i.priority === "must");
-  const mustResolved = mustItems.filter((i) => isResolved(i.status)).length;
+  const mustResolved = mustItems.filter((i) => isReceived(i.status)).length;
   const mustTotal = mustItems.length;
   const pct = mustTotal > 0 ? Math.round((mustResolved / mustTotal) * 100) : 0;
 
@@ -157,6 +165,9 @@ export default function FounderView({
             <div>
               <p className="text-[12px] font-bold tnum" style={{ color: "var(--ink)" }}>{mustResolved} of {mustTotal} essentials</p>
               <p className="mt-0.5 text-[11px] tnum" style={{ color: "var(--ink-secondary)" }}>{received} of {total} in total</p>
+              {naCount > 0 && (
+                <p className="mt-0.5 text-[11px] tnum" style={{ color: "var(--ink-secondary)" }}>{naCount} marked not applicable</p>
+              )}
             </div>
           </div>
           <UserMenu user={currentUser} />
