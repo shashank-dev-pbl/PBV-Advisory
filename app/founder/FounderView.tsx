@@ -80,7 +80,7 @@ function PrioritySection({
   return (
     <section className="mb-6 border-b" style={{ borderColor: "var(--rule)" }}>
       <div className="flex w-full items-center justify-between py-3">
-        <p className="text-[13px] font-extrabold" style={{ color: "var(--ink)" }}>{title}</p>
+        <p className="text-[18px] font-extrabold" style={{ color: "var(--ink)" }}>{title}</p>
         <span className="text-[11px] tnum" style={{ color: "var(--ink-secondary)" }}>
           {resolvedCount} of {items.length}
         </span>
@@ -705,7 +705,7 @@ function ChecklistRow({
       >
         <StatusCheckbox status={item.status} />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-[14px] font-semibold">
             <StrikeText text={item.title} active={hasAnyFile || item.status === "not_applicable"} />
             {item.status !== "pending" && (
               <span
