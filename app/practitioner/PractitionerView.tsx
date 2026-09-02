@@ -5,7 +5,7 @@ import { Circle, CircleCheck, ArrowRight } from "lucide-react";
 import { currentPeriod, formatPeriodLabel } from "@/lib/period";
 import type { Company, DocItem, DocItemMessage, Deliverable } from "@/lib/types";
 import { acceptItem, markNotApplicable, sendPractitionerMessage, markPractitionerRead } from "./actions";
-import { FileRow, VersionHistory, latestOf, sortedFiles, sortedMessages, hasUnreadFor, isResolved, ChatPopover, MessageButton, UserMenu, type ChatMessage, type CurrentUser } from "../founder/FounderView";
+import { FileRow, VersionHistory, sortedFiles, sortedMessages, hasUnreadFor, isResolved, isReceived, ChatPopover, MessageButton, UserMenu, type ChatMessage, type CurrentUser } from "../founder/FounderView";
 
 function daysAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -32,7 +32,7 @@ export default function PractitionerView({
     return m;
   }, [items]);
 
-  const received = items.filter((i) => i.status === "uploaded" || i.status === "accepted" || i.status === "query" || i.status === "not_applicable").length;
+  const received = items.filter((i) => isReceived(i.status)).length;
   const total = items.length;
 
   const inbox = items.filter((i) => i.status === "uploaded" || i.status === "query");
@@ -268,14 +268,31 @@ function InboxRow({
           <p className="text-[14px] font-bold" style={{ color: "var(--ink)" }}>{item.title}</p>
           {(() => {
             const files = sortedFiles(item.doc_file);
+            if (files.length === 0) return null;
+            if (item.allows_multiple) {
+              return (
+                <div className="mt-1.5 flex flex-col gap-1">
+                  {files.map((f) => (
+                    <div key={f.id}>
+                      {f.label && (
+                        <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.04em]" style={{ color: "var(--ink-secondary)" }}>
+                          {f.label}
+                        </p>
+                      )}
+                      <FileRow filename={f.filename} storagePath={f.storage_path} />
+                    </div>
+                  ))}
+                </div>
+              );
+            }
             const f = files[0];
             const older = files.slice(1);
-            return f ? (
+            return (
               <div className="mt-1.5">
                 <FileRow filename={f.filename} storagePath={f.storage_path} />
                 {older.length > 0 && <VersionHistory files={older} />}
               </div>
-            ) : null;
+            );
           })()}
         </div>
         <div className="flex items-center gap-2">
@@ -355,12 +372,21 @@ function ReadyDeliverableRow({
       </div>
       <div className="mt-2 flex flex-col gap-1.5">
         {inputs.map((i) => {
-          const f = latestOf(i.doc_file);
-          if (f) {
+          const files = sortedFiles(i.doc_file);
+          if (files.length > 0) {
             return (
               <div key={i.id}>
                 <p className="mb-0.5 text-[10px] font-semibold" style={{ color: "var(--ink-secondary)" }}>{i.title}</p>
-                <FileRow filename={f.filename} storagePath={f.storage_path} />
+                {(i.allows_multiple ? files : files.slice(0, 1)).map((f) => (
+                  <div key={f.id}>
+                    {f.label && (
+                      <p className="mb-0.5 text-[9px] font-semibold uppercase tracking-[0.04em]" style={{ color: "var(--ink-secondary)" }}>
+                        {f.label}
+                      </p>
+                    )}
+                    <FileRow filename={f.filename} storagePath={f.storage_path} />
+                  </div>
+                ))}
               </div>
             );
           }
