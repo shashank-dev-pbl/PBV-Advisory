@@ -18,7 +18,9 @@ export default function LoginPage() {
         data: { session },
       } = await createClient().auth.getSession();
       if (session && !cancelled) {
-        window.location.href = "/";
+        // The tab that requested the link (this one) goes to the practitioner desk; the
+        // tab opened by actually clicking the emailed link goes to founder (see auth/callback).
+        window.location.href = "/practitioner";
       }
     }
 
