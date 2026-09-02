@@ -8,7 +8,8 @@ import PractitionerView from "./PractitionerView";
 export default async function PractitionerPage() {
   const appUser = await getCurrentAppUser();
   if (!appUser) redirect("/login");
-  if (appUser.role !== "practitioner") redirect(appUser.role === "founder" ? "/founder" : "/login");
+  // Temporary: any signed-in account can view either screen by changing the route.
+  // Once real per-role accounts are the norm, gate this back to appUser.role === "practitioner".
 
   const supabase = await createClient();
   const companyId = appUser.company_id;
@@ -40,7 +41,7 @@ export default async function PractitionerPage() {
       company={company as Company}
       docItems={(docItems ?? []) as DocItem[]}
       deliverables={(deliverables ?? []) as Deliverable[]}
-      currentUser={{ name: appUser.name, role: appUser.role }}
+      currentUser={{ email: appUser.email, role: "practitioner" }}
     />
   );
 }

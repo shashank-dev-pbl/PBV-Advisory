@@ -8,7 +8,8 @@ import FounderView from "./FounderView";
 export default async function FounderPage() {
   const appUser = await getCurrentAppUser();
   if (!appUser) redirect("/login");
-  if (appUser.role !== "founder") redirect(appUser.role === "practitioner" ? "/practitioner" : "/login");
+  // Temporary: any signed-in account can view either screen by changing the route.
+  // Once real per-role accounts are the norm, gate this back to appUser.role === "founder".
 
   const supabase = await createClient();
   const companyId = appUser.company_id;
@@ -40,7 +41,7 @@ export default async function FounderPage() {
       company={company as Company}
       docItems={(docItems ?? []) as DocItem[]}
       deliveredItems={(deliverables ?? []) as Deliverable[]}
-      currentUser={{ name: appUser.name, role: appUser.role }}
+      currentUser={{ email: appUser.email, role: "founder" }}
     />
   );
 }

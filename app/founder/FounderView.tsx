@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, Trash2, TriangleAlert, MessageCircle, Send, X } from "lucide-react";
+import { Download, Trash2, TriangleAlert, MessageCircle, Send, X, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { currentPeriod, formatPeriodLabel } from "@/lib/period";
 import { safeStorageSegment } from "@/lib/storagePath";
@@ -53,7 +53,7 @@ function groupItems(items: DocItem[]) {
   return groups;
 }
 
-export type CurrentUser = { name: string; role: "founder" | "practitioner" | "admin" };
+export type CurrentUser = { email: string; role: "founder" | "practitioner" | "admin" };
 
 export default function FounderView({
   company,
@@ -191,57 +191,26 @@ const ROLE_LABEL: Record<CurrentUser["role"], string> = {
 };
 
 export function UserMenu({ user }: { user: CurrentUser }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, []);
-
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
     window.location.href = "/login";
   }
 
-  const initial = user.name.trim().charAt(0).toUpperCase() || "?";
-
   return (
-    <div className="relative flex-shrink-0" ref={ref}>
+    <div className="flex flex-shrink-0 items-center gap-3">
+      <div className="text-right">
+        <p className="truncate text-[13px] font-bold" style={{ color: "var(--ink)" }}>{user.email}</p>
+        <p className="mt-0.5 text-[11px]" style={{ color: "var(--ink-secondary)" }}>{ROLE_LABEL[user.role]}</p>
+      </div>
       <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2"
-        style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+        onClick={handleSignOut}
+        aria-label="Sign out"
+        title="Sign out"
+        style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 4 }}
       >
-        <span
-          className="flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-extrabold"
-          style={{ background: "var(--bottomline-green)", color: "var(--paper)" }}
-        >
-          {initial}
-        </span>
+        <LogOut size={18} strokeWidth={1.75} style={{ color: "var(--ink-secondary)" }} />
       </button>
-      {open && (
-        <div
-          className="absolute right-0 top-full z-30 mt-2 flex flex-col"
-          style={{ width: 220, background: "var(--paper)", border: "1px solid var(--rule)", boxShadow: "0 10px 28px rgba(0,0,0,0.16)" }}
-        >
-          <div className="border-b px-4 py-3" style={{ borderColor: "var(--rule)" }}>
-            <p className="truncate text-[13px] font-bold" style={{ color: "var(--ink)" }}>{user.name}</p>
-            <p className="mt-0.5 text-[11px]" style={{ color: "var(--ink-secondary)" }}>{ROLE_LABEL[user.role]}</p>
-          </div>
-          <button
-            onClick={handleSignOut}
-            className="px-4 py-3 text-left text-[12px] font-semibold"
-            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--status-query)" }}
-          >
-            Sign out
-          </button>
-        </div>
-      )}
     </div>
   );
 }
