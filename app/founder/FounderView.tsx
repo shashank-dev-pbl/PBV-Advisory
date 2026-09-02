@@ -53,14 +53,18 @@ function groupItems(items: DocItem[]) {
   return groups;
 }
 
+export type CurrentUser = { name: string; role: "founder" | "practitioner" | "admin" };
+
 export default function FounderView({
   company,
   docItems,
   deliveredItems,
+  currentUser,
 }: {
   company: Company;
   docItems: DocItem[];
   deliveredItems: Deliverable[];
+  currentUser: CurrentUser;
 }) {
   const [items, setItems] = useState(docItems);
   const grouped = useMemo(() => groupItems(items), [items]);
@@ -87,12 +91,13 @@ export default function FounderView({
             <h1 className="text-[22px] font-extrabold">{company.name}</h1>
             <p className="mt-0.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>{formatPeriodLabel(currentPeriod())}</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <div className="text-right">
               <p className="text-[11px] tnum" style={{ color: "var(--ink-secondary)" }}>{received} of {total}</p>
               <p className="text-[11px]" style={{ color: "var(--ink-secondary)" }}>received</p>
             </div>
             <CircularProgress pct={pct} />
+            <UserMenu user={currentUser} />
           </div>
         </header>
       </div>
@@ -175,6 +180,68 @@ function CircularProgress({ pct, size = 48, strokeWidth = 4 }: { pct: number; si
       <div className="absolute inset-0 flex items-center justify-center">
         <span className="text-[12px] font-extrabold tnum" style={{ color: "var(--bottomline-green)" }}>{pct}%</span>
       </div>
+    </div>
+  );
+}
+
+const ROLE_LABEL: Record<CurrentUser["role"], string> = {
+  founder: "Founder",
+  practitioner: "Practitioner",
+  admin: "Admin",
+};
+
+export function UserMenu({ user }: { user: CurrentUser }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, []);
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = "/login";
+  }
+
+  const initial = user.name.trim().charAt(0).toUpperCase() || "?";
+
+  return (
+    <div className="relative flex-shrink-0" ref={ref}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2"
+        style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+      >
+        <span
+          className="flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-extrabold"
+          style={{ background: "var(--bottomline-green)", color: "var(--paper)" }}
+        >
+          {initial}
+        </span>
+      </button>
+      {open && (
+        <div
+          className="absolute right-0 top-full z-30 mt-2 flex flex-col"
+          style={{ width: 220, background: "var(--paper)", border: "1px solid var(--rule)", boxShadow: "0 10px 28px rgba(0,0,0,0.16)" }}
+        >
+          <div className="border-b px-4 py-3" style={{ borderColor: "var(--rule)" }}>
+            <p className="truncate text-[13px] font-bold" style={{ color: "var(--ink)" }}>{user.name}</p>
+            <p className="mt-0.5 text-[11px]" style={{ color: "var(--ink-secondary)" }}>{ROLE_LABEL[user.role]}</p>
+          </div>
+          <button
+            onClick={handleSignOut}
+            className="px-4 py-3 text-left text-[12px] font-semibold"
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--status-query)" }}
+          >
+            Sign out
+          </button>
+        </div>
+      )}
     </div>
   );
 }

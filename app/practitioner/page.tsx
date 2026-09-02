@@ -40,6 +40,7 @@ export default async function PractitionerPage() {
       company={company as Company}
       docItems={(docItems ?? []) as DocItem[]}
       deliverables={(deliverables ?? []) as Deliverable[]}
+      currentUser={{ name: appUser.name, role: appUser.role }}
     />
   );
 }

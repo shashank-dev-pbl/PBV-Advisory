@@ -5,7 +5,7 @@ import { Circle, CircleCheck, ArrowRight } from "lucide-react";
 import { currentPeriod, formatPeriodLabel } from "@/lib/period";
 import type { Company, DocItem, DocItemMessage, Deliverable } from "@/lib/types";
 import { acceptItem, markNotApplicable, sendPractitionerMessage, markPractitionerRead } from "./actions";
-import { FileRow, VersionHistory, latestOf, sortedFiles, sortedMessages, hasUnreadFor, isResolved, ChatPopover, MessageButton, type ChatMessage } from "../founder/FounderView";
+import { FileRow, VersionHistory, latestOf, sortedFiles, sortedMessages, hasUnreadFor, isResolved, ChatPopover, MessageButton, UserMenu, type ChatMessage, type CurrentUser } from "../founder/FounderView";
 
 function daysAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -16,10 +16,12 @@ export default function PractitionerView({
   company,
   docItems,
   deliverables,
+  currentUser,
 }: {
   company: Company;
   docItems: DocItem[];
   deliverables: Deliverable[];
+  currentUser: CurrentUser;
 }) {
   const [items, setItems] = useState(docItems);
   const [dlvs, setDlvs] = useState(deliverables);
@@ -74,6 +76,7 @@ export default function PractitionerView({
             <h1 className="text-[22px] font-extrabold">{company.name}</h1>
             <p className="mt-0.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>{formatPeriodLabel(currentPeriod())} · {received} of {total} received</p>
           </div>
+          <UserMenu user={currentUser} />
         </header>
       </div>
 
