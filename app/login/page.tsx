@@ -9,16 +9,30 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    const supabase = createClient();
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN") {
+    if (status !== "sent") return;
+
+    let cancelled = false;
+
+    async function checkSession() {
+      const {
+        data: { session },
+      } = await createClient().auth.getSession();
+      if (session && !cancelled) {
         window.location.href = "/";
       }
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+    }
+
+    const interval = setInterval(checkSession, 2000);
+    window.addEventListener("focus", checkSession);
+    document.addEventListener("visibilitychange", checkSession);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener("focus", checkSession);
+      document.removeEventListener("visibilitychange", checkSession);
+    };
+  }, [status]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
