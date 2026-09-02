@@ -33,6 +33,12 @@ async function seedForPeriod(
       group_name: t.group_name,
       title: t.title,
       prompt: t.prompt,
+      description: t.description,
+      priority: t.priority,
+      allows_multiple: t.allows_multiple,
+      needs_label: t.needs_label,
+      nil_return_allowed: t.nil_return_allowed,
+      register_ref: t.register_ref,
       period: templateType === "once" ? "ONCE" : period,
       status: "pending" as const,
     }));

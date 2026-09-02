@@ -1,4 +1,5 @@
 export type DocStatus = "pending" | "uploaded" | "accepted" | "query" | "not_applicable";
+export type DocPriority = "must" | "good" | "cosmetic";
 export type DeliverableStatus = "blocked" | "ready" | "in_progress" | "delivered";
 export type Role = "founder" | "practitioner" | "admin";
 
@@ -51,6 +52,11 @@ export type DocItem = {
   query_text: string | null;
   reply_text: string | null;
   na_reason: string | null;
+  description: string;
+  priority: DocPriority;
+  allows_multiple: boolean;
+  needs_label: boolean;
+  nil_return_allowed: boolean;
   requested_at: string;
   uploaded_at: string | null;
   accepted_at: string | null;

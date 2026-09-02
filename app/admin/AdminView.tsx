@@ -28,7 +28,7 @@ export default function AdminView({ companies }: { companies: CompanyStat[] }) {
     setMessage("");
     try {
       await createCompanyWithUsers({ companyName, founderName, founderEmail, practitionerName, practitionerEmail });
-      setMessage(`${companyName} onboarded — 47 items seeded.`);
+      setMessage(`${companyName} onboarded — 74 items seeded.`);
       setCompanyName("");
       setFounderName("");
       setFounderEmail("");

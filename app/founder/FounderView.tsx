@@ -70,7 +70,12 @@ export default function FounderView({
   const grouped = useMemo(() => groupItems(items), [items]);
   const received = items.filter((i) => i.status === "uploaded" || i.status === "accepted" || i.status === "query" || i.status === "not_applicable").length;
   const total = items.length;
-  const pct = total > 0 ? Math.round((received / total) * 100) : 0;
+
+  const mustItems = items.filter((i) => i.priority === "must");
+  const mustResolved = mustItems.filter((i) => isResolved(i.status)).length;
+  const mustTotal = mustItems.length;
+  const pct = mustTotal > 0 ? Math.round((mustResolved / mustTotal) * 100) : 0;
+
   const questionCount = items.filter((i) => i.status === "query").length;
 
   const needsRevenueInfo = !company.revenue_classification || !company.gross_net_billing;
@@ -94,8 +99,8 @@ export default function FounderView({
             </div>
             <CircularProgress pct={pct} />
             <div>
-              <p className="text-[11px] tnum" style={{ color: "var(--ink-secondary)" }}>{received} of {total}</p>
-              <p className="text-[11px]" style={{ color: "var(--ink-secondary)" }}>received</p>
+              <p className="text-[12px] font-bold tnum" style={{ color: "var(--ink)" }}>{mustResolved} of {mustTotal} essentials</p>
+              <p className="mt-0.5 text-[11px] tnum" style={{ color: "var(--ink-secondary)" }}>{received} of {total} in total</p>
             </div>
           </div>
           <UserMenu user={currentUser} />
@@ -591,6 +596,17 @@ function ChecklistRow({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <StrikeText text={item.title} active={hasFile || item.status === "not_applicable"} />
+            {item.priority !== "must" && (
+              <span
+                className="pill flex-shrink-0"
+                style={{
+                  background: item.priority === "good" ? "rgba(0,77,0,0.06)" : "rgba(107,99,87,0.1)",
+                  color: item.priority === "good" ? "var(--green-soft)" : "var(--ink-secondary)",
+                }}
+              >
+                {item.priority === "good" ? "Good to have" : "Cosmetic"}
+              </span>
+            )}
             {item.status !== "pending" && (
               <span
                 className="pill flex-shrink-0"
@@ -625,6 +641,11 @@ function ChecklistRow({
               </div>
             )}
           </div>
+          {item.description && (
+            <p className="mt-0.5 truncate text-[11px]" style={{ color: "var(--ink-secondary)" }}>
+              {item.description}
+            </p>
+          )}
         </div>
       </div>
 
