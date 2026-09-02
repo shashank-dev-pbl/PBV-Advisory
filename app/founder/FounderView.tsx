@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, Trash2, TriangleAlert, MessageCircle, Send, X, LogOut } from "lucide-react";
+import Link from "next/link";
+import { Download, Trash2, TriangleAlert, MessageCircle, Send, X, LogOut, LayoutDashboard } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { currentPeriod, formatPeriodLabel } from "@/lib/period";
 import { safeStorageSegment } from "@/lib/storagePath";
@@ -151,7 +152,17 @@ export default function FounderView({
               <p className="mt-0.5 text-[11px] tnum" style={{ color: "var(--ink-secondary)" }}>{received} of {total} in total</p>
             </div>
           </div>
-          <UserMenu user={currentUser} />
+          <div className="flex items-center gap-4">
+            <Link
+              href="/founder/dashboard"
+              className="flex items-center gap-1.5 text-[12px] font-semibold"
+              style={{ color: "var(--ink-secondary)" }}
+            >
+              <LayoutDashboard size={15} strokeWidth={1.75} />
+              Dashboard
+            </Link>
+            <UserMenu user={currentUser} />
+          </div>
         </header>
       </div>
 

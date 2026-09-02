@@ -67,6 +67,61 @@ export type DocItem = {
   doc_item_message?: DocItemMessage[];
 };
 
+export type MonthlyFinancials = {
+  id: string;
+  company_id: string;
+  period: string;
+  status: "draft" | "published";
+  version: number;
+  published_at: string | null;
+  prepared_by: string | null;
+
+  cash_opening: number | null;
+  cash_closing: number | null;
+  cash_restricted: number | null;
+  gross_burn: number | null;
+  net_burn: number | null;
+  expenses_accrual: number | null;
+
+  revenue_total: number | null;
+  revenue_subscription: number | null;
+  revenue_service: number | null;
+  revenue_project: number | null;
+  partner_share_paid: number | null;
+
+  clients_active: number | null;
+  clients_added: number | null;
+  clients_lost: number | null;
+  top_client_revenue: number | null;
+  top5_client_revenue: number | null;
+
+  receivables_total: number | null;
+  receivables_0_30: number | null;
+  receivables_31_60: number | null;
+  receivables_61_90: number | null;
+  receivables_90_plus: number | null;
+  payables_total: number | null;
+  billed_month: number | null;
+  collections_month: number | null;
+
+  filings_current: boolean | null;
+  filings_due_30d: number | null;
+  filings_due_note: string | null;
+  notices_open: number | null;
+
+  created_at: string;
+  updated_at: string;
+};
+
+export const FINANCIALS_FIELDS = [
+  "cash_opening", "cash_closing", "cash_restricted", "gross_burn", "net_burn", "expenses_accrual",
+  "revenue_total", "revenue_subscription", "revenue_service", "revenue_project", "partner_share_paid",
+  "clients_active", "clients_added", "clients_lost", "top_client_revenue", "top5_client_revenue",
+  "receivables_total", "receivables_0_30", "receivables_31_60", "receivables_61_90", "receivables_90_plus",
+  "payables_total", "billed_month", "collections_month",
+  "filings_current", "filings_due_30d", "filings_due_note", "notices_open",
+] as const;
+
 export type Deliverable = {
   id: string;
   company_id: string;

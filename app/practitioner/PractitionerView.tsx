@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Circle, CircleCheck, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { Circle, CircleCheck, ArrowRight, LayoutDashboard } from "lucide-react";
 import { currentPeriod, formatPeriodLabel } from "@/lib/period";
 import type { Company, DocItem, DocItemMessage, Deliverable } from "@/lib/types";
 import { acceptItem, markNotApplicable, sendPractitionerMessage, markPractitionerRead } from "./actions";
@@ -76,7 +77,17 @@ export default function PractitionerView({
             <h1 className="text-[22px] font-extrabold">{company.name}</h1>
             <p className="mt-0.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>{formatPeriodLabel(currentPeriod())} · {received} of {total} received</p>
           </div>
-          <UserMenu user={currentUser} />
+          <div className="flex items-center gap-4">
+            <Link
+              href="/practitioner/dashboard"
+              className="flex items-center gap-1.5 text-[12px] font-semibold"
+              style={{ color: "var(--ink-secondary)" }}
+            >
+              <LayoutDashboard size={15} strokeWidth={1.75} />
+              Dashboard
+            </Link>
+            <UserMenu user={currentUser} />
+          </div>
         </header>
       </div>
 
