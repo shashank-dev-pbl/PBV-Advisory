@@ -35,6 +35,8 @@ export default async function DebugPage() {
     }
   }
 
+  const whoami = await supabase.rpc("debug_whoami");
+
   return (
     <pre>{JSON.stringify({
       rawCookies,
@@ -47,6 +49,8 @@ export default async function DebugPage() {
       companyLookupError,
       insertResult,
       insertError,
+      whoami: whoami.data,
+      whoamiError: whoami.error?.message ?? null,
     }, null, 2)}</pre>
   );
 }
