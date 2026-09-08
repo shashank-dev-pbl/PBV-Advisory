@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin";
+import { isCurrentUserPlatformAdmin } from "@/lib/admin";
 import { listCompaniesWithStats } from "./actions";
 import AdminView from "./AdminView";
 
@@ -9,8 +9,8 @@ export default async function AdminPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user?.email) redirect("/login");
-  if (!isAdminEmail(user.email)) redirect("/");
+  if (!user) redirect("/login");
+  if (!(await isCurrentUserPlatformAdmin())) redirect("/");
 
   const companies = await listCompaniesWithStats();
 

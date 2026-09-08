@@ -1,5 +1,11 @@
-export const ADMIN_EMAILS = ["shashank@primebottomline.vc"];
+import { createClient } from "@/lib/supabase/server";
 
-export function isAdminEmail(email: string | null | undefined) {
-  return !!email && ADMIN_EMAILS.includes(email.toLowerCase());
+// Ops console access — platform staff only, independent of any company's app_user
+// rows. Backed by the platform_admin table (see is_platform_admin() in the DB),
+// checked against the caller's own verified phone, not a hardcoded list.
+export async function isCurrentUserPlatformAdmin(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("is_platform_admin");
+  if (error) return false;
+  return data === true;
 }

@@ -9,8 +9,8 @@ const mulish = Mulish({
 });
 
 export const metadata: Metadata = {
-  title: "Xploro — Prime Bottomline Advisory",
-  description: "CFO module — advisory portal",
+  title: "PBA Advisory Portal",
+  description: "Prime Bottomline Advisory — client advisory portal",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

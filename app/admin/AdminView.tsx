@@ -2,19 +2,28 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { createCompanyWithUsers, runMonthlySeed } from "./actions";
-import type { Company, AppUser } from "@/lib/types";
+import { createCompanyWithUsers, runMonthlySeed, addTeamMember } from "./actions";
+import type { Company, AppUser, Role } from "@/lib/types";
 
 type CompanyStat = { company: Company; total: number; received: number; users: AppUser[] };
 
 export default function AdminView({ companies }: { companies: CompanyStat[] }) {
   const [companyName, setCompanyName] = useState("");
-  const [founderName, setFounderName] = useState("");
+  const [founderPhone, setFounderPhone] = useState("");
   const [founderEmail, setFounderEmail] = useState("");
-  const [practitionerName, setPractitionerName] = useState("");
+  const [practitionerPhone, setPractitionerPhone] = useState("");
   const [practitionerEmail, setPractitionerEmail] = useState("");
+  const [practitionerFirmName, setPractitionerFirmName] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+
+  const [memberCompanyId, setMemberCompanyId] = useState("");
+  const [memberPhone, setMemberPhone] = useState("");
+  const [memberEmail, setMemberEmail] = useState("");
+  const [memberRole, setMemberRole] = useState<Role>("pba");
+  const [memberFirmName, setMemberFirmName] = useState("");
+  const [memberBusy, setMemberBusy] = useState(false);
+  const [memberMessage, setMemberMessage] = useState("");
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -27,18 +36,50 @@ export default function AdminView({ companies }: { companies: CompanyStat[] }) {
     setBusy(true);
     setMessage("");
     try {
-      await createCompanyWithUsers({ companyName, founderName, founderEmail, practitionerName, practitionerEmail });
-      setMessage(`${companyName} onboarded — 74 items seeded.`);
+      await createCompanyWithUsers({
+        companyName,
+        founderPhone,
+        founderEmail,
+        practitionerPhone,
+        practitionerEmail,
+        practitionerFirmName,
+      });
+      setMessage(`${companyName} onboarded — checklist seeded. Founder and practitioner complete their profile on first sign-in.`);
       setCompanyName("");
-      setFounderName("");
+      setFounderPhone("");
       setFounderEmail("");
-      setPractitionerName("");
+      setPractitionerPhone("");
       setPractitionerEmail("");
+      setPractitionerFirmName("");
       window.location.reload();
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "Failed");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleAddMember(e: React.FormEvent) {
+    e.preventDefault();
+    setMemberBusy(true);
+    setMemberMessage("");
+    try {
+      await addTeamMember({
+        companyId: memberCompanyId,
+        phone: memberPhone,
+        email: memberEmail,
+        role: memberRole,
+        firmName: memberFirmName,
+      });
+      setMemberMessage("Added — they complete their profile on first sign-in.");
+      setMemberPhone("");
+      setMemberEmail("");
+      setMemberFirmName("");
+      window.location.reload();
+    } catch (err) {
+      setMemberMessage(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setMemberBusy(false);
     }
   }
 
@@ -65,19 +106,48 @@ export default function AdminView({ companies }: { companies: CompanyStat[] }) {
         <section className="mb-10">
           <p className="mb-3 eyebrow">Onboard a new company</p>
           <form onSubmit={handleCreate} className="flex flex-col gap-3 p-5" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>
-            <input className="input-field" placeholder="Company name (e.g. Xploro)" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+            <input className="input-field" placeholder="Company name" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
             <div className="grid grid-cols-2 gap-3">
-              <input className="input-field" placeholder="Founder name" required value={founderName} onChange={(e) => setFounderName(e.target.value)} />
+              <input className="input-field" placeholder="Founder phone (+91…)" required value={founderPhone} onChange={(e) => setFounderPhone(e.target.value)} />
               <input className="input-field" placeholder="Founder email" type="email" required value={founderEmail} onChange={(e) => setFounderEmail(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <input className="input-field" placeholder="Practitioner name" required value={practitionerName} onChange={(e) => setPractitionerName(e.target.value)} />
+              <input className="input-field" placeholder="Practitioner phone (+91…)" required value={practitionerPhone} onChange={(e) => setPractitionerPhone(e.target.value)} />
               <input className="input-field" placeholder="Practitioner email" type="email" required value={practitionerEmail} onChange={(e) => setPractitionerEmail(e.target.value)} />
             </div>
+            <input className="input-field" placeholder="Practitioner firm name (e.g. SPARC & Co)" value={practitionerFirmName} onChange={(e) => setPractitionerFirmName(e.target.value)} />
             <button type="submit" disabled={busy} className="btn-primary self-start">
               {busy ? "Creating…" : "Create company + seed checklist"}
             </button>
             {message && <p className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>{message}</p>}
+          </form>
+        </section>
+
+        <section className="mb-10">
+          <p className="mb-3 eyebrow">Add a team member to an existing company</p>
+          <form onSubmit={handleAddMember} className="flex flex-col gap-3 p-5" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>
+            <select className="input-field" required value={memberCompanyId} onChange={(e) => setMemberCompanyId(e.target.value)}>
+              <option value="">Select company…</option>
+              {companies.map(({ company }) => (
+                <option key={company.id} value={company.id}>{company.name}</option>
+              ))}
+            </select>
+            <div className="grid grid-cols-2 gap-3">
+              <input className="input-field" placeholder="Phone (+91…)" required value={memberPhone} onChange={(e) => setMemberPhone(e.target.value)} />
+              <input className="input-field" placeholder="Email" type="email" required value={memberEmail} onChange={(e) => setMemberEmail(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <select className="input-field" value={memberRole} onChange={(e) => setMemberRole(e.target.value as Role)}>
+                <option value="pba">PBA</option>
+                <option value="practitioner">Practitioner</option>
+                <option value="founder">Founder</option>
+              </select>
+              <input className="input-field" placeholder="Firm name (practitioner/PBA)" value={memberFirmName} onChange={(e) => setMemberFirmName(e.target.value)} />
+            </div>
+            <button type="submit" disabled={memberBusy} className="btn-primary self-start">
+              {memberBusy ? "Adding…" : "Add team member"}
+            </button>
+            {memberMessage && <p className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>{memberMessage}</p>}
           </form>
         </section>
 
@@ -93,7 +163,7 @@ export default function AdminView({ companies }: { companies: CompanyStat[] }) {
                 <div className="mt-2 flex flex-wrap gap-2">
                   {users.map((u) => (
                     <span key={u.id} className="pill" style={{ background: "var(--paper)", border: "1px solid var(--rule)", color: "var(--ink-secondary)" }}>
-                      {u.role}: {u.email}
+                      {u.role}: {u.name ? `${u.name} · ` : ""}{u.email}
                     </span>
                   ))}
                 </div>

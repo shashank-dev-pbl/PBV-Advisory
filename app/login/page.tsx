@@ -1,57 +1,59 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { normalizePhone } from "@/lib/phone";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [phoneInput, setPhoneInput] = useState("");
+  const [code, setCode] = useState("");
+  const [step, setStep] = useState<"phone" | "code">("phone");
+  const [status, setStatus] = useState<"idle" | "busy" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
-  useEffect(() => {
-    if (status !== "sent") return;
+  async function handleSendCode(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("busy");
+    setErrorMsg("");
+    const supabase = createClient();
+    const phone = normalizePhone(phoneInput);
 
-    let cancelled = false;
-
-    async function checkSession() {
-      const {
-        data: { session },
-      } = await createClient().auth.getSession();
-      if (session && !cancelled) {
-        // The tab that requested the link (this one) goes to the practitioner desk; the
-        // tab opened by actually clicking the emailed link goes to founder (see auth/callback).
-        window.location.href = "/practitioner";
-      }
+    const { data: registered, error: checkError } = await supabase.rpc("is_phone_registered", { p_phone: phone });
+    if (checkError) {
+      setErrorMsg(checkError.message);
+      setStatus("error");
+      return;
+    }
+    if (!registered) {
+      setErrorMsg("This number isn't registered. Contact Prime Bottomline Advisory to get access.");
+      setStatus("error");
+      return;
     }
 
-    const interval = setInterval(checkSession, 2000);
-    window.addEventListener("focus", checkSession);
-    document.addEventListener("visibilitychange", checkSession);
-
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-      window.removeEventListener("focus", checkSession);
-      document.removeEventListener("visibilitychange", checkSession);
-    };
-  }, [status]);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setStatus("sending");
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    const { error } = await supabase.auth.signInWithOtp({ phone: `+${phone}` });
     if (error) {
       setErrorMsg(error.message);
       setStatus("error");
-    } else {
-      setStatus("sent");
+      return;
     }
+    setStatus("idle");
+    setStep("code");
+  }
+
+  async function handleVerifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    setStatus("busy");
+    setErrorMsg("");
+    const supabase = createClient();
+    const phone = normalizePhone(phoneInput);
+
+    const { error } = await supabase.auth.verifyOtp({ phone: `+${phone}`, token: code, type: "sms" });
+    if (error) {
+      setErrorMsg(error.message);
+      setStatus("error");
+      return;
+    }
+    window.location.href = "/";
   }
 
   return (
@@ -61,31 +63,52 @@ export default function LoginPage() {
           Prime Bottomline Advisory
         </p>
         <h1 className="text-[32px] font-extrabold leading-[1.05] tracking-[-0.02em]">
-          Xploro <span style={{ color: "var(--bottomline-green)" }}>CFO Portal</span>
+          Advisory <span style={{ color: "var(--bottomline-green)" }}>Portal</span>
         </h1>
         <p className="mt-3 text-[14px] leading-[1.6]" style={{ color: "var(--ink-secondary)" }}>
-          Enter your email and we&apos;ll send you a sign-in link. No password needed.
+          {step === "phone"
+            ? "Enter your registered mobile number and we'll text you a code."
+            : `Enter the code sent to +${normalizePhone(phoneInput)}.`}
         </p>
 
-        {status === "sent" ? (
-          <div className="mt-8 p-5" style={{ background: "rgba(0,77,0,0.06)", border: "1px solid rgba(0,77,0,0.18)" }}>
-            <p className="text-[14px] font-bold" style={{ color: "var(--bottomline-green)" }}>Check your email</p>
-            <p className="mt-1.5 text-[13px] leading-[1.55]" style={{ color: "var(--ink-secondary)" }}>
-              We sent a sign-in link to <strong style={{ color: "var(--ink)" }}>{email}</strong>. Open it on this device to continue.
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-3">
+        {step === "phone" ? (
+          <form onSubmit={handleSendCode} className="mt-8 flex flex-col gap-3">
             <input
-              type="email"
+              type="tel"
               required
-              placeholder="you@company.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              placeholder="+91 98765 43210"
+              value={phoneInput}
+              onChange={(e) => setPhoneInput(e.target.value)}
               className="input-field"
             />
-            <button type="submit" disabled={status === "sending"} className="btn-primary">
-              {status === "sending" ? "Sending…" : "Send sign-in link"}
+            <button type="submit" disabled={status === "busy"} className="btn-primary">
+              {status === "busy" ? "Checking…" : "Send code"}
+            </button>
+            {status === "error" && (
+              <p className="text-[12px]" style={{ color: "#8c1a1a" }}>{errorMsg}</p>
+            )}
+          </form>
+        ) : (
+          <form onSubmit={handleVerifyCode} className="mt-8 flex flex-col gap-3">
+            <input
+              type="text"
+              inputMode="numeric"
+              required
+              placeholder="6-digit code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className="input-field"
+            />
+            <button type="submit" disabled={status === "busy"} className="btn-primary">
+              {status === "busy" ? "Verifying…" : "Verify and sign in"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setStep("phone"); setCode(""); setStatus("idle"); setErrorMsg(""); }}
+              className="text-[12px] font-semibold self-start"
+              style={{ color: "var(--ink-secondary)" }}
+            >
+              Use a different number
             </button>
             {status === "error" && (
               <p className="text-[12px]" style={{ color: "#8c1a1a" }}>{errorMsg}</p>

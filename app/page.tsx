@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin";
-import { getCurrentAppUser } from "@/lib/auth";
+import { isCurrentUserPlatformAdmin } from "@/lib/admin";
+import { getCurrentAppUser, needsOnboarding } from "@/lib/auth";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -9,10 +9,15 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user?.email) redirect("/login");
+  if (!user) redirect("/login");
 
   const appUser = await getCurrentAppUser();
-  if (appUser) redirect(appUser.role === "practitioner" ? "/practitioner" : "/founder");
-  if (isAdminEmail(user.email)) redirect("/admin");
+  if (appUser) {
+    if (needsOnboarding(appUser)) redirect("/onboarding");
+    if (appUser.role === "practitioner") redirect("/practitioner");
+    if (appUser.role === "pba") redirect("/pba");
+    redirect("/founder");
+  }
+  if (await isCurrentUserPlatformAdmin()) redirect("/admin");
   redirect("/login");
 }

@@ -1,7 +1,7 @@
 export type DocStatus = "pending" | "uploaded" | "accepted" | "query" | "not_applicable";
 export type DocPriority = "must" | "good" | "cosmetic";
 export type DeliverableStatus = "blocked" | "ready" | "in_progress" | "delivered";
-export type Role = "founder" | "practitioner" | "admin";
+export type Role = "founder" | "practitioner" | "pba";
 
 export type Company = {
   id: string;
@@ -16,9 +16,15 @@ export type Company = {
 export type AppUser = {
   id: string;
   email: string;
-  name: string;
+  name: string | null;
+  position: string | null;
   role: Role;
   company_id: string;
+  phone: string | null;
+  auth_user_id: string | null;
+  can_verify: boolean;
+  can_publish: boolean;
+  firm_name: string | null;
 };
 
 export type DocFile = {

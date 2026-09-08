@@ -1,15 +1,15 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { currentPeriod } from "@/lib/period";
-import { getCurrentAppUser } from "@/lib/auth";
+import { getCurrentAppUser, needsOnboarding } from "@/lib/auth";
 import type { Company, DocItem, Deliverable } from "@/lib/types";
 import PractitionerView from "./PractitionerView";
 
 export default async function PractitionerPage() {
   const appUser = await getCurrentAppUser();
   if (!appUser) redirect("/login");
-  // Temporary: any signed-in account can view either screen by changing the route.
-  // Once real per-role accounts are the norm, gate this back to appUser.role === "practitioner".
+  if (needsOnboarding(appUser)) redirect("/onboarding");
+  if (appUser.role !== "practitioner") redirect("/");
 
   const supabase = await createClient();
   const companyId = appUser.company_id;
@@ -41,7 +41,7 @@ export default async function PractitionerPage() {
       company={company as Company}
       docItems={(docItems ?? []) as DocItem[]}
       deliverables={(deliverables ?? []) as Deliverable[]}
-      currentUser={{ email: appUser.email, role: "practitioner" }}
+      currentUser={{ name: appUser.name, position: appUser.position, role: "practitioner" }}
     />
   );
 }

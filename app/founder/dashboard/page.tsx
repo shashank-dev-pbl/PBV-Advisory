@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getCurrentAppUser } from "@/lib/auth";
+import { getCurrentAppUser, needsOnboarding } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { currentPeriod, formatPeriodLabel } from "@/lib/period";
 import { getFinancialsHistory } from "@/app/practitioner/financials-actions";
@@ -12,6 +12,8 @@ import type { Company } from "@/lib/types";
 export default async function FounderDashboardPage() {
   const appUser = await getCurrentAppUser();
   if (!appUser) redirect("/login");
+  if (needsOnboarding(appUser)) redirect("/onboarding");
+  if (appUser.role !== "founder") redirect("/");
 
   const supabase = await createClient();
   const { data: company } = await supabase.from("company").select("*").eq("id", appUser.company_id).single<Company>();
@@ -37,7 +39,7 @@ export default async function FounderDashboardPage() {
             Back to checklist
           </Link>
           <div style={{ width: 1, height: 28, background: "var(--rule)" }} />
-          <UserMenu user={{ email: appUser.email, role: "founder" }} />
+          <UserMenu user={{ name: appUser.name, position: appUser.position, role: "founder" }} />
         </div>
       </header>
       <main className="mx-auto w-full max-w-[900px] px-5 py-8 md:px-8">

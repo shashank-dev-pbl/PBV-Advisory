@@ -2,15 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { isAdminEmail } from "@/lib/admin";
+import { isCurrentUserPlatformAdmin } from "@/lib/admin";
 import { currentPeriod } from "@/lib/period";
+import { normalizePhone } from "@/lib/phone";
+import type { Role } from "@/lib/types";
 
 async function requireAdmin() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!isAdminEmail(user?.email)) throw new Error("Not authorized");
+  if (!(await isCurrentUserPlatformAdmin())) throw new Error("Not authorized");
   return { supabase };
 }
 
@@ -66,10 +65,11 @@ async function seedForPeriod(
 
 export async function createCompanyWithUsers(params: {
   companyName: string;
-  founderName: string;
+  founderPhone: string;
   founderEmail: string;
-  practitionerName: string;
+  practitionerPhone: string;
   practitionerEmail: string;
+  practitionerFirmName?: string;
 }) {
   const { supabase } = await requireAdmin();
 
@@ -80,9 +80,22 @@ export async function createCompanyWithUsers(params: {
     .single();
   if (companyError) throw companyError;
 
+  // Only phone + email + role are set here — the person fills in their own
+  // name and position the first time they sign in (see /onboarding).
   const { error: usersError } = await supabase.from("app_user").insert([
-    { email: params.founderEmail.toLowerCase(), name: params.founderName, role: "founder", company_id: company.id },
-    { email: params.practitionerEmail.toLowerCase(), name: params.practitionerName, role: "practitioner", company_id: company.id },
+    {
+      email: params.founderEmail.toLowerCase(),
+      phone: normalizePhone(params.founderPhone),
+      role: "founder",
+      company_id: company.id,
+    },
+    {
+      email: params.practitionerEmail.toLowerCase(),
+      phone: normalizePhone(params.practitionerPhone),
+      role: "practitioner",
+      company_id: company.id,
+      firm_name: params.practitionerFirmName || null,
+    },
   ]);
   if (usersError) throw usersError;
 
@@ -91,6 +104,28 @@ export async function createCompanyWithUsers(params: {
 
   revalidatePath("/admin");
   return company.id as string;
+}
+
+export async function addTeamMember(params: {
+  companyId: string;
+  phone: string;
+  email: string;
+  role: Role;
+  firmName?: string;
+}) {
+  const { supabase } = await requireAdmin();
+
+  const { error } = await supabase.from("app_user").insert({
+    company_id: params.companyId,
+    phone: normalizePhone(params.phone),
+    email: params.email.toLowerCase(),
+    role: params.role,
+    firm_name: params.firmName || null,
+    ...(params.role === "pba" ? { can_verify: true, can_publish: true } : {}),
+  });
+  if (error) throw error;
+
+  revalidatePath("/admin");
 }
 
 export async function runMonthlySeed(companyId: string) {

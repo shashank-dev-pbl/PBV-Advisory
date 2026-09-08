@@ -103,7 +103,7 @@ function PrioritySection({
   );
 }
 
-export type CurrentUser = { email: string; role: "founder" | "practitioner" | "admin" };
+export type CurrentUser = { name: string | null; position: string | null; role: "founder" | "practitioner" | "pba" };
 
 export default function FounderView({
   company,
@@ -258,7 +258,7 @@ function CircularProgress({ pct, size = 48, strokeWidth = 4 }: { pct: number; si
 const ROLE_LABEL: Record<CurrentUser["role"], string> = {
   founder: "Founder",
   practitioner: "Practitioner",
-  admin: "Admin",
+  pba: "PBA",
 };
 
 export function UserMenu({ user }: { user: CurrentUser }) {
@@ -271,8 +271,8 @@ export function UserMenu({ user }: { user: CurrentUser }) {
   return (
     <div className="flex flex-shrink-0 items-center gap-3">
       <div className="text-right">
-        <p className="truncate text-[13px] font-bold" style={{ color: "var(--ink)" }}>{user.email}</p>
-        <p className="mt-0.5 text-[11px]" style={{ color: "var(--ink-secondary)" }}>{ROLE_LABEL[user.role]}</p>
+        <p className="truncate text-[13px] font-bold" style={{ color: "var(--ink)" }}>{user.name ?? ROLE_LABEL[user.role]}</p>
+        <p className="mt-0.5 text-[11px]" style={{ color: "var(--ink-secondary)" }}>{user.position ?? ROLE_LABEL[user.role]}</p>
       </div>
       <button
         onClick={handleSignOut}
