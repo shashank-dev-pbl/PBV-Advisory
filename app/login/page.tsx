@@ -73,14 +73,25 @@ export default function LoginPage() {
 
         {step === "phone" ? (
           <form onSubmit={handleSendCode} className="mt-8 flex flex-col gap-3">
-            <input
-              type="tel"
-              required
-              placeholder="+91 98765 43210"
-              value={phoneInput}
-              onChange={(e) => setPhoneInput(e.target.value)}
-              className="input-field"
-            />
+            <div className="flex items-stretch gap-2">
+              <span
+                className="input-field flex items-center justify-center"
+                style={{ flex: "0 0 auto", width: 56, textAlign: "center" }}
+              >
+                +91
+              </span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                required
+                placeholder="98765 43210"
+                maxLength={10}
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                className="input-field"
+                style={{ flex: 1 }}
+              />
+            </div>
             <button type="submit" disabled={status === "busy"} className="btn-primary">
               {status === "busy" ? "Checking…" : "Send code"}
             </button>
