@@ -7,6 +7,7 @@ import { currentPeriod, formatPeriodLabel } from "@/lib/period";
 import type { Company, DocItem, DocItemMessage, Deliverable } from "@/lib/types";
 import { acceptItem, markNotApplicable, sendPractitionerMessage, markPractitionerRead } from "./actions";
 import { FileRow, VersionHistory, sortedFiles, sortedMessages, hasUnreadFor, isResolved, isReceived, ChatPopover, MessageButton, UserMenu, type ChatMessage, type CurrentUser } from "../founder/FounderView";
+import MisUploadCard from "./MisUploadCard";
 
 function daysAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -18,11 +19,15 @@ export default function PractitionerView({
   docItems,
   deliverables,
   currentUser,
+  period,
+  misState,
 }: {
   company: Company;
   docItems: DocItem[];
   deliverables: Deliverable[];
   currentUser: CurrentUser;
+  period: string;
+  misState: Parameters<typeof MisUploadCard>[0]["initial"];
 }) {
   const [items, setItems] = useState(docItems);
   const [dlvs, setDlvs] = useState(deliverables);
@@ -93,6 +98,8 @@ export default function PractitionerView({
       </div>
 
       <main className="mx-auto w-full max-w-[900px] px-5 py-8 md:px-8">
+        <MisUploadCard companyId={company.id} period={period} initial={misState} />
+
         <section className="mb-10">
           <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>
             Inbox — {inbox.length} waiting for you

@@ -4,6 +4,7 @@ import { currentPeriod } from "@/lib/period";
 import { getCurrentAppUser, needsOnboarding } from "@/lib/auth";
 import type { Company, DocItem, Deliverable } from "@/lib/types";
 import PractitionerView from "./PractitionerView";
+import { getMisState } from "./mis-actions";
 
 export default async function PractitionerPage() {
   const appUser = await getCurrentAppUser();
@@ -36,12 +37,16 @@ export default async function PractitionerPage() {
     .in("period", ["ONCE", period])
     .order("due_date", { ascending: true });
 
+  const misState = await getMisState(companyId, period);
+
   return (
     <PractitionerView
       company={company as Company}
       docItems={(docItems ?? []) as DocItem[]}
       deliverables={(deliverables ?? []) as Deliverable[]}
       currentUser={{ name: appUser.name, position: appUser.position, role: "practitioner" }}
+      period={period}
+      misState={misState}
     />
   );
 }
