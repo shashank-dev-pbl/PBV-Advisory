@@ -113,9 +113,13 @@ export default function MisUploadCard({
                   Replace file
                 </button>
               </div>
-            ) : (
+            ) : state.state === "submitted" ? (
               <p className="mt-3 text-[12.5px] font-semibold" style={{ color: "var(--bottomline-green)" }}>
                 Submitted to PBA — not yet visible to the founder.
+              </p>
+            ) : (
+              <p className="mt-3 text-[12.5px] font-semibold" style={{ color: "var(--bottomline-green)" }}>
+                Published — visible on the founder&apos;s dashboard.
               </p>
             )}
           </>
