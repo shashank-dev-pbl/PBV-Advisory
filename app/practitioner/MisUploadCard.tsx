@@ -75,9 +75,16 @@ export default function MisUploadCard({
             </div>
 
             <div className="mt-3 flex flex-col gap-1.5 border-t pt-3" style={{ borderColor: "var(--rule)" }}>
-              <p className="text-[12.5px]" style={{ color: "var(--bottomline-green)" }}>✓ Template version recognised</p>
-              <p className="text-[12.5px]" style={{ color: "var(--bottomline-green)" }}>✓ All 24 figures read cleanly</p>
-              <p className="text-[12.5px]" style={{ color: "var(--bottomline-green)" }}>✓ The workbook&apos;s own five checks pass</p>
+              {(() => {
+                const checkColor = state.state === "draft" ? "var(--bottomline-green)" : "var(--ink-secondary)";
+                return (
+                  <>
+                    <p className="text-[12.5px]" style={{ color: checkColor }}>✓ Template version recognised</p>
+                    <p className="text-[12.5px]" style={{ color: checkColor }}>✓ All 24 figures read cleanly</p>
+                    <p className="text-[12.5px]" style={{ color: checkColor }}>✓ The workbook&apos;s own five checks pass</p>
+                  </>
+                );
+              })()}
             </div>
 
             {state.state === "draft" ? (

@@ -142,8 +142,8 @@ export default function FounderView({
         >
           <div className="flex items-center gap-4">
             <div>
-              <p className="eyebrow mb-1">Data room</p>
-              <h1 className="text-[22px] font-extrabold">{company.name}</h1>
+              <p className="eyebrow mb-1" style={{ color: "var(--bottomline-green)" }}>Prime Bottomline Advisory</p>
+              <h1 className="text-[22px] font-extrabold">{company.name} <span style={{ color: "var(--bottomline-green)" }}>· Founder</span></h1>
               <p className="mt-0.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>{formatPeriodLabel(currentPeriod())}</p>
             </div>
             <CircularProgress pct={pct} />

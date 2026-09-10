@@ -78,8 +78,8 @@ export default function PractitionerView({
           style={{ background: "var(--paper)", borderColor: "var(--rule)" }}
         >
           <div>
-            <p className="eyebrow mb-1">Practitioner desk</p>
-            <h1 className="text-[22px] font-extrabold">{company.name}</h1>
+            <p className="eyebrow mb-1" style={{ color: "var(--bottomline-green)" }}>Prime Bottomline Advisory</p>
+            <h1 className="text-[22px] font-extrabold">{company.name} <span style={{ color: "var(--bottomline-green)" }}>· Practitioner</span></h1>
             <p className="mt-0.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>{formatPeriodLabel(currentPeriod())} · {received} of {total} received</p>
           </div>
           <div className="flex items-center gap-4">
