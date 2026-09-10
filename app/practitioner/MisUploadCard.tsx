@@ -31,7 +31,8 @@ export default function MisUploadCard({
     setError("");
     try {
       const supabase = createClient();
-      const path = `mis/${companyId}/${period}/${Date.now()}-${safeStorageSegment(file.name)}`;
+      // Storage RLS requires company_id as the first path segment — same convention as doc_item uploads.
+      const path = `${companyId}/mis/${period}/${Date.now()}-${safeStorageSegment(file.name)}`;
       const { error: uploadError } = await supabase.storage.from("docs").upload(path, file);
       if (uploadError) throw uploadError;
 
