@@ -189,7 +189,7 @@ export default function MisUploadCard({
               <p className="text-[13px] font-bold" style={{ color: "var(--ink)" }}>Burn and runway sheet</p>
               <p className="mt-0.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>Included as a tab in the MIS workbook. Read automatically.</p>
             </div>
-            <span style={{ background: "var(--green-soft, #e8efe6)", color: "var(--bottomline-green)", fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 20, flexShrink: 0 }}>
+            <span style={{ background: "var(--bottomline-green)", color: "#fff", fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 20, flexShrink: 0 }}>
               In the workbook
             </span>
           </div>
