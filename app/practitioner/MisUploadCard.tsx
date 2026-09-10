@@ -53,8 +53,14 @@ export default function MisUploadCard({
   async function handleSubmitToPBA() {
     if (!state) return;
     setBusy(true);
-    await submitToPBA(state.id);
-    window.location.reload();
+    setError("");
+    try {
+      await submitToPBA(state.id);
+      window.location.reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit — try again.");
+      setBusy(false);
+    }
   }
 
   return (

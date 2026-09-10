@@ -53,6 +53,12 @@ export async function verifyFiling(obligationId: string) {
   const appUser = await requireRole("pba");
   const supabase = await createClient();
 
+  const { data: ob } = await supabase.from("obligation").select("filed_by").eq("id", obligationId).single();
+  if (!ob) throw new Error("Not found");
+  if (ob.filed_by === appUser.id) {
+    throw new Error("The account that filed this can't also verify it.");
+  }
+
   const { error } = await supabase
     .from("obligation")
     .update({ status: "verified", verified_by: appUser.id, verified_at: new Date().toISOString() })

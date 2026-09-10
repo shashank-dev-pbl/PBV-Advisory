@@ -124,6 +124,7 @@ function ObligationRow({
   onPatch: (id: string, p: Partial<Obligation>) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canFile = currentUser.role === obligation.owner && obligation.status === "pending";
   const canVerify = currentUser.role === "pba" && obligation.status === "filed";
@@ -131,23 +132,30 @@ function ObligationRow({
 
   async function handleFile(file: File) {
     setBusy(true);
+    setError("");
     try {
       const supabase = createClient();
       const path = `${companyId}/obligations/${obligation.id}/${Date.now()}-${safeStorageSegment(file.name)}`;
       const { error: uploadError } = await supabase.storage.from("docs").upload(path, file);
       if (uploadError) throw uploadError;
-      await markFiled({ obligationId: obligation.id, storagePath: path, filename: file.name, filedOn: new Date().toISOString().slice(0, 10) });
-      onPatch(obligation.id, { status: "filed", filed_on: new Date().toISOString().slice(0, 10), evidence_filename: file.name });
-    } catch {
-      // left as pending; user can retry
+      const filedOn = new Date().toISOString().slice(0, 10);
+      await markFiled({ obligationId: obligation.id, storagePath: path, filename: file.name, filedOn });
+      onPatch(obligation.id, { status: "filed", filed_on: filedOn, evidence_filename: file.name });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed — try again.");
     }
     setBusy(false);
   }
 
   async function handleVerify() {
     setBusy(true);
-    await verifyFiling(obligation.id);
-    onPatch(obligation.id, { status: "verified" });
+    setError("");
+    try {
+      await verifyFiling(obligation.id);
+      onPatch(obligation.id, { status: "verified" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to verify — try again.");
+    }
     setBusy(false);
   }
 
@@ -182,13 +190,14 @@ function ObligationRow({
           )}
         </div>
       </div>
+      {error && <p className="mt-2 text-[11.5px]" style={{ color: "#8c1a1a" }}>{error}</p>}
       <input
         ref={fileInputRef}
         type="file"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) handleFile(file);
+          if (file) void handleFile(file);
           e.target.value = "";
         }}
       />

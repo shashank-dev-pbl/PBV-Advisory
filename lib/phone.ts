@@ -4,9 +4,9 @@
 // registered user today is in India — a real multi-country rollout would need
 // an explicit country selector instead of this default.
 export function normalizePhone(input: string): string {
-  const digits = input.replace(/\D/g, "");
+  const digits = input.replace(/\D/g, "").replace(/^0+/, "");
   if (digits.length === 10) return `91${digits}`;
-  return digits.replace(/^0+/, "");
+  return digits;
 }
 
 export function formatPhoneDisplay(phone: string): string {

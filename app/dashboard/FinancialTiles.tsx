@@ -227,13 +227,13 @@ export default function FinancialTiles({
             <p className="text-[16px] font-bold">{latest.filings_current === null ? "—" : latest.filings_current ? "Up to date" : "Behind"}</p>
           </Tile>
           <Tile label="Due in 30 days">
-            <p className="text-[20px] font-extrabold tnum">{latest.filings_due_30d ?? 0}</p>
+            <p className="text-[20px] font-extrabold tnum">{latest.filings_due_30d === null ? "—" : latest.filings_due_30d}</p>
             {latest.filings_due_note && (
               <p className="mt-1 text-[11px]" style={{ color: "var(--ink-secondary)" }}>{latest.filings_due_note}</p>
             )}
           </Tile>
           <Tile label="Open notices">
-            <p className="text-[16px] font-bold">{latest.notices_open ? latest.notices_open : "None"}</p>
+            <p className="text-[16px] font-bold">{latest.notices_open === null ? "—" : latest.notices_open === 0 ? "None" : latest.notices_open}</p>
           </Tile>
         </div>
       </section>
