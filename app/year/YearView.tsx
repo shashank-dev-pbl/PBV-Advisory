@@ -11,10 +11,11 @@ import { UserMenu, type CurrentUser } from "../founder/FounderView";
 import type { Company, Obligation, ObligationOwner } from "@/lib/types";
 
 const OWNER_LABEL: Record<ObligationOwner, string> = { founder: "Founder", practitioner: "Practitioner", pba: "PBA" };
+const ROLE_LABEL: Record<ObligationOwner, string> = { founder: "Founder", practitioner: "Practitioner", pba: "PBA" };
 const STATUS_CHIP: Record<Obligation["status"], { label: string; bg: string; color: string }> = {
   pending: { label: "Not filed", bg: "#f1ece0", color: "var(--ink-secondary)" },
   filed: { label: "Awaiting PBA", bg: "#e9eef5", color: "#26527f" },
-  verified: { label: "Verified by PBA", bg: "var(--green-soft, #e8efe6)", color: "var(--bottomline-green)" },
+  verified: { label: "Verified by PBA", bg: "var(--bottomline-green)", color: "#fff" },
 };
 
 export default function YearView({
@@ -51,7 +52,7 @@ export default function YearView({
       <header className="flex items-center justify-between border-b px-5 py-4 md:px-8" style={{ borderColor: "var(--rule)" }}>
         <div>
           <p className="eyebrow" style={{ color: "var(--bottomline-green)" }}>Prime Bottomline Advisory</p>
-          <h1 className="text-[18px] font-extrabold">{company?.name} <span style={{ color: "var(--bottomline-green)" }}>· Year</span></h1>
+          <h1 className="text-[18px] font-extrabold">{company?.name} <span style={{ color: "var(--bottomline-green)" }}>· {ROLE_LABEL[currentUser.role]}</span></h1>
         </div>
         <div className="flex items-center gap-4">
           <Link
