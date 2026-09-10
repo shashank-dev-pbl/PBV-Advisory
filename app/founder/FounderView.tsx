@@ -6,6 +6,7 @@ import { Download, Trash2, TriangleAlert, MessageCircle, Send, X, LogOut, Layout
 import { createClient } from "@/lib/supabase/client";
 import { currentPeriod, formatPeriodLabel } from "@/lib/period";
 import { safeStorageSegment } from "@/lib/storagePath";
+import { isResolved, isReceived } from "@/lib/docItemStatus";
 import type { Company, DocItem, DocItemMessage, Deliverable } from "@/lib/types";
 import { recordUpload, deleteUpload, deleteFile, markNilReturn, sendFounderMessage, markFounderRead, saveRevenueInfo, getSignedDownloadUrl } from "./actions";
 
@@ -19,16 +20,9 @@ const STATUS_LABEL: Record<string, string> = {
   not_applicable: "Not applicable",
 };
 
-export function isResolved(status: DocItem["status"]): boolean {
-  return status === "accepted" || status === "not_applicable";
-}
-
-// A genuine submission — a file actually came in (or was accepted). Deliberately excludes
-// not_applicable: for progress *counts* an N/A item hasn't produced anything, even though it
-// still satisfies a deliverable's dependency (see isResolved, used for that instead).
-export function isReceived(status: DocItem["status"]): boolean {
-  return status === "uploaded" || status === "accepted" || status === "query";
-}
+// Re-exported for callers that already import these from here (e.g. PractitionerView.tsx) —
+// the actual definitions live in lib/docItemStatus.ts so server components can use them too.
+export { isResolved, isReceived };
 
 export function sortedFiles(files: DocItem["doc_file"]) {
   if (!files || files.length === 0) return [];
@@ -235,7 +229,7 @@ export default function FounderView({
   );
 }
 
-function CircularProgress({ pct, size = 48, strokeWidth = 4 }: { pct: number; size?: number; strokeWidth?: number }) {
+export function CircularProgress({ pct, size = 48, strokeWidth = 4, label }: { pct: number; size?: number; strokeWidth?: number; label?: string }) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - Math.min(100, Math.max(0, pct)) / 100);
@@ -257,7 +251,7 @@ function CircularProgress({ pct, size = 48, strokeWidth = 4 }: { pct: number; si
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-[12px] font-extrabold tnum" style={{ color: "var(--bottomline-green)" }}>{pct}%</span>
+        <span className="text-[12px] font-extrabold tnum" style={{ color: "var(--bottomline-green)" }}>{label ?? `${pct}%`}</span>
       </div>
     </div>
   );

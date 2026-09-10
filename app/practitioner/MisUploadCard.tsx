@@ -3,13 +3,14 @@
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { safeStorageSegment } from "@/lib/storagePath";
-import { submitMisUpload, submitToPBA } from "./mis-actions";
+import { submitMisUpload, submitToPBA, uploadSignedPdf } from "./mis-actions";
 import type { PeriodFiguresState } from "@/lib/types";
 
 type MisState = {
   id: string;
   state: PeriodFiguresState;
   query_text: string | null;
+  pdf_filename: string | null;
   mis_upload: { filename: string; uploaded_at: string; template_version: string } | null;
 } | null;
 
@@ -26,6 +27,8 @@ export default function MisUploadCard({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
 
   async function handleFile(file: File) {
     setBusy(true);
@@ -48,6 +51,23 @@ export default function MisUploadCard({
       setError(err instanceof Error ? err.message : "Upload failed — try again.");
       setBusy(false);
     }
+  }
+
+  async function handlePdfFile(file: File) {
+    if (!state) return;
+    setPdfBusy(true);
+    setError("");
+    try {
+      const supabase = createClient();
+      const path = `${companyId}/mis-pdf/${period}/${Date.now()}-${safeStorageSegment(file.name)}`;
+      const { error: uploadError } = await supabase.storage.from("docs").upload(path, file);
+      if (uploadError) throw uploadError;
+      await uploadSignedPdf({ periodFiguresId: state.id, storagePath: path, filename: file.name });
+      setState({ ...state, pdf_filename: file.name });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "PDF upload failed — try again.");
+    }
+    setPdfBusy(false);
   }
 
   async function handleSubmitToPBA() {
@@ -158,6 +178,36 @@ export default function MisUploadCard({
 
         {error && <p className="mt-3 text-[12.5px]" style={{ color: "#8c1a1a" }}>{error}</p>}
       </div>
+
+      {state?.mis_upload && (
+        <div className="mt-2 p-4 flex items-center justify-between gap-3" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>
+          <div>
+            <p className="text-[13px] font-bold" style={{ color: "var(--ink)" }}>Signed MIS, PDF</p>
+            <p className="mt-0.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>
+              {state.pdf_filename ?? "Optional — the version the founder downloads. The workbook is what the portal reads."}
+            </p>
+          </div>
+          <button
+            onClick={() => pdfInputRef.current?.click()}
+            disabled={pdfBusy}
+            className="btn-small"
+            style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)", flexShrink: 0 }}
+          >
+            {pdfBusy ? "Uploading…" : state.pdf_filename ? "Replace PDF" : "Upload PDF"}
+          </button>
+          <input
+            ref={pdfInputRef}
+            type="file"
+            accept=".pdf"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void handlePdfFile(file);
+              e.target.value = "";
+            }}
+          />
+        </div>
+      )}
     </section>
   );
 }

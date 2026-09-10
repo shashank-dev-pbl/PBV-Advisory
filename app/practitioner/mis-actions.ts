@@ -137,6 +137,24 @@ export async function submitToPBA(periodFiguresId: string) {
   revalidatePath("/practitioner");
 }
 
+// The signed PDF is optional and separate from the workbook the portal reads —
+// it's the version the founder actually downloads (mockup: "Other files for
+// this month" → "Signed MIS, PDF"). Attachable at any state, not gated.
+export async function uploadSignedPdf(params: { periodFiguresId: string; storagePath: string; filename: string }) {
+  const appUser = await requireRole("practitioner");
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("period_figures")
+    .update({ pdf_storage_path: params.storagePath, pdf_filename: params.filename })
+    .eq("id", params.periodFiguresId)
+    .eq("company_id", appUser.company_id);
+  if (error) throw error;
+
+  revalidatePath("/practitioner");
+  revalidatePath("/founder/dashboard");
+}
+
 export async function getMisState(companyId: string, period: string) {
   const supabase = await createClient();
   const { data: periodFigures } = await supabase

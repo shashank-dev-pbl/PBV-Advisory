@@ -149,6 +149,8 @@ export type PeriodFigures = {
   state: PeriodFiguresState;
   source_upload_id: string;
   query_text: string | null;
+  pdf_storage_path: string | null;
+  pdf_filename: string | null;
 
   cash_opening: number | null;
   cash_closing: number | null;
