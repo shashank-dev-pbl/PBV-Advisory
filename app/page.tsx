@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isCurrentUserPlatformAdmin } from "@/lib/admin";
-import { getCurrentAppUser, needsOnboarding } from "@/lib/auth";
+import { getCurrentAppUser, needsOnboarding, DEV_BYPASS_AUTH } from "@/lib/auth";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -9,7 +9,7 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
+  if (!DEV_BYPASS_AUTH && !user) redirect("/login");
 
   const appUser = await getCurrentAppUser();
   if (appUser) {

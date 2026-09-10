@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { currentPeriod } from "@/lib/period";
-import { getCurrentAppUser, needsOnboarding } from "@/lib/auth";
+import { getCurrentAppUser, needsOnboarding, DEV_BYPASS_AUTH } from "@/lib/auth";
 import type { Company, DocItem, Deliverable } from "@/lib/types";
 import FounderView from "./FounderView";
 
@@ -9,7 +9,7 @@ export default async function FounderPage() {
   const appUser = await getCurrentAppUser();
   if (!appUser) redirect("/login");
   if (needsOnboarding(appUser)) redirect("/onboarding");
-  if (appUser.role !== "founder") redirect("/");
+  if (!DEV_BYPASS_AUTH && appUser.role !== "founder") redirect("/");
 
   const supabase = await createClient();
   const companyId = appUser.company_id;

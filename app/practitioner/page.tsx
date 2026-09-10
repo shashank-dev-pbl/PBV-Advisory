@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { currentPeriod } from "@/lib/period";
-import { getCurrentAppUser, needsOnboarding } from "@/lib/auth";
+import { getCurrentAppUser, needsOnboarding, DEV_BYPASS_AUTH } from "@/lib/auth";
 import type { Company, DocItem, Deliverable } from "@/lib/types";
 import PractitionerView from "./PractitionerView";
 import { getMisState } from "./mis-actions";
@@ -10,7 +10,7 @@ export default async function PractitionerPage() {
   const appUser = await getCurrentAppUser();
   if (!appUser) redirect("/login");
   if (needsOnboarding(appUser)) redirect("/onboarding");
-  if (appUser.role !== "practitioner") redirect("/");
+  if (!DEV_BYPASS_AUTH && appUser.role !== "practitioner") redirect("/");
 
   const supabase = await createClient();
   const companyId = appUser.company_id;

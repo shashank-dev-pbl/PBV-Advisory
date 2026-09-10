@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getCurrentAppUser, needsOnboarding } from "@/lib/auth";
+import { getCurrentAppUser, needsOnboarding, DEV_BYPASS_AUTH } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { currentPeriod, formatPeriodLabel } from "@/lib/period";
 import { getFinancialsHistory } from "@/app/practitioner/financials-actions";
@@ -13,7 +13,7 @@ export default async function FounderDashboardPage() {
   const appUser = await getCurrentAppUser();
   if (!appUser) redirect("/login");
   if (needsOnboarding(appUser)) redirect("/onboarding");
-  if (appUser.role !== "founder") redirect("/");
+  if (!DEV_BYPASS_AUTH && appUser.role !== "founder") redirect("/");
 
   const supabase = await createClient();
   const { data: company } = await supabase.from("company").select("*").eq("id", appUser.company_id).single<Company>();
