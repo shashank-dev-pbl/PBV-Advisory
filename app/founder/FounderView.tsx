@@ -10,15 +10,26 @@ import { isResolved, isReceived } from "@/lib/docItemStatus";
 import type { Company, DocItem, DocItemMessage, Deliverable } from "@/lib/types";
 import { recordUpload, deleteUpload, deleteFile, markNilReturn, sendFounderMessage, markFounderRead, saveRevenueInfo, getSignedDownloadUrl } from "./actions";
 
-const STRIKE_MS = 420;
+type ChipStyle = { label: string; bg: string; color: string };
 
-const STATUS_LABEL: Record<string, string> = {
-  pending: "Pending",
-  uploaded: "Uploaded",
-  accepted: "Accepted",
-  query: "Question",
-  not_applicable: "Not applicable",
-};
+function statusChip(item: DocItem): ChipStyle {
+  switch (item.status) {
+    case "accepted":
+      return { label: "Accepted", bg: "rgba(0,77,0,0.08)", color: "var(--status-accepted)" };
+    case "query":
+      return { label: "Question from us", bg: "rgba(140,26,26,0.08)", color: "var(--status-query)" };
+    case "uploaded":
+      return { label: "With us", bg: "rgba(184,134,11,0.1)", color: "var(--status-uploaded)" };
+    case "not_applicable":
+      return {
+        label: item.na_reason === "Founder confirmed — none to report" ? "You said: none" : "Not applicable",
+        bg: "rgba(107,99,87,0.12)",
+        color: "var(--ink-secondary)",
+      };
+    default:
+      return { label: "Not started", bg: "rgba(107,99,87,0.12)", color: "var(--ink-secondary)" };
+  }
+}
 
 // Re-exported for callers that already import these from here (e.g. PractitionerView.tsx) —
 // the actual definitions live in lib/docItemStatus.ts so server components can use them too.
@@ -55,44 +66,27 @@ function groupItems(items: DocItem[]) {
   return groups;
 }
 
-function PrioritySection({
-  title,
+function GroupSection({
+  groupName,
   items,
   companyId,
   currentUserId,
   onPatch,
 }: {
-  title: string;
+  groupName: string;
   items: DocItem[];
   companyId: string;
   currentUserId: string;
   onPatch: (id: string, patch: Partial<DocItem>) => void;
 }) {
-  const grouped = useMemo(() => groupItems(items), [items]);
-  const resolvedCount = items.filter((i) => isReceived(i.status)).length;
-
-  if (items.length === 0) return null;
-
   return (
-    <section className="mb-6 border-b" style={{ borderColor: "var(--rule)" }}>
-      <div className="flex w-full items-center justify-between py-3">
-        <p className="text-[18px] font-extrabold" style={{ color: "var(--ink)" }}>{title}</p>
-        <span className="text-[11px] tnum" style={{ color: "var(--ink-secondary)" }}>
-          {resolvedCount} of {items.length}
-        </span>
-      </div>
-      <div className="flex flex-col gap-6 pb-5">
-        {[...grouped.entries()].map(([groupName, groupItemsList]) => (
-          <div key={groupName}>
-            <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: "var(--ink-secondary)" }}>
-              {groupName}
-            </p>
-            <div className="flex flex-col gap-0.5">
-              {groupItemsList.map((item) => (
-                <ChecklistRow key={item.id} item={item} companyId={companyId} currentUserId={currentUserId} onPatch={onPatch} />
-              ))}
-            </div>
-          </div>
+    <section className="mb-8">
+      <p className="mb-3 text-[12px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink-secondary)" }}>
+        {groupName}
+      </p>
+      <div className="flex flex-col gap-2.5">
+        {items.map((item) => (
+          <ChecklistCard key={item.id} item={item} companyId={companyId} currentUserId={currentUserId} onPatch={onPatch} />
         ))}
       </div>
     </section>
@@ -113,6 +107,7 @@ export default function FounderView({
   currentUser: CurrentUser;
 }) {
   const [items, setItems] = useState(docItems);
+  const [showCosmetic, setShowCosmetic] = useState(false);
   const received = items.filter((i) => isReceived(i.status)).length;
   const total = items.length;
 
@@ -120,6 +115,18 @@ export default function FounderView({
   const mustResolved = mustItems.filter((i) => isReceived(i.status)).length;
   const mustTotal = mustItems.length;
   const pct = mustTotal > 0 ? Math.round((mustResolved / mustTotal) * 100) : 0;
+
+  const unresolvedMust = mustItems.filter((i) => !isReceived(i.status));
+  const nextDue = unresolvedMust
+    .map((i) => i.due_date)
+    .filter((d): d is string => !!d)
+    .sort()[0] ?? null;
+  const daysUntilDue = nextDue ? Math.ceil((new Date(nextDue).getTime() - Date.now()) / 86400000) : null;
+
+  const mustGoodItems = items.filter((i) => i.priority !== "cosmetic");
+  const cosmeticItems = items.filter((i) => i.priority === "cosmetic");
+  const groupedMustGood = useMemo(() => groupItems(mustGoodItems), [mustGoodItems]);
+  const groupedCosmetic = useMemo(() => groupItems(cosmeticItems), [cosmeticItems]);
 
   const questionCount = items.filter((i) => i.status === "query").length;
 
@@ -189,33 +196,73 @@ export default function FounderView({
           </div>
         )}
 
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-[13px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>Docs checklist</p>
+        <div className="mb-8 flex flex-wrap items-center gap-5 p-4" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>
+          <div>
+            <p className="text-[18px] font-extrabold tnum" style={{ color: "var(--ink)" }}>{mustResolved} of {mustTotal} essentials</p>
+            <p className="mt-0.5 text-[12px] tnum" style={{ color: "var(--ink-secondary)" }}>{received} of {total} items in total</p>
+          </div>
+          <div className="h-[7px] flex-1" style={{ minWidth: 140, background: "var(--rule)", borderRadius: 4, overflow: "hidden" }}>
+            <div className="h-full" style={{ width: `${pct}%`, background: "var(--bottomline-green)", transition: "width 400ms ease" }} />
+          </div>
+          {daysUntilDue !== null && unresolvedMust.length > 0 && (
+            <p className="whitespace-nowrap text-[12px]" style={{ color: "var(--ink-secondary)" }}>
+              {unresolvedMust.length} item{unresolvedMust.length > 1 ? "s" : ""} left · due in {daysUntilDue} day{daysUntilDue === 1 ? "" : "s"}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col">
-          <PrioritySection
-            title="Essentials"
-            items={items.filter((i) => i.priority === "must")}
-            companyId={company.id}
-            currentUserId={currentUser.id}
-            onPatch={patchItem}
-          />
-          <PrioritySection
-            title="Good to have"
-            items={items.filter((i) => i.priority === "good")}
-            companyId={company.id}
-            currentUserId={currentUser.id}
-            onPatch={patchItem}
-          />
-          <PrioritySection
-            title="Cosmetic"
-            items={items.filter((i) => i.priority === "cosmetic")}
-            companyId={company.id}
-            currentUserId={currentUser.id}
-            onPatch={patchItem}
-          />
+          {[...groupedMustGood.entries()].map(([groupName, groupItemsList]) => (
+            <GroupSection
+              key={groupName}
+              groupName={groupName}
+              items={groupItemsList}
+              companyId={company.id}
+              currentUserId={currentUser.id}
+              onPatch={patchItem}
+            />
+          ))}
         </div>
+
+        {cosmeticItems.length > 0 && (
+          <section className="mb-8">
+            {!showCosmetic ? (
+              <button
+                onClick={() => setShowCosmetic(true)}
+                className="w-full p-4 text-left text-[13px]"
+                style={{ background: "transparent", border: "1px dashed var(--rule)", color: "var(--ink-secondary)", cursor: "pointer" }}
+              >
+                <strong style={{ color: "var(--ink)" }}>{cosmeticItems.length} nice-to-have item{cosmeticItems.length > 1 ? "s" : ""}</strong> — never blocks anything. Show them →
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => setShowCosmetic(false)}
+                  className="mb-4 text-[12px] font-semibold"
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-secondary)" }}
+                >
+                  Hide nice-to-have items
+                </button>
+                {[...groupedCosmetic.entries()].map(([groupName, groupItemsList]) => (
+                  <GroupSection
+                    key={groupName}
+                    groupName={groupName}
+                    items={groupItemsList}
+                    companyId={company.id}
+                    currentUserId={currentUser.id}
+                    onPatch={patchItem}
+                  />
+                ))}
+              </>
+            )}
+          </section>
+        )}
+
+        <p className="mt-2 text-center text-[11.5px] leading-[1.7]" style={{ color: "var(--ink-secondary)" }}>
+          Items marked <strong style={{ color: "var(--ink)" }}>essential</strong> stop us producing your MIS. Everything else improves it but never holds it up.
+          <br />
+          If something is late we tell you the new delivery date rather than letting it drift.
+        </p>
 
         {deliveredItems.length > 0 && (
           <section className="mt-10">
@@ -333,73 +380,6 @@ function RevenueInfoBanner({
         {saving ? "Saving…" : "Save"}
       </button>
     </div>
-  );
-}
-
-function StatusCheckbox({ status }: { status: DocItem["status"] }) {
-  if (status === "accepted") {
-    return (
-      <span
-        className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
-        style={{ background: "var(--bottomline-green)", color: "var(--paper)" }}
-      >
-        ✓
-      </span>
-    );
-  }
-  if (status === "not_applicable") {
-    return (
-      <span
-        className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
-        style={{ background: "var(--ink-secondary)", color: "var(--paper)" }}
-      >
-        —
-      </span>
-    );
-  }
-  if (status === "query") {
-    return (
-      <span
-        className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
-        style={{ background: "var(--status-query)", color: "var(--paper)" }}
-      >
-        ?
-      </span>
-    );
-  }
-  if (status === "uploaded") {
-    return (
-      <span
-        className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full"
-        style={{ border: "2px solid var(--status-uploaded)" }}
-      >
-        <span className="h-2 w-2 rounded-full" style={{ background: "var(--status-uploaded)" }} />
-      </span>
-    );
-  }
-  return <span className="h-5 w-5 flex-shrink-0 rounded-full" style={{ border: "2px solid var(--rule)" }} />;
-}
-
-function StrikeText({ text, active }: { text: string; active: boolean }) {
-  return (
-    <span
-      className="relative inline-block truncate align-middle"
-      style={{ color: active ? "var(--ink-secondary)" : "var(--ink)", transition: `color ${STRIKE_MS}ms ease` }}
-    >
-      {text}
-      <span
-        aria-hidden
-        className="absolute left-0 top-1/2"
-        style={{
-          height: 1.5,
-          width: "100%",
-          background: "var(--ink-secondary)",
-          transform: active ? "scaleX(1)" : "scaleX(0)",
-          transformOrigin: "left",
-          transition: `transform ${STRIKE_MS}ms ease`,
-        }}
-      />
-    </span>
   );
 }
 
@@ -577,7 +557,7 @@ export function ChatPopover({
   );
 }
 
-function ChecklistRow({
+function ChecklistCard({
   item,
   companyId,
   currentUserId,
@@ -589,11 +569,12 @@ function ChecklistRow({
   onPatch: (id: string, patch: Partial<DocItem>) => void;
 }) {
   const [uploading, setUploading] = useState(false);
-  const [expanded, setExpanded] = useState(item.status === "query");
   const [chatOpen, setChatOpen] = useState(false);
   const [confirmingNil, setConfirmingNil] = useState(false);
   const [nilBusy, setNilBusy] = useState(false);
   const [label, setLabel] = useState("");
+  const [reply, setReply] = useState("");
+  const [replying, setReplying] = useState(false);
 
   async function uploadFile(file: File, fileLabel?: string) {
     setUploading(true);
@@ -620,8 +601,6 @@ function ChecklistRow({
       status: "uploaded",
       doc_file: [{ id: path, doc_item_id: item.id, storage_path: path, filename: file.name, label: null, uploaded_at: new Date().toISOString() }],
     });
-    // let the strike-through animation play out while still expanded, then settle closed
-    window.setTimeout(() => setExpanded(false), STRIKE_MS + 150);
   }
 
   async function handleAddLabeledFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -646,7 +625,6 @@ function ChecklistRow({
     if (!latestFile) return;
     await deleteUpload(item.id);
     onPatch(item.id, { status: "pending", doc_file: [] });
-    setExpanded(false);
   }
 
   async function handleDeleteOne(fileId: string) {
@@ -664,7 +642,6 @@ function ChecklistRow({
     await markNilReturn(item.id);
     onPatch(item.id, { status: "not_applicable", na_reason: "Founder confirmed — none to report", na_at: new Date().toISOString(), na_by: currentUserId });
     setNilBusy(false);
-    setExpanded(false);
   }
 
   async function handleSendMessage(text: string) {
@@ -677,10 +654,18 @@ function ChecklistRow({
     };
     await sendFounderMessage(item.id, text);
     onPatch(item.id, {
-      status: "uploaded",
       founder_last_read_at: optimistic.created_at,
       doc_item_message: [...(item.doc_item_message ?? []), optimistic],
     });
+  }
+
+  async function handleInlineReply() {
+    if (!reply.trim() || replying) return;
+    setReplying(true);
+    const text = reply.trim();
+    setReply("");
+    await handleSendMessage(text);
+    setReplying(false);
   }
 
   function handleOpenChat() {
@@ -701,42 +686,24 @@ function ChecklistRow({
   const hasMessages = messages.length > 0;
   const unread = hasUnreadFor(item, "founder");
   const chatMessages: ChatMessage[] = messages.map((m) => ({ text: m.body, mine: m.sender === "founder", createdAt: m.created_at }));
+  const chip = statusChip(item);
+  const isQuery = item.status === "query";
+  const latestQuery = isQuery ? [...messages].reverse().find((m) => m.sender === "practitioner") : undefined;
 
   return (
-    <div className="border-b" style={{ borderColor: "var(--rule)" }}>
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => setExpanded((v) => !v)}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded((v) => !v); } }}
-        className="flex w-full items-center gap-3 py-3 text-left"
-        style={{ cursor: "pointer" }}
-      >
-        <StatusCheckbox status={item.status} />
+    <div
+      className="p-4"
+      style={{
+        background: isQuery ? "#fffcf3" : "var(--paper)",
+        border: `1px solid ${isQuery ? "#d9cfae" : "var(--rule)"}`,
+      }}
+    >
+      <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-[14px] font-semibold">
-            <StrikeText text={item.title} active={hasAnyFile || item.status === "not_applicable"} />
-            {item.status !== "pending" && (
-              <span
-                className="pill flex-shrink-0"
-                style={{
-                  background:
-                    item.status === "accepted" ? "rgba(0,77,0,0.08)"
-                    : item.status === "query" ? "rgba(140,26,26,0.08)"
-                    : item.status === "not_applicable" ? "rgba(107,99,87,0.12)"
-                    : "rgba(184,134,11,0.1)",
-                  color:
-                    item.status === "accepted" ? "var(--status-accepted)"
-                    : item.status === "query" ? "var(--status-query)"
-                    : item.status === "not_applicable" ? "var(--ink-secondary)"
-                    : "var(--status-uploaded)",
-                }}
-              >
-                {STATUS_LABEL[item.status]}
-              </span>
-            )}
-            {hasMessages && (
-              <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-2">
+            <p className="text-[14.5px] font-semibold" style={{ color: "var(--ink)" }}>{item.title}</p>
+            {!isQuery && hasMessages && (
+              <div className="relative flex-shrink-0">
                 <MessageButton active={unread} needsAttention={unread} onClick={handleOpenChat} />
                 {chatOpen && (
                   <ChatPopover
@@ -751,127 +718,153 @@ function ChecklistRow({
             )}
           </div>
           {item.description && (
-            <p className="mt-0.5 truncate text-[11px]" style={{ color: "var(--ink-secondary)" }}>
+            <p className="mt-1 text-[13px]" style={{ color: "var(--ink-secondary)" }}>
               {item.description}
             </p>
           )}
         </div>
+        <span className="pill flex-shrink-0" style={{ background: chip.bg, color: chip.color }}>{chip.label}</span>
       </div>
 
-      <div
-        className="grid"
-        style={{ gridTemplateRows: expanded ? "1fr" : "0fr", transition: "grid-template-rows 280ms ease" }}
-      >
-        <div className="overflow-hidden">
-          <div className="pb-4 pl-8">
-            {item.status === "not_applicable" ? (
-              <p className="py-2 text-[12px]" style={{ color: "var(--ink-secondary)" }}>
-                Marked not applicable{item.na_reason ? ` — ${item.na_reason}` : ""}.
-              </p>
-            ) : item.allows_multiple ? (
-              <>
-                {files.length === 0 && item.status === "accepted" && (
-                  <p className="py-2 text-[12px]" style={{ color: "var(--ink-secondary)" }}>
-                    No file on record for this item.
-                  </p>
-                )}
-                {files.length > 0 && (
-                  <div className="flex flex-col gap-1">
-                    {files.map((f) => (
-                      <div key={f.id}>
-                        {f.label && (
-                          <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.04em]" style={{ color: "var(--ink-secondary)" }}>
-                            {f.label}
-                          </p>
-                        )}
-                        <FileRow
-                          filename={f.filename}
-                          storagePath={f.storage_path}
-                          onDelete={isResolved(item.status) ? undefined : () => handleDeleteOne(f.id)}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
+      {item.status === "not_applicable" ? (
+        <div className="mt-3 border-t pt-3" style={{ borderColor: "var(--rule)" }}>
+          <p className="text-[13px]" style={{ color: "var(--ink-secondary)" }}>
+            {item.na_reason ?? "Marked not applicable."}
+          </p>
+        </div>
+      ) : (
+        hasAnyFile && (
+          <div className="mt-3 flex flex-col gap-1 border-t pt-3" style={{ borderColor: "var(--rule)" }}>
+            {item.allows_multiple ? (
+              files.map((f) => (
+                <div key={f.id}>
+                  {f.label && (
+                    <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.04em]" style={{ color: "var(--ink-secondary)" }}>
+                      {f.label}
+                    </p>
+                  )}
+                  <FileRow
+                    filename={f.filename}
+                    storagePath={f.storage_path}
+                    onDelete={isResolved(item.status) ? undefined : () => handleDeleteOne(f.id)}
+                  />
+                </div>
+              ))
             ) : (
               <>
-                {latestFile ? (
+                {latestFile && (
                   <FileRow
                     filename={latestFile.filename}
                     storagePath={latestFile.storage_path}
                     onDelete={isResolved(item.status) ? undefined : handleDelete}
                   />
-                ) : (
-                  item.status === "accepted" && (
-                    <p className="py-2 text-[12px]" style={{ color: "var(--ink-secondary)" }}>
-                      No file on record for this item.
-                    </p>
-                  )
                 )}
                 {olderFiles.length > 0 && <VersionHistory files={olderFiles} />}
               </>
             )}
-
-            {!isResolved(item.status) && (
-              <div className="mt-2 flex flex-col gap-2">
-                {item.allows_multiple ? (
-                  <div className="flex items-center gap-2 p-3" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>
-                    {item.needs_label && (
-                      <input
-                        className="input-field"
-                        style={{ minHeight: 36, padding: "8px 10px", fontSize: 12, flex: 1 }}
-                        placeholder="Label (e.g. HDFC Bank, or Founder A)"
-                        value={label}
-                        onChange={(e) => setLabel(e.target.value)}
-                      />
-                    )}
-                    <label className={item.needs_label ? "flex-shrink-0 cursor-pointer" : "flex-1 cursor-pointer"}>
-                      <span
-                        className="btn-ghost"
-                        style={{
-                          minHeight: 36,
-                          padding: "8px 16px",
-                          fontSize: 12,
-                          opacity: item.needs_label && !label.trim() ? 0.5 : 1,
-                        }}
-                      >
-                        {uploading ? "Uploading…" : "Add file"}
-                      </span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={handleAddLabeledFile}
-                        disabled={uploading || (item.needs_label && !label.trim())}
-                      />
-                    </label>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 p-3" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>
-                    <label className="flex-1 cursor-pointer">
-                      <span className="btn-ghost" style={{ minHeight: 36, padding: "8px 16px", fontSize: 12 }}>
-                        {uploading ? "Uploading…" : hasFile ? "Replace file" : "Choose file"}
-                      </span>
-                      <input type="file" className="hidden" onChange={handleFile} disabled={uploading} />
-                    </label>
-                  </div>
-                )}
-
-                {item.nil_return_allowed && !hasAnyFile && (
-                  <button
-                    onClick={handleNilReturn}
-                    disabled={nilBusy}
-                    className="self-start text-[11px] font-semibold"
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-secondary)", padding: "2px 0" }}
-                  >
-                    {nilBusy ? "Saving…" : confirmingNil ? "Confirm — we have none" : "We have none"}
-                  </button>
-                )}
-              </div>
-            )}
           </div>
+        )
+      )}
+
+      {isQuery && (
+        <div className="mt-3 p-3" style={{ background: "var(--paper)", border: "1px solid #e3d4a8", borderRadius: 6 }}>
+          <p className="text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: "#8a6412" }}>
+            Practitioner asked
+          </p>
+          {latestQuery && (
+            <p className="mt-1 text-[13.5px]" style={{ color: "var(--ink)" }}>{latestQuery.body}</p>
+          )}
+          {chatMessages.length > 1 && (
+            <div className="mt-2">
+              <button
+                onClick={handleOpenChat}
+                className="text-[11px] font-semibold"
+                style={{ background: "none", border: "none", cursor: "pointer", color: "#8a6412", padding: 0 }}
+              >
+                {chatOpen ? "Hide full thread" : "Show full thread"}
+              </button>
+              {chatOpen && (
+                <div className="mt-2 flex flex-col gap-2" style={{ maxHeight: 200, overflowY: "auto" }}>
+                  {chatMessages.map((m, i) => (
+                    <div key={i} className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>
+                      <span className="font-semibold" style={{ color: "var(--ink)" }}>{m.mine ? "You" : "Practitioner"}:</span> {m.text}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          <input
+            className="input-field mt-2"
+            style={{ minHeight: 36, padding: "8px 10px", fontSize: 13, width: "100%", background: "var(--paper)" }}
+            placeholder="Type your reply…"
+            value={reply}
+            onChange={(e) => setReply(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleInlineReply(); }}
+            disabled={replying}
+          />
+          <p className="mt-1.5 text-[11.5px]" style={{ color: "#8a6412" }}>
+            We can&apos;t accept this item until the question is answered.
+          </p>
         </div>
-      </div>
+      )}
+
+      {!isResolved(item.status) && (
+        <div className="mt-3 flex flex-col gap-2">
+          {item.allows_multiple ? (
+            <div className="flex items-center gap-2 p-3" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>
+              {item.needs_label && (
+                <input
+                  className="input-field"
+                  style={{ minHeight: 36, padding: "8px 10px", fontSize: 12, flex: 1 }}
+                  placeholder="Label (e.g. HDFC Bank, or Founder A)"
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value)}
+                />
+              )}
+              <label className={item.needs_label ? "flex-shrink-0 cursor-pointer" : "flex-1 cursor-pointer"}>
+                <span
+                  className="btn-ghost"
+                  style={{
+                    minHeight: 36,
+                    padding: "8px 16px",
+                    fontSize: 12,
+                    opacity: item.needs_label && !label.trim() ? 0.5 : 1,
+                  }}
+                >
+                  {uploading ? "Uploading…" : hasAnyFile ? "Add another" : "Upload file"}
+                </span>
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={handleAddLabeledFile}
+                  disabled={uploading || (item.needs_label && !label.trim())}
+                />
+              </label>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 p-3" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>
+              <label className="flex-1 cursor-pointer">
+                <span className="btn-ghost" style={{ minHeight: 36, padding: "8px 16px", fontSize: 12 }}>
+                  {uploading ? "Uploading…" : hasFile ? "Replace file" : "Upload file"}
+                </span>
+                <input type="file" className="hidden" onChange={handleFile} disabled={uploading} />
+              </label>
+            </div>
+          )}
+
+          {item.nil_return_allowed && !hasAnyFile && (
+            <button
+              onClick={handleNilReturn}
+              disabled={nilBusy}
+              className="self-start text-[11px] font-semibold"
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-secondary)", padding: "2px 0" }}
+            >
+              {nilBusy ? "Saving…" : confirmingNil ? "Confirm — we have none" : "We have none"}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
