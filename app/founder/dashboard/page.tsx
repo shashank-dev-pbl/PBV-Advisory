@@ -48,6 +48,14 @@ export default async function FounderDashboardPage() {
   const deliverables = (deliverableRows ?? []) as Pick<PeriodFigures, "id" | "period" | "state" | "published_at" | "pdf_storage_path" | "pdf_filename">[];
   const latestDeliverable = deliverables[0] ?? null;
 
+  // The monthly cadence per the close schedule: practitioner uploads by day 7.
+  // "Due" always refers to the month right after whatever was last delivered
+  // (or the current month, if nothing has been delivered yet).
+  const [dueY, dueM] = (latestDeliverable ? latestDeliverable.period : period).split("-").map(Number);
+  const duePeriodDate = new Date(dueY, dueM, 1); // one month after the reference period
+  const duePeriodLabel = formatPeriodLabel(`${duePeriodDate.getFullYear()}-${String(duePeriodDate.getMonth() + 1).padStart(2, "0")}`);
+  const nextMisDue = new Date(dueY, dueM + 1, 7);
+
   return (
     <div className="min-h-screen" style={{ background: "var(--paper)" }}>
       <header className="flex items-center justify-between border-b px-5 py-4 md:px-8" style={{ borderColor: "var(--rule)" }}>
@@ -102,19 +110,22 @@ export default async function FounderDashboardPage() {
               <p className="mt-0.5 text-[14px] font-bold" style={{ color: "var(--ink)" }}>
                 {latestDeliverable ? `${formatPeriodLabel(latestDeliverable.period)} MIS delivered` : "Nothing delivered yet"}
               </p>
-              {latestDeliverable?.published_at && (
-                <p className="mt-0.5 text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>
-                  Published {new Date(latestDeliverable.published_at).toLocaleDateString()}
-                </p>
-              )}
+              <p className="mt-0.5 text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>
+                {duePeriodLabel} MIS due {nextMisDue.toLocaleDateString()}
+              </p>
             </div>
+            {deliverables.length > 0 && (
+              <a href="#deliverables" className="btn-small" style={{ background: "transparent", border: "1px solid var(--bottomline-green)", color: "var(--bottomline-green)", flexShrink: 0 }}>
+                See files
+              </a>
+            )}
           </div>
         </div>
 
         <FinancialTiles history={publishedHistory} isPractitioner={false} />
 
         {deliverables.length > 0 && (
-          <section className="mt-10">
+          <section id="deliverables" className="mt-10">
             <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>Everything we have given you</p>
             <table className="w-full" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderCollapse: "collapse" }}>
               <thead>
@@ -146,6 +157,12 @@ export default async function FounderDashboardPage() {
               </tbody>
             </table>
           </section>
+        )}
+
+        {latestDeliverable && (
+          <p className="mt-8 text-[12px] text-center" style={{ color: "var(--ink-secondary)" }}>
+            Every number on this page comes from the {formatPeriodLabel(latestDeliverable.period)} close. Nothing here is a forecast.
+          </p>
         )}
       </main>
     </div>

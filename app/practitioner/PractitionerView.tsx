@@ -8,6 +8,8 @@ import type { Company, DocItem, DocItemMessage, Deliverable } from "@/lib/types"
 import { acceptItem, markNotApplicable, sendPractitionerMessage, markPractitionerRead } from "./actions";
 import { FileRow, VersionHistory, sortedFiles, sortedMessages, hasUnreadFor, isResolved, isReceived, ChatPopover, MessageButton, UserMenu, type ChatMessage, type CurrentUser } from "../founder/FounderView";
 import MisUploadCard from "./MisUploadCard";
+import FilingsTable from "./FilingsTable";
+import type { Obligation } from "@/lib/types";
 
 function daysAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -21,6 +23,7 @@ export default function PractitionerView({
   currentUser,
   period,
   misState,
+  filings,
 }: {
   company: Company;
   docItems: DocItem[];
@@ -28,6 +31,7 @@ export default function PractitionerView({
   currentUser: CurrentUser;
   period: string;
   misState: Parameters<typeof MisUploadCard>[0]["initial"];
+  filings: Obligation[];
 }) {
   const [items, setItems] = useState(docItems);
   const [dlvs, setDlvs] = useState(deliverables);
@@ -106,7 +110,15 @@ export default function PractitionerView({
       </div>
 
       <main className="mx-auto w-full max-w-[900px] px-5 py-8 md:px-8">
+        <div className="mb-6 p-4" style={{ background: "#eef3ec", border: "1px solid #cfdccd" }}>
+          <p className="text-[13px]" style={{ color: "#22452a" }}>
+            <strong>You upload; PBA verifies.</strong> Nothing on this screen reaches the founder until Prime Bottomline has checked it.
+          </p>
+        </div>
+
         <MisUploadCard companyId={company.id} period={period} initial={misState} />
+
+        <FilingsTable companyId={company.id} period={period} filings={filings} />
 
         <section className="mb-10">
           <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>

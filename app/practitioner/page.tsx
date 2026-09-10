@@ -5,6 +5,7 @@ import { getCurrentAppUser, needsOnboarding, DEV_BYPASS_AUTH } from "@/lib/auth"
 import type { Company, DocItem, Deliverable } from "@/lib/types";
 import PractitionerView from "./PractitionerView";
 import { getMisState } from "./mis-actions";
+import type { Obligation } from "@/lib/types";
 
 export default async function PractitionerPage() {
   const appUser = await getCurrentAppUser();
@@ -39,6 +40,16 @@ export default async function PractitionerPage() {
 
   const misState = await getMisState(companyId, period);
 
+  // The filings table on the desk is this month's practitioner-owned work only —
+  // the full multi-year calendar lives on /year.
+  const { data: filings } = await supabase
+    .from("obligation")
+    .select("*")
+    .eq("company_id", companyId)
+    .eq("period", period)
+    .eq("owner", "practitioner")
+    .order("statutory_due_date", { ascending: true });
+
   return (
     <PractitionerView
       company={company as Company}
@@ -47,6 +58,7 @@ export default async function PractitionerPage() {
       currentUser={{ name: appUser.name, position: appUser.position, role: "practitioner" }}
       period={period}
       misState={misState}
+      filings={(filings ?? []) as Obligation[]}
     />
   );
 }
