@@ -78,7 +78,7 @@ export default async function FounderDashboardPage() {
             Back to checklist
           </Link>
           <div style={{ width: 1, height: 28, background: "var(--rule)" }} />
-          <UserMenu user={{ name: appUser.name, position: appUser.position, role: "founder" }} />
+          <UserMenu user={{ id: appUser.id, name: appUser.name, position: appUser.position, role: "founder" }} />
         </div>
       </header>
       <main className="mx-auto w-full max-w-[900px] px-5 py-8 md:px-8">

@@ -23,7 +23,7 @@ export default async function PractitionerDashboardPage() {
       company={company as Company}
       period={period}
       history={history}
-      currentUser={{ name: appUser.name, position: appUser.position, role: "practitioner" }}
+      currentUser={{ id: appUser.id, name: appUser.name, position: appUser.position, role: "practitioner" }}
     />
   );
 }

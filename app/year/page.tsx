@@ -22,7 +22,7 @@ export default async function YearPage() {
   return (
     <YearView
       company={company as Company}
-      currentUser={{ name: appUser.name, position: appUser.position, role: appUser.role }}
+      currentUser={{ id: appUser.id, name: appUser.name, position: appUser.position, role: appUser.role }}
       obligations={obligations}
       financialYearStart={company?.financial_year_start ?? "2026-04-01"}
     />

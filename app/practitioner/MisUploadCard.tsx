@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { safeStorageSegment } from "@/lib/storagePath";
-import { submitMisUpload, submitToPBA, uploadSignedPdf } from "./mis-actions";
+import { submitMisUpload, submitToPBA, uploadSignedPdf, deleteMisUpload } from "./mis-actions";
 import type { PeriodFiguresState } from "@/lib/types";
 
 type MisState = {
@@ -24,6 +24,7 @@ export default function MisUploadCard({
   initial: MisState;
 }) {
   const [state, setState] = useState(initial);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -83,11 +84,38 @@ export default function MisUploadCard({
     }
   }
 
+  async function handleDelete() {
+    if (!state) return;
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      await deleteMisUpload(state.id);
+      window.location.reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete — try again.");
+      setBusy(false);
+    }
+  }
+
   return (
     <section className="mb-10">
-      <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>
-        The month&apos;s MIS
-      </p>
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-[13px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>
+          The month&apos;s MIS
+        </p>
+        <a
+          href="/mis-template-v1.0.xlsx"
+          download
+          className="text-[12px] font-semibold"
+          style={{ color: "var(--bottomline-green)" }}
+        >
+          Download the MIS template
+        </a>
+      </div>
       {state?.query_text && (
         <div className="mb-2 p-3" style={{ background: "#fdf3dd", border: "1px solid #e3d4a8" }}>
           <p className="text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: "#8a6412" }}>Query from PBA</p>
@@ -138,11 +166,29 @@ export default function MisUploadCard({
                 >
                   Replace file
                 </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={busy}
+                  className="btn-small"
+                  style={{ background: "transparent", border: "1px solid #8c1a1a", color: "#8c1a1a" }}
+                >
+                  {busy ? "Deleting…" : confirmingDelete ? "Confirm delete" : "Delete"}
+                </button>
               </div>
             ) : state.state === "submitted" ? (
-              <p className="mt-3 text-[12.5px] font-semibold" style={{ color: "var(--bottomline-green)" }}>
-                Submitted to PBA — not yet visible to the founder.
-              </p>
+              <div className="mt-3 flex items-center gap-3">
+                <p className="text-[12.5px] font-semibold" style={{ color: "var(--bottomline-green)" }}>
+                  Submitted to PBA — not yet visible to the founder.
+                </p>
+                <button
+                  onClick={handleDelete}
+                  disabled={busy}
+                  className="text-[11.5px] font-semibold"
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "#8c1a1a" }}
+                >
+                  {busy ? "Deleting…" : confirmingDelete ? "Confirm delete" : "Delete"}
+                </button>
+              </div>
             ) : (
               <p className="mt-3 text-[12.5px] font-semibold" style={{ color: "var(--bottomline-green)" }}>
                 Published — visible on the founder&apos;s dashboard.

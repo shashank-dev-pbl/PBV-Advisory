@@ -2,14 +2,17 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Circle, CircleCheck, ArrowRight, LayoutDashboard, CalendarDays } from "lucide-react";
+import { CircleCheck, ArrowRight, LayoutDashboard, CalendarDays } from "lucide-react";
 import { currentPeriod, formatPeriodLabel } from "@/lib/period";
 import type { Company, DocItem, DocItemMessage, Deliverable } from "@/lib/types";
 import { acceptItem, markNotApplicable, sendPractitionerMessage, markPractitionerRead } from "./actions";
 import { FileRow, VersionHistory, sortedFiles, sortedMessages, hasUnreadFor, isResolved, isReceived, ChatPopover, MessageButton, UserMenu, type ChatMessage, type CurrentUser } from "../founder/FounderView";
 import MisUploadCard from "./MisUploadCard";
 import FilingsTable from "./FilingsTable";
+import DecisionHistory from "./DecisionHistory";
 import type { Obligation } from "@/lib/types";
+
+type TeamUser = { id: string; name: string | null; role: string };
 
 function daysAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -24,6 +27,7 @@ export default function PractitionerView({
   period,
   misState,
   filings,
+  teamUsers,
 }: {
   company: Company;
   docItems: DocItem[];
@@ -32,15 +36,10 @@ export default function PractitionerView({
   period: string;
   misState: Parameters<typeof MisUploadCard>[0]["initial"];
   filings: Obligation[];
+  teamUsers: TeamUser[];
 }) {
   const [items, setItems] = useState(docItems);
   const [dlvs, setDlvs] = useState(deliverables);
-
-  const byCode = useMemo(() => {
-    const m = new Map<string, DocItem>();
-    for (const i of items) m.set(i.code, i);
-    return m;
-  }, [items]);
 
   const received = items.filter((i) => isReceived(i.status)).length;
   const total = items.length;
@@ -51,27 +50,12 @@ export default function PractitionerView({
     ? [...outstanding].sort((a, b) => new Date(a.requested_at).getTime() - new Date(b.requested_at).getTime())[0]
     : null;
 
-  // Deliverable status is derived from doc_item acceptance, same rule as the DB trigger.
-  // Recomputing it locally means "What I can work on" updates the instant an item is accepted,
-  // instead of waiting for a full page reload to see the server-side trigger's result.
-  const derivedDeliverables = useMemo(() => {
-    const resolvedCodes = new Set(items.filter((i) => isResolved(i.status)).map((i) => i.code));
-    return dlvs.map((d) => {
-      if (d.status === "in_progress" || d.status === "delivered") return d;
-      const allResolved = d.input_codes.every((c) => resolvedCodes.has(c));
-      return { ...d, status: allResolved ? "ready" : "blocked" } as Deliverable;
-    });
-  }, [dlvs, items]);
-
-  const canWorkOn = derivedDeliverables.filter((d) => d.status === "ready" || d.status === "in_progress");
-  const waitingOnClient = derivedDeliverables.filter((d) => d.status === "blocked");
-  const delivered = derivedDeliverables.filter((d) => d.status === "delivered");
+  // Deliverable status is derived from doc_item acceptance, same rule as the DB trigger —
+  // only "Delivered" is still shown here, the ready/blocked states moved to decision history.
+  const delivered = useMemo(() => dlvs.filter((d) => d.status === "delivered"), [dlvs]);
 
   function patchItem(id: string, patch: Partial<DocItem>) {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
-  }
-  function patchDeliverable(id: string, patch: Partial<Deliverable>) {
-    setDlvs((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
   }
 
   return (
@@ -129,85 +113,13 @@ export default function PractitionerView({
           ) : (
             <div className="flex flex-col gap-2">
               {inbox.map((item) => (
-                <InboxRow key={item.id} item={item} companyId={company.id} onPatch={patchItem} />
+                <InboxRow key={item.id} item={item} companyId={company.id} currentUserId={currentUser.id} onPatch={patchItem} />
               ))}
             </div>
           )}
         </section>
 
-        <div className="grid gap-8 md:grid-cols-2">
-          <section>
-            <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>
-              What I can work on
-            </p>
-            {canWorkOn.length === 0 ? (
-              <p className="text-[13px]" style={{ color: "var(--ink-secondary)" }}>Nothing ready yet.</p>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {canWorkOn.map((d) => (
-                  <ReadyDeliverableRow
-                    key={d.id}
-                    deliverable={d}
-                    inputs={d.input_codes.map((code) => byCode.get(code)).filter((i): i is DocItem => !!i)}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section>
-            <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>
-              Waiting on client
-            </p>
-            {waitingOnClient.length === 0 ? (
-              <p className="text-[13px]" style={{ color: "var(--ink-secondary)" }}>Nothing blocked.</p>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {waitingOnClient.map((d) => {
-                  const inputs = d.input_codes
-                    .map((code) => byCode.get(code))
-                    .filter((i): i is DocItem => !!i);
-                  return (
-                    <div key={d.id} className="p-4" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>
-                      <div className="flex items-center justify-between">
-                        <p className="flex items-center gap-1.5 text-[13px] font-bold" style={{ color: "var(--ink)" }}>
-                          <Circle size={14} strokeWidth={1.75} style={{ color: "var(--status-query)" }} />
-                          {d.title}
-                        </p>
-                        {d.due_date && (
-                          <span className="text-[11px]" style={{ color: "var(--ink-secondary)" }}>
-                            due {new Date(d.due_date).toLocaleDateString()}
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-2 flex flex-col gap-1">
-                        {inputs.map((m) => {
-                          const done = isResolved(m.status);
-                          return (
-                            <p
-                              key={m.id}
-                              className="flex items-center gap-1.5 text-[12px]"
-                              style={{ color: done ? "var(--status-accepted)" : "var(--status-query)" }}
-                            >
-                              {done ? (
-                                <CircleCheck size={12} strokeWidth={1.75} />
-                              ) : (
-                                <Circle size={12} strokeWidth={1.75} />
-                              )}
-                              <span style={{ textDecoration: done ? "line-through" : "none", opacity: done ? 0.75 : 1 }}>
-                                {m.title}
-                              </span>
-                            </p>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-        </div>
+        <DecisionHistory items={items} teamUsers={teamUsers} />
 
         <section className="mt-10 border-t pt-5" style={{ borderColor: "var(--rule)" }}>
           <p className="text-[13px] font-bold" style={{ color: "var(--ink)" }}>
@@ -244,10 +156,12 @@ export default function PractitionerView({
 function InboxRow({
   item,
   companyId,
+  currentUserId,
   onPatch,
 }: {
   item: DocItem;
   companyId: string;
+  currentUserId: string;
   onPatch: (id: string, patch: Partial<DocItem>) => void;
 }) {
   const [markingNa, setMarkingNa] = useState(false);
@@ -258,7 +172,7 @@ function InboxRow({
   async function handleAccept() {
     setBusy(true);
     await acceptItem(item.id);
-    onPatch(item.id, { status: "accepted", accepted_at: new Date().toISOString() });
+    onPatch(item.id, { status: "accepted", accepted_at: new Date().toISOString(), accepted_by: currentUserId });
     setBusy(false);
   }
 
@@ -291,7 +205,7 @@ function InboxRow({
     if (!text) return;
     setBusy(true);
     await markNotApplicable(item.id, text);
-    onPatch(item.id, { status: "not_applicable", na_reason: text });
+    onPatch(item.id, { status: "not_applicable", na_reason: text, na_at: new Date().toISOString(), na_by: currentUserId });
     setBusy(false);
     setMarkingNa(false);
   }
@@ -389,56 +303,3 @@ function InboxRow({
   );
 }
 
-function ReadyDeliverableRow({
-  deliverable,
-  inputs,
-}: {
-  deliverable: Deliverable;
-  inputs: DocItem[];
-}) {
-  return (
-    <div className="p-4" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>
-      <div className="flex items-center justify-between">
-        <p className="flex items-center gap-1.5 text-[13px] font-bold" style={{ color: "var(--ink)" }}>
-          <CircleCheck size={14} strokeWidth={1.75} style={{ color: "var(--status-accepted)" }} />
-          {deliverable.title}
-        </p>
-        {deliverable.due_date && (
-          <span className="text-[11px]" style={{ color: "var(--ink-secondary)" }}>
-            due {new Date(deliverable.due_date).toLocaleDateString()}
-          </span>
-        )}
-      </div>
-      <div className="mt-2 flex flex-col gap-1.5">
-        {inputs.map((i) => {
-          const files = sortedFiles(i.doc_file);
-          if (files.length > 0) {
-            return (
-              <div key={i.id}>
-                <p className="mb-0.5 text-[10px] font-semibold" style={{ color: "var(--ink-secondary)" }}>{i.title}</p>
-                {(i.allows_multiple ? files : files.slice(0, 1)).map((f) => (
-                  <div key={f.id}>
-                    {f.label && (
-                      <p className="mb-0.5 text-[9px] font-semibold uppercase tracking-[0.04em]" style={{ color: "var(--ink-secondary)" }}>
-                        {f.label}
-                      </p>
-                    )}
-                    <FileRow filename={f.filename} storagePath={f.storage_path} />
-                  </div>
-                ))}
-              </div>
-            );
-          }
-          if (i.status === "not_applicable") {
-            return (
-              <p key={i.id} className="text-[11px]" style={{ color: "var(--ink-secondary)" }}>
-                {i.title} — not applicable{i.na_reason ? `: ${i.na_reason}` : ""}
-              </p>
-            );
-          }
-          return null;
-        })}
-      </div>
-    </div>
-  );
-}

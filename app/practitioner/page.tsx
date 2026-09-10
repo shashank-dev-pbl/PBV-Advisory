@@ -31,6 +31,11 @@ export default async function PractitionerPage() {
     .in("period", ["ONCE", period])
     .order("requested_at", { ascending: true });
 
+  const { data: teamUsers } = await supabase
+    .from("app_user")
+    .select("id, name, role")
+    .eq("company_id", companyId);
+
   const { data: deliverables } = await supabase
     .from("deliverable")
     .select("*")
@@ -55,10 +60,11 @@ export default async function PractitionerPage() {
       company={company as Company}
       docItems={(docItems ?? []) as DocItem[]}
       deliverables={(deliverables ?? []) as Deliverable[]}
-      currentUser={{ name: appUser.name, position: appUser.position, role: "practitioner" }}
+      currentUser={{ id: appUser.id, name: appUser.name, position: appUser.position, role: "practitioner" }}
       period={period}
       misState={misState}
       filings={(filings ?? []) as Obligation[]}
+      teamUsers={teamUsers ?? []}
     />
   );
 }

@@ -59,11 +59,13 @@ function PrioritySection({
   title,
   items,
   companyId,
+  currentUserId,
   onPatch,
 }: {
   title: string;
   items: DocItem[];
   companyId: string;
+  currentUserId: string;
   onPatch: (id: string, patch: Partial<DocItem>) => void;
 }) {
   const grouped = useMemo(() => groupItems(items), [items]);
@@ -87,7 +89,7 @@ function PrioritySection({
             </p>
             <div className="flex flex-col gap-0.5">
               {groupItemsList.map((item) => (
-                <ChecklistRow key={item.id} item={item} companyId={companyId} onPatch={onPatch} />
+                <ChecklistRow key={item.id} item={item} companyId={companyId} currentUserId={currentUserId} onPatch={onPatch} />
               ))}
             </div>
           </div>
@@ -97,7 +99,7 @@ function PrioritySection({
   );
 }
 
-export type CurrentUser = { name: string | null; position: string | null; role: "founder" | "practitioner" | "pba" };
+export type CurrentUser = { id: string; name: string | null; position: string | null; role: "founder" | "practitioner" | "pba" };
 
 export default function FounderView({
   company,
@@ -196,18 +198,21 @@ export default function FounderView({
             title="Essentials"
             items={items.filter((i) => i.priority === "must")}
             companyId={company.id}
+            currentUserId={currentUser.id}
             onPatch={patchItem}
           />
           <PrioritySection
             title="Good to have"
             items={items.filter((i) => i.priority === "good")}
             companyId={company.id}
+            currentUserId={currentUser.id}
             onPatch={patchItem}
           />
           <PrioritySection
             title="Cosmetic"
             items={items.filter((i) => i.priority === "cosmetic")}
             companyId={company.id}
+            currentUserId={currentUser.id}
             onPatch={patchItem}
           />
         </div>
@@ -575,10 +580,12 @@ export function ChatPopover({
 function ChecklistRow({
   item,
   companyId,
+  currentUserId,
   onPatch,
 }: {
   item: DocItem;
   companyId: string;
+  currentUserId: string;
   onPatch: (id: string, patch: Partial<DocItem>) => void;
 }) {
   const [uploading, setUploading] = useState(false);
@@ -655,7 +662,7 @@ function ChecklistRow({
     }
     setNilBusy(true);
     await markNilReturn(item.id);
-    onPatch(item.id, { status: "not_applicable", na_reason: "Founder confirmed — none to report" });
+    onPatch(item.id, { status: "not_applicable", na_reason: "Founder confirmed — none to report", na_at: new Date().toISOString(), na_by: currentUserId });
     setNilBusy(false);
     setExpanded(false);
   }

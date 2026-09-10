@@ -41,7 +41,7 @@ export default async function FounderPage() {
       company={company as Company}
       docItems={(docItems ?? []) as DocItem[]}
       deliveredItems={(deliverables ?? []) as Deliverable[]}
-      currentUser={{ name: appUser.name, position: appUser.position, role: "founder" }}
+      currentUser={{ id: appUser.id, name: appUser.name, position: appUser.position, role: "founder" }}
     />
   );
 }

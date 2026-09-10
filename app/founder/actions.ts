@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireRole } from "@/lib/permissions";
 
 export async function recordUpload(docItemId: string, storagePath: string, filename: string, label?: string) {
   const supabase = await createClient();
@@ -53,10 +54,17 @@ export async function deleteFile(docFileId: string, docItemId: string) {
 }
 
 export async function markNilReturn(docItemId: string) {
+  const appUser = await requireRole("founder");
   const supabase = await createClient();
   await supabase
     .from("doc_item")
-    .update({ status: "not_applicable", na_reason: "Founder confirmed — none to report", query_text: null })
+    .update({
+      status: "not_applicable",
+      na_reason: "Founder confirmed — none to report",
+      na_at: new Date().toISOString(),
+      na_by: appUser.id,
+      query_text: null,
+    })
     .eq("id", docItemId);
   revalidatePath("/founder");
   revalidatePath("/practitioner");

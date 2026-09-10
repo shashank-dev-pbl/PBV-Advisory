@@ -25,7 +25,7 @@ export default async function PBAPage() {
   return (
     <PBAView
       company={company as Company}
-      currentUser={{ name: appUser.name, position: appUser.position, role: "pba" }}
+      currentUser={{ id: appUser.id, name: appUser.name, position: appUser.position, role: "pba" }}
       period={period}
       review={review}
     />

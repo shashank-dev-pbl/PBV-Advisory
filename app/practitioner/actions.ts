@@ -2,12 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireRole } from "@/lib/permissions";
 
 export async function acceptItem(docItemId: string) {
+  const appUser = await requireRole("practitioner");
   const supabase = await createClient();
   const { error } = await supabase
     .from("doc_item")
-    .update({ status: "accepted", accepted_at: new Date().toISOString(), query_text: null })
+    .update({ status: "accepted", accepted_at: new Date().toISOString(), accepted_by: appUser.id, query_text: null })
     .eq("id", docItemId);
   if (error) throw error;
 
@@ -16,12 +18,15 @@ export async function acceptItem(docItemId: string) {
 }
 
 export async function markNotApplicable(docItemId: string, reason: string) {
+  const appUser = await requireRole("practitioner");
   const supabase = await createClient();
   const { error } = await supabase
     .from("doc_item")
     .update({
       status: "not_applicable",
       na_reason: reason,
+      na_at: new Date().toISOString(),
+      na_by: appUser.id,
       query_text: null,
     })
     .eq("id", docItemId);

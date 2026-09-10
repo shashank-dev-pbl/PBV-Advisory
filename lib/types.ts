@@ -59,6 +59,8 @@ export type DocItem = {
   query_text: string | null;
   reply_text: string | null;
   na_reason: string | null;
+  na_at: string | null;
+  na_by: string | null;
   description: string;
   priority: DocPriority;
   allows_multiple: boolean;
@@ -67,6 +69,7 @@ export type DocItem = {
   requested_at: string;
   uploaded_at: string | null;
   accepted_at: string | null;
+  accepted_by: string | null;
   founder_last_read_at: string | null;
   practitioner_last_read_at: string | null;
   doc_file?: DocFile[];

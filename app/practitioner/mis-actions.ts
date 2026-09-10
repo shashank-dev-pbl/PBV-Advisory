@@ -137,6 +137,35 @@ export async function submitToPBA(periodFiguresId: string) {
   revalidatePath("/practitioner");
 }
 
+// Lets a mistaken upload be cleared out entirely — before publish only, since a
+// published month is live on the founder's dashboard and needs a correction
+// (re-upload → verify → publish again), not a silent delete.
+export async function deleteMisUpload(periodFiguresId: string) {
+  const appUser = await requireRole("practitioner");
+  const supabase = await createClient();
+
+  const { data: row } = await supabase
+    .from("period_figures")
+    .select("state, source_upload_id, pdf_storage_path")
+    .eq("id", periodFiguresId)
+    .eq("company_id", appUser.company_id)
+    .single();
+  if (!row) throw new Error("Not found");
+  if (row.state === "published") throw new Error("A published month can't be deleted — upload a correction instead.");
+
+  const { data: upload } = await supabase.from("mis_upload").select("file_path").eq("id", row.source_upload_id).single();
+  const pathsToRemove = [upload?.file_path, row.pdf_storage_path].filter((p): p is string => !!p);
+  if (pathsToRemove.length > 0) {
+    await supabase.storage.from("docs").remove(pathsToRemove);
+  }
+
+  const { error } = await supabase.from("period_figures").delete().eq("id", periodFiguresId);
+  if (error) throw error;
+  await supabase.from("mis_upload").delete().eq("id", row.source_upload_id);
+
+  revalidatePath("/practitioner");
+}
+
 // The signed PDF is optional and separate from the workbook the portal reads —
 // it's the version the founder actually downloads (mockup: "Other files for
 // this month" → "Signed MIS, PDF"). Attachable at any state, not gated.
