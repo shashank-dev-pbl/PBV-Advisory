@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Download, Trash2, TriangleAlert, MessageCircle, Send, X, LogOut, LayoutDashboard } from "lucide-react";
+import { Download, Trash2, TriangleAlert, MessageCircle, Send, X, LogOut, LayoutDashboard, CalendarDays } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { currentPeriod, formatPeriodLabel } from "@/lib/period";
 import { safeStorageSegment } from "@/lib/storagePath";
@@ -160,6 +160,14 @@ export default function FounderView({
             >
               <LayoutDashboard size={13} strokeWidth={1.75} />
               Dashboard
+            </Link>
+            <Link
+              href="/year"
+              className="btn-small"
+              style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)", gap: 6 }}
+            >
+              <CalendarDays size={13} strokeWidth={1.75} />
+              Year
             </Link>
             <div style={{ width: 1, height: 28, background: "var(--rule)" }} />
             <UserMenu user={currentUser} />

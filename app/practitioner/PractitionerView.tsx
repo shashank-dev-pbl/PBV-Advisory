@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Circle, CircleCheck, ArrowRight, LayoutDashboard } from "lucide-react";
+import { Circle, CircleCheck, ArrowRight, LayoutDashboard, CalendarDays } from "lucide-react";
 import { currentPeriod, formatPeriodLabel } from "@/lib/period";
 import type { Company, DocItem, DocItemMessage, Deliverable } from "@/lib/types";
 import { acceptItem, markNotApplicable, sendPractitionerMessage, markPractitionerRead } from "./actions";
@@ -90,6 +90,14 @@ export default function PractitionerView({
             >
               <LayoutDashboard size={13} strokeWidth={1.75} />
               Dashboard
+            </Link>
+            <Link
+              href="/year"
+              className="btn-small"
+              style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)", gap: 6 }}
+            >
+              <CalendarDays size={13} strokeWidth={1.75} />
+              Year
             </Link>
             <div style={{ width: 1, height: 28, background: "var(--rule)" }} />
             <UserMenu user={currentUser} />

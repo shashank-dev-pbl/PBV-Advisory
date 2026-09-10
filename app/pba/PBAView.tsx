@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { CalendarDays } from "lucide-react";
 import { UserMenu, type CurrentUser } from "../founder/FounderView";
 import { verifyAndPublish, sendBackWithQuery, type PBAReviewData } from "./actions";
 import { PERIOD_FIGURES_FIELDS, type PeriodFigures } from "@/lib/types";
@@ -72,7 +74,17 @@ export default function PBAView({
           <p className="eyebrow" style={{ color: "var(--bottomline-green)" }}>Prime Bottomline Advisory</p>
           <h1 className="text-[18px] font-extrabold">{company?.name} <span style={{ color: "var(--bottomline-green)" }}>· PBA</span></h1>
         </div>
-        <UserMenu user={currentUser} />
+        <div className="flex items-center gap-4">
+          <Link
+            href="/year"
+            className="btn-small"
+            style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)", gap: 6 }}
+          >
+            <CalendarDays size={13} strokeWidth={1.75} />
+            Year
+          </Link>
+          <UserMenu user={currentUser} />
+        </div>
       </header>
       <main className="mx-auto w-full max-w-[900px] px-5 py-8 md:px-8">
         {review ? (

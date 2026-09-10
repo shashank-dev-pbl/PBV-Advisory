@@ -201,6 +201,30 @@ export type MisUpload = {
   uploaded_at: string;
 };
 
+export type ObligationOwner = "founder" | "practitioner" | "pba";
+export type ObligationStatus = "pending" | "filed" | "verified";
+
+export type Obligation = {
+  id: string;
+  company_id: string;
+  name: string;
+  category: string;
+  fy: string;
+  period: string;
+  statutory_due_date: string;
+  owner: ObligationOwner;
+  status: ObligationStatus;
+  filed_on: string | null;
+  evidence_storage_path: string | null;
+  evidence_filename: string | null;
+  filed_by: string | null;
+  verified_by: string | null;
+  verified_at: string | null;
+  due_override: string | null;
+  override_reason: string | null;
+  created_at: string;
+};
+
 export type Deliverable = {
   id: string;
   company_id: string;

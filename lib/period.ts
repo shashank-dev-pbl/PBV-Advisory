@@ -21,3 +21,14 @@ export function formatPeriodLabel(period: string): string {
   const date = new Date(Number(y), Number(m) - 1, 1);
   return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
+
+// The "work" financial year a given month falls in — computed from the
+// company's FY start month/day, not stored, so it's never out of sync with
+// itself. "FY26" = the FY ending March 2026 (Indian convention: named for
+// the year it closes in), regardless of which calendar year it started.
+export function fyForPeriod(period: string, financialYearStart: string): string {
+  const [y, m] = period.split("-").map(Number);
+  const fyStartMonth = new Date(financialYearStart).getMonth(); // 0-indexed
+  const endYear = m - 1 >= fyStartMonth ? y + 1 : y;
+  return `FY${String(endYear).slice(-2)}`;
+}
