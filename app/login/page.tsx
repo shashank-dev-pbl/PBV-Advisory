@@ -11,6 +11,29 @@ export default function LoginPage() {
   const [status, setStatus] = useState<"idle" | "busy" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
+  // TEMPORARY — email test sign-in while phone OTP is blocked on Twilio.
+  // Remove this block and app/auth/callback/route.ts before merging to main.
+  const [testEmail, setTestEmail] = useState("");
+  const [testStatus, setTestStatus] = useState<"idle" | "busy" | "sent" | "error">("idle");
+  const [testError, setTestError] = useState("");
+
+  async function handleTestEmailSignIn(e: React.FormEvent) {
+    e.preventDefault();
+    setTestStatus("busy");
+    setTestError("");
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOtp({
+      email: testEmail.trim().toLowerCase(),
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) {
+      setTestError(error.message);
+      setTestStatus("error");
+      return;
+    }
+    setTestStatus("sent");
+  }
+
   async function handleSendCode(e: React.FormEvent) {
     e.preventDefault();
     setStatus("busy");
@@ -126,6 +149,36 @@ export default function LoginPage() {
             )}
           </form>
         )}
+
+        <div className="mt-10 border-t pt-6" style={{ borderColor: "var(--rule, #ddd)" }}>
+          <p className="text-[11px] font-bold uppercase tracking-[0.08em]" style={{ color: "#8c1a1a" }}>
+            Test sign-in — temporary, remove before launch
+          </p>
+          <p className="mt-1.5 text-[12.5px]" style={{ color: "var(--ink-secondary)" }}>
+            For testing only, while phone OTP is blocked on the SMS provider. Use an email already
+            registered on an app_user row (e.g. the practitioner test account).
+          </p>
+          {testStatus === "sent" ? (
+            <p className="mt-3 text-[13px]">Check <strong>{testEmail}</strong> for a sign-in link.</p>
+          ) : (
+            <form onSubmit={handleTestEmailSignIn} className="mt-3 flex flex-col gap-2">
+              <input
+                type="email"
+                required
+                placeholder="test-email@example.com"
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
+                className="input-field"
+              />
+              <button type="submit" disabled={testStatus === "busy"} className="btn-primary" style={{ background: "#8c1a1a" }}>
+                {testStatus === "busy" ? "Sending…" : "Send test sign-in link"}
+              </button>
+              {testStatus === "error" && (
+                <p className="text-[12px]" style={{ color: "#8c1a1a" }}>{testError}</p>
+              )}
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );
