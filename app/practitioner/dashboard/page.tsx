@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentAppUser, needsOnboarding, DEV_BYPASS_AUTH } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { currentPeriod } from "@/lib/period";
-import { getFinancialsHistory, getFinancialsForPeriod } from "../financials-actions";
+import { getPublishedHistory } from "@/lib/periodFiguresView";
 import PractitionerDashboardView from "./PractitionerDashboardView";
 import type { Company } from "@/lib/types";
 
@@ -16,16 +16,12 @@ export default async function PractitionerDashboardPage() {
   const { data: company } = await supabase.from("company").select("*").eq("id", appUser.company_id).single<Company>();
 
   const period = currentPeriod();
-  const [history, existing] = await Promise.all([
-    getFinancialsHistory(appUser.company_id, period, 6),
-    getFinancialsForPeriod(appUser.company_id, period),
-  ]);
+  const history = await getPublishedHistory(appUser.company_id, period, 6);
 
   return (
     <PractitionerDashboardView
       company={company as Company}
       period={period}
-      existing={existing}
       history={history}
       currentUser={{ name: appUser.name, position: appUser.position, role: "practitioner" }}
     />

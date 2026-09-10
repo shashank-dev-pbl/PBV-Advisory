@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/permissions";
-import { previousPeriods } from "@/lib/period";
+import { previousPeriods, formatPeriodLabel } from "@/lib/period";
+import { getPublishedHistory } from "@/lib/periodFiguresView";
+import { runwayMonths } from "@/lib/dashboardCalc";
+import { sendEmail } from "@/lib/resend";
 import type { PeriodFigures } from "@/lib/types";
 
 // Verify and publish happen as one action, matching the mockup's single
@@ -17,7 +20,7 @@ export async function verifyAndPublish(periodFiguresId: string) {
 
   const { data: row } = await supabase
     .from("period_figures")
-    .select("submitted_by")
+    .select("submitted_by, period")
     .eq("id", periodFiguresId)
     .single();
   if (!row) throw new Error("Not found");
@@ -39,6 +42,23 @@ export async function verifyAndPublish(periodFiguresId: string) {
     .eq("company_id", appUser.company_id)
     .eq("state", "submitted");
   if (error) throw error;
+
+  // Runway below 4 months fires an email alert to founder(s) and PBA, immediately, on publish.
+  const published = await getPublishedHistory(appUser.company_id, row.period, 3);
+  const { months } = runwayMonths(published);
+  if (months !== null && months < 4) {
+    const { data: recipients } = await supabase
+      .from("app_user")
+      .select("email")
+      .eq("company_id", appUser.company_id)
+      .in("role", ["founder", "pba"]);
+    const recipientEmails = (recipients ?? []).map((r) => r.email);
+    await sendEmail({
+      to: recipientEmails,
+      subject: `Runway alert — ${months.toFixed(1)} months (${formatPeriodLabel(row.period)})`,
+      html: `<p>Runway is ${months.toFixed(1)} months as of the ${formatPeriodLabel(row.period)} close, below the 4-month threshold.</p>`,
+    });
+  }
 
   revalidatePath("/pba");
   revalidatePath("/founder/dashboard");

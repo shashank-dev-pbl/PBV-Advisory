@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { getCurrentAppUser, needsOnboarding, DEV_BYPASS_AUTH } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { currentPeriod, formatPeriodLabel } from "@/lib/period";
-import { getFinancialsHistory } from "@/app/practitioner/financials-actions";
+import { getPublishedHistory } from "@/lib/periodFiguresView";
 import FinancialTiles from "@/app/dashboard/FinancialTiles";
 import { UserMenu } from "@/app/founder/FounderView";
 import type { Company } from "@/lib/types";
@@ -18,8 +18,7 @@ export default async function FounderDashboardPage() {
   const supabase = await createClient();
   const { data: company } = await supabase.from("company").select("*").eq("id", appUser.company_id).single<Company>();
 
-  const history = await getFinancialsHistory(appUser.company_id, currentPeriod(), 6);
-  const publishedHistory = history.filter((m) => m.status === "published");
+  const publishedHistory = await getPublishedHistory(appUser.company_id, currentPeriod(), 6);
 
   return (
     <div className="min-h-screen" style={{ background: "var(--paper)" }}>
