@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentAppUser, needsOnboarding, DEV_BYPASS_AUTH } from "@/lib/auth";
+import { currentPeriod } from "@/lib/period";
 import type { Company } from "@/lib/types";
 import PBAView from "./PBAView";
+import { getSubmittedForReview } from "./actions";
 
 export default async function PBAPage() {
   const appUser = await getCurrentAppUser();
@@ -17,10 +19,15 @@ export default async function PBAPage() {
     .eq("id", appUser.company_id)
     .single<Company>();
 
+  const period = currentPeriod();
+  const review = await getSubmittedForReview(appUser.company_id, period);
+
   return (
     <PBAView
       company={company as Company}
       currentUser={{ name: appUser.name, position: appUser.position, role: "pba" }}
+      period={period}
+      review={review}
     />
   );
 }

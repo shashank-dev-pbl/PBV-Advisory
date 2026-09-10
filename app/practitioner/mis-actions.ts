@@ -96,6 +96,7 @@ export async function submitMisUpload(params: {
       .from("period_figures")
       .update({
         source_upload_id: upload.id,
+        query_text: null,
         ...Object.fromEntries(PERIOD_FIGURES_FIELDS.map((f) => [f, result.figures[f]])),
       })
       .eq("id", existingActive.id)

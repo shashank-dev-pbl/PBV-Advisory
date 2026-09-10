@@ -9,6 +9,7 @@ import type { PeriodFiguresState } from "@/lib/types";
 type MisState = {
   id: string;
   state: PeriodFiguresState;
+  query_text: string | null;
   mis_upload: { filename: string; uploaded_at: string; template_version: string } | null;
 } | null;
 
@@ -61,6 +62,12 @@ export default function MisUploadCard({
       <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>
         The month&apos;s MIS
       </p>
+      {state?.query_text && (
+        <div className="mb-2 p-3" style={{ background: "#fdf3dd", border: "1px solid #e3d4a8" }}>
+          <p className="text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: "#8a6412" }}>Query from PBA</p>
+          <p className="mt-1 text-[13px]" style={{ color: "#4d3c14" }}>{state.query_text}</p>
+        </div>
+      )}
       <div className="p-4" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>
         {state?.mis_upload ? (
           <>

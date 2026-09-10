@@ -148,6 +148,7 @@ export type PeriodFigures = {
   version: number;
   state: PeriodFiguresState;
   source_upload_id: string;
+  query_text: string | null;
 
   cash_opening: number | null;
   cash_closing: number | null;
