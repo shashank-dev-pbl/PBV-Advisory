@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { normalizePhone } from "@/lib/phone";
+import { DEV_BYPASS_AUTH } from "@/lib/devBypass";
 
 export default function LoginPage() {
+  // Phone OTP isn't live while DEV_BYPASS_AUTH is on — bounce straight back
+  // rather than stranding anyone who lands here (a stale bookmark, a redirect
+  // loop) on a form that can't actually sign them in.
+  useEffect(() => {
+    if (DEV_BYPASS_AUTH) window.location.href = "/";
+  }, []);
+
   const [phoneInput, setPhoneInput] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"phone" | "code">("phone");

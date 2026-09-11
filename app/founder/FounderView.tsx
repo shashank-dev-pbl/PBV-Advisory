@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { currentPeriod, formatPeriodLabel } from "@/lib/period";
 import { safeStorageSegment } from "@/lib/storagePath";
 import { isResolved, isReceived } from "@/lib/docItemStatus";
+import { DEV_BYPASS_AUTH } from "@/lib/devBypass";
 import type { Company, DocItem, DocItemMessage, Deliverable } from "@/lib/types";
 import { recordUpload, deleteUpload, deleteFile, markNilReturn, sendFounderMessage, markFounderRead, saveRevenueInfo, getSignedDownloadUrl } from "./actions";
 
@@ -328,14 +329,18 @@ export function UserMenu({ user }: { user: CurrentUser }) {
         <p className="truncate text-[13px] font-bold" style={{ color: "var(--ink)" }}>{user.name ?? ROLE_LABEL[user.role]}</p>
         <p className="mt-0.5 text-[11px]" style={{ color: "var(--ink-secondary)" }}>{user.position ?? ROLE_LABEL[user.role]}</p>
       </div>
-      <button
-        onClick={handleSignOut}
-        aria-label="Sign out"
-        title="Sign out"
-        style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 4 }}
-      >
-        <LogOut size={18} strokeWidth={1.75} style={{ color: "var(--ink-secondary)" }} />
-      </button>
+      {/* Sign-out hidden while DEV_BYPASS_AUTH is on — phone OTP isn't live yet, so
+          signing out would strand whoever clicked it with no way back in. */}
+      {!DEV_BYPASS_AUTH && (
+        <button
+          onClick={handleSignOut}
+          aria-label="Sign out"
+          title="Sign out"
+          style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 4 }}
+        >
+          <LogOut size={18} strokeWidth={1.75} style={{ color: "var(--ink-secondary)" }} />
+        </button>
+      )}
     </div>
   );
 }

@@ -1,14 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import type { AppUser } from "@/lib/types";
+import { DEV_BYPASS_AUTH } from "@/lib/devBypass";
 
-// TEMPORARY — dev-only login bypass while phone OTP is blocked on Twilio.
-// Skips Supabase Auth entirely; matching anon-role RLS policies on the
-// relevant tables/storage bucket were reopened alongside this (see the
-// "dev_bypass" migration) so pages can still actually fetch/write data.
-// MUST be reverted (set to false, migration rolled back) before Twilio ships
-// or before any deploy to main — this exposes Xploro's real data to anyone
-// holding the public anon key, not just this app.
-export const DEV_BYPASS_AUTH = true;
+export { DEV_BYPASS_AUTH };
+
 const DEV_BYPASS_USER: AppUser = {
   id: "8ec4cd6e-e017-46e4-8ea6-e1abc69597d7",
   email: "shashank@primebottomline.vc",
