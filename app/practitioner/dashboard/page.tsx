@@ -14,6 +14,9 @@ export default async function PractitionerDashboardPage() {
 
   const supabase = await createClient();
   const { data: company } = await supabase.from("company").select("*").eq("id", appUser.company_id).single<Company>();
+  // A transient Supabase blip surfaces here as a null row, not a thrown error —
+  // bounce home instead of crashing the page on it.
+  if (!company) redirect("/");
 
   const period = currentPeriod();
   const history = await getPublishedHistory(appUser.company_id, period, 6);

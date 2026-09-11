@@ -19,6 +19,9 @@ export default async function FounderPage() {
     .select("*")
     .eq("id", companyId)
     .single<Company>();
+  // A transient Supabase blip surfaces here as a null row, not a thrown error —
+  // bounce home instead of crashing the page on it.
+  if (!company) redirect("/");
 
   const period = currentPeriod();
 

@@ -18,6 +18,9 @@ export default async function PBAPage() {
     .select("*")
     .eq("id", appUser.company_id)
     .single<Company>();
+  // A transient Supabase blip surfaces here as a null row, not a thrown error —
+  // bounce home instead of crashing the page on it.
+  if (!company) redirect("/");
 
   const period = currentPeriod();
   const review = await getSubmittedForReview(appUser.company_id, period);
