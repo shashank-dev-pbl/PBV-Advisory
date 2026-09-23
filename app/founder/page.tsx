@@ -4,6 +4,7 @@ import { currentPeriod } from "@/lib/period";
 import { getCurrentAppUser, needsOnboarding, DEV_BYPASS_AUTH } from "@/lib/auth";
 import type { Company, DocItem, Deliverable } from "@/lib/types";
 import FounderView from "./FounderView";
+import DataUnavailable from "../data-unavailable";
 
 export default async function FounderPage() {
   const appUser = await getCurrentAppUser();
@@ -19,9 +20,11 @@ export default async function FounderPage() {
     .select("*")
     .eq("id", companyId)
     .single<Company>();
-  // A transient Supabase blip surfaces here as a null row, not a thrown error —
-  // bounce home instead of crashing the page on it.
-  if (!company) redirect("/");
+  // A transient Supabase blip (or the free-tier project waking from auto-pause)
+  // surfaces here as a null row, not a thrown error. Show a retry message
+  // instead of redirecting home — redirecting back into a role's own route
+  // just loops, since it would immediately redirect right back here.
+  if (!company) return <DataUnavailable />;
 
   const period = currentPeriod();
 
