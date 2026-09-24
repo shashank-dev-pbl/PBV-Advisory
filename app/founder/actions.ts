@@ -107,7 +107,7 @@ export async function sendFounderMessage(docItemId: string, body: string) {
     .update({ status: "uploaded", founder_last_read_at: new Date().toISOString() })
     .eq("id", docItemId)
     .eq("status", "query");
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   revalidatePath("/founder");
   revalidatePath("/practitioner");
@@ -132,7 +132,7 @@ export async function saveRevenueInfo(companyId: string, revenueClassification: 
       gross_net_billing: grossNetBilling,
     })
     .eq("id", companyId);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   revalidatePath("/founder");
   revalidatePath("/practitioner");
@@ -141,6 +141,6 @@ export async function saveRevenueInfo(companyId: string, revenueClassification: 
 export async function getSignedDownloadUrl(storagePath: string) {
   const supabase = await createClient();
   const { data, error } = await supabase.storage.from("docs").createSignedUrl(storagePath, 60 * 10);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data.signedUrl;
 }

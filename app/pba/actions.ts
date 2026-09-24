@@ -41,7 +41,7 @@ export async function verifyAndPublish(periodFiguresId: string) {
     .eq("id", periodFiguresId)
     .eq("company_id", appUser.company_id)
     .eq("state", "submitted");
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   // Runway below 4 months fires an email alert to founder(s) and PBA, immediately, on publish.
   const published = await getPublishedHistory(appUser.company_id, row.period, 3);
@@ -74,7 +74,7 @@ export async function sendBackWithQuery(periodFiguresId: string, queryText: stri
     .eq("id", periodFiguresId)
     .eq("company_id", appUser.company_id)
     .eq("state", "submitted");
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   revalidatePath("/pba");
   revalidatePath("/practitioner");

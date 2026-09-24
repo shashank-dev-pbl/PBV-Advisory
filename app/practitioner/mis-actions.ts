@@ -132,7 +132,7 @@ export async function submitToPBA(periodFiguresId: string) {
     .eq("id", periodFiguresId)
     .eq("state", "draft")
     .eq("company_id", appUser.company_id);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   revalidatePath("/practitioner");
 }
@@ -160,7 +160,7 @@ export async function deleteMisUpload(periodFiguresId: string) {
   }
 
   const { error } = await supabase.from("period_figures").delete().eq("id", periodFiguresId);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   await supabase.from("mis_upload").delete().eq("id", row.source_upload_id);
 
   revalidatePath("/practitioner");
@@ -178,7 +178,7 @@ export async function uploadSignedPdf(params: { periodFiguresId: string; storage
     .update({ pdf_storage_path: params.storagePath, pdf_filename: params.filename })
     .eq("id", params.periodFiguresId)
     .eq("company_id", appUser.company_id);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   revalidatePath("/practitioner");
   revalidatePath("/founder/dashboard");

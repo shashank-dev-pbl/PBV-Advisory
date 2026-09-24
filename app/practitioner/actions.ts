@@ -11,7 +11,7 @@ export async function acceptItem(docItemId: string) {
     .from("doc_item")
     .update({ status: "accepted", accepted_at: new Date().toISOString(), accepted_by: appUser.id, query_text: null })
     .eq("id", docItemId);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   revalidatePath("/practitioner");
   revalidatePath("/founder");
@@ -30,7 +30,7 @@ export async function markNotApplicable(docItemId: string, reason: string) {
       query_text: null,
     })
     .eq("id", docItemId);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   revalidatePath("/practitioner");
   revalidatePath("/founder");
@@ -49,7 +49,7 @@ export async function sendPractitionerMessage(docItemId: string, body: string) {
     .update({ status: "query", practitioner_last_read_at: new Date().toISOString() })
     .eq("id", docItemId)
     .not("status", "in", "(accepted,not_applicable)");
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   revalidatePath("/practitioner");
   revalidatePath("/founder");
@@ -75,7 +75,7 @@ export async function recordDeliverableUpload(deliverableId: string, storagePath
       delivered_at: new Date().toISOString(),
     })
     .eq("id", deliverableId);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   revalidatePath("/practitioner");
   revalidatePath("/founder");
@@ -84,6 +84,6 @@ export async function recordDeliverableUpload(deliverableId: string, storagePath
 export async function getSignedDownloadUrl(storagePath: string) {
   const supabase = await createClient();
   const { data, error } = await supabase.storage.from("docs").createSignedUrl(storagePath, 60 * 10);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return data.signedUrl;
 }

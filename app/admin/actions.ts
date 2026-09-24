@@ -123,7 +123,7 @@ export async function addTeamMember(params: {
     firm_name: params.firmName || null,
     ...(params.role === "pba" ? { can_verify: true, can_publish: true } : {}),
   });
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   revalidatePath("/admin");
 }

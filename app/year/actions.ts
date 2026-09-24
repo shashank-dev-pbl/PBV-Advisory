@@ -44,7 +44,7 @@ export async function markFiled(params: {
     })
     .eq("id", params.obligationId)
     .eq("company_id", appUser.company_id);
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   revalidatePath("/year");
 }
@@ -65,7 +65,7 @@ export async function verifyFiling(obligationId: string) {
     .eq("id", obligationId)
     .eq("company_id", appUser.company_id)
     .eq("status", "filed");
-  if (error) throw error;
+  if (error) throw new Error(error.message);
 
   revalidatePath("/year");
 }
