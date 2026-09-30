@@ -115,8 +115,8 @@ export default async function FounderDashboardPage() {
           </div>
 
           <div className="flex items-center gap-4 p-4" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 }}>
-            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full" style={{ background: "var(--green-soft, #e8efe6)" }}>
-              <span style={{ color: "var(--bottomline-green)", fontSize: 20 }}>✓</span>
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full" style={{ background: "var(--bottomline-green)" }}>
+              <span style={{ color: "var(--paper)", fontSize: 20 }}>✓</span>
             </div>
             <div className="flex-1">
               <p className="text-[10.5px] font-bold uppercase tracking-[0.06em]" style={{ color: "var(--ink-secondary)" }}>What you get from us</p>
@@ -175,8 +175,8 @@ export default async function FounderDashboardPage() {
                             fontWeight: 600,
                             padding: "3px 9px",
                             borderRadius: 20,
-                            background: i === 0 ? "var(--green-soft, #e8efe6)" : "var(--paper)",
-                            color: i === 0 ? "var(--bottomline-green)" : "var(--ink-secondary)",
+                            background: i === 0 ? "var(--bottomline-green)" : "var(--paper)",
+                            color: i === 0 ? "var(--paper)" : "var(--ink-secondary)",
                           }}
                         >
                           {i === 0 ? "New" : "Opened"}
