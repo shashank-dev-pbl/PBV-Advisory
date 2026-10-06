@@ -121,8 +121,8 @@ function Standard({ companyId, canEdit, kinds, stdDocs }: Props) {
               const versions = byKind[k.code] ?? [];
               const cur = versions[0];
               return (
-                <div key={k.code} className="p-3" style={box}>
-                  <div className="flex items-center gap-3">
+                <div key={k.code} className="min-w-0 p-3" style={box}>
+                  <div className="flex flex-wrap items-center gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[13.5px] font-semibold">{k.label}</div>
                       <div className="text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>

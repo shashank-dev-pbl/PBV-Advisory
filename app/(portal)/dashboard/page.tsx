@@ -135,7 +135,7 @@ export default async function DashboardPage() {
         {deliverables.length > 0 && (
           <section id="deliverables" className="mt-10">
             <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>Everything we have given you</p>
-            <table className="w-full" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderCollapse: "separate", borderRadius: 10, overflow: "hidden" }}>
+            <div className="overflow-x-auto"><table className="w-full" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderCollapse: "separate", borderRadius: 10, overflow: "hidden" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--rule)" }}>
                   <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em]" style={{ color: "var(--ink-secondary)" }}>Document</th>
@@ -178,7 +178,7 @@ export default async function DashboardPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </section>
         )}
 
