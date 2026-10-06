@@ -67,7 +67,7 @@ export default async function DashboardPage() {
           ? `Figures for ${formatPeriodLabel(latestDeliverable.period)} · published ${latestDeliverable.published_at ? new Date(latestDeliverable.published_at).toLocaleDateString() : ""}`
           : formatPeriodLabel(closePeriod())}
       />
-      <div className="mx-auto w-full max-w-[1100px] px-5 py-8 md:px-8">
+      <div className="mx-auto w-full max-w-[1280px] px-5 py-8 md:px-8">
         <div className="mb-8 grid gap-3.5 md:grid-cols-2">
           <div className="flex items-center gap-4 p-4" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 }}>
             <CircularProgress pct={mustTotal > 0 ? Math.round((mustResolved / mustTotal) * 100) : 0} label={`${mustResolved}/${mustTotal}`} />

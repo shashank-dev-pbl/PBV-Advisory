@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Lock, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { PAGES, canOpen, type PageKey, type Who } from "@/lib/access";
 import { switchCompany } from "./actions";
 
@@ -15,27 +15,28 @@ type Props = {
   children: React.ReactNode;
 };
 
-function NavItem({ page, who, pathname, extra, child, onNavigate }: {
-  page: PageKey; who: Who; pathname: string; extra?: React.ReactNode; child?: boolean; onNavigate: () => void;
+// Only the pages this person can open appear at all — no greyed-out, locked entries.
+function NavItem({ page, who, pathname, extra, label, href, matchPrefix, onNavigate }: {
+  page: PageKey; who: Who; pathname: string; extra?: React.ReactNode; label?: string; href?: string; matchPrefix?: string; onNavigate: () => void;
 }) {
+  if (!canOpen(who, page)) return null;
   const p = PAGES[page];
-  const on = pathname === p.href || pathname.startsWith(p.href + "/");
-  const locked = !canOpen(who, page);
+  const on = matchPrefix ? pathname.startsWith(matchPrefix) : pathname === p.href || pathname.startsWith(p.href + "/");
   return (
     <Link
-      href={p.href}
+      href={href ?? p.href}
       onClick={onNavigate}
       className="flex items-center justify-between text-[13.5px]"
       style={{
-        padding: child ? "7px 12px 7px 28px" : "8px 12px",
+        padding: "8px 12px",
         borderRadius: 7,
-        color: on ? "var(--paper)" : locked ? "var(--ink-secondary)" : "var(--ink)",
+        color: on ? "var(--paper)" : "var(--ink)",
         background: on ? "var(--bottomline-green)" : "transparent",
         fontWeight: on ? 700 : 500,
       }}
     >
-      <span>{p.label}</span>
-      {locked ? <Lock size={12} strokeWidth={1.75} aria-label="No access" /> : extra}
+      <span>{label ?? p.label}</span>
+      {extra}
     </Link>
   );
 }
@@ -69,11 +70,7 @@ export default function PortalShell({ who, companies, companyId, closeWaiting, c
 
       <NavItem page="home" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="dashboard" who={who} pathname={pathname} onNavigate={close} />
-      <p className="px-3 pb-0.5 pt-2 text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: "var(--ink-secondary)" }}>Uploads</p>
-      <NavItem page="up-once" who={who} pathname={pathname} onNavigate={close} child />
-      <NavItem page="up-month" who={who} pathname={pathname} onNavigate={close} child />
-      <NavItem page="up-qy" who={who} pathname={pathname} onNavigate={close} child />
-      <div style={{ height: 6 }} />
+      <NavItem page="up-month" who={who} pathname={pathname} onNavigate={close} label="Uploads" href="/uploads/month" matchPrefix="/uploads" />
       <NavItem
         page="close" who={who} pathname={pathname} onNavigate={close}
         extra={closeWaiting > 0 ? (
@@ -83,8 +80,12 @@ export default function PortalShell({ who, companies, companyId, closeWaiting, c
       <NavItem page="filings" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="files" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="dataroom" who={who} pathname={pathname} onNavigate={close} />
-      <div className="my-2" style={{ borderTop: "1px solid var(--rule)" }} />
-      <p className="px-3 pb-0.5 text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: "var(--ink-secondary)" }}>Admin</p>
+      {(canOpen(who, "companies") || canOpen(who, "people")) && (
+        <>
+          <div className="my-2" style={{ borderTop: "1px solid var(--rule)" }} />
+          <p className="px-3 pb-0.5 text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: "var(--ink-secondary)" }}>Admin</p>
+        </>
+      )}
       <NavItem page="companies" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="people" who={who} pathname={pathname} onNavigate={close} />
     </nav>

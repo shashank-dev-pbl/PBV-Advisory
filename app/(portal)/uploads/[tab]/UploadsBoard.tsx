@@ -21,7 +21,7 @@ const ICONS: Record<RowKey | "done", React.ReactNode> = {
     <svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" fill="#fbe9e7" /><path d="M9 4.8v5.2" stroke="#b3261e" strokeWidth="2" strokeLinecap="round" /><circle cx="9" cy="12.9" r="1.2" fill="#b3261e" /></svg>
   ),
   submitted: (
-    <svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="7.2" fill="none" stroke="#26527f" strokeWidth="1.6" /><path d="M9 1.8a7.2 7.2 0 010 14.4z" fill="#26527f" /></svg>
+    <svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="7.2" fill="none" stroke="#4d6b4d" strokeWidth="1.6" /><path d="M9 1.8a7.2 7.2 0 010 14.4z" fill="#4d6b4d" /></svg>
   ),
   query: (
     <svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" fill="#fdf3dd" /><path d="M6.8 7a2.3 2.3 0 114 1.5c-.8.6-1.8 1-1.8 2.3" fill="none" stroke="#8a6412" strokeWidth="1.7" strokeLinecap="round" /><circle cx="9" cy="13.4" r="1.1" fill="#8a6412" /></svg>

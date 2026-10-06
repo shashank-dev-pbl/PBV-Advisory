@@ -28,7 +28,7 @@ export default async function DataRoomPage() {
   return (
     <>
       <PageHeader title={company.name} accent="Data room" sub="The company's legal history in one place" />
-      <div className="mx-auto w-full max-w-[1000px] px-5 py-8 md:px-8">
+      <div className="mx-auto w-full max-w-[1280px] px-5 py-8 md:px-8">
         <DataRoom
           companyId={company.id}
           canEdit={session.who !== "founder"}

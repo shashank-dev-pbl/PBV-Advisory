@@ -4,10 +4,10 @@
 
 export const CATEGORY_COLOUR: Record<string, string> = {
   Founding: "#1e4620",
-  Fundraise: "#2a78d6",
-  "Debt & charges": "#eb6834",
-  "People & ESOP": "#1baf7a",
-  "Structure & governance": "#c98500",
+  Fundraise: "#6b8f5a",
+  "Debt & charges": "#8a6412",
+  "People & ESOP": "#3d6a73",
+  "Structure & governance": "#8b8779",
 };
 
 export type LibDoc = { code: string; name: string; form: string | null };

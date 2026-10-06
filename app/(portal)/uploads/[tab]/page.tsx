@@ -65,7 +65,7 @@ export default async function UploadsPage({ params }: { params: Promise<{ tab: s
   return (
     <>
       <PageHeader title={company.name} accent={`Uploads · ${t.label}`} sub={sub} />
-      <div className="mx-auto w-full max-w-[900px] px-5 py-8 md:px-8">
+      <div className="mx-auto w-full max-w-[1280px] px-5 py-8 md:px-8">
         <div className="mb-5 flex gap-1 border-b" style={{ borderColor: "var(--rule)" }}>
           {(Object.keys(TABS) as TabKey[]).map((k) => {
             const n = openCount(TABS[k].cadence);
@@ -87,7 +87,7 @@ export default async function UploadsPage({ params }: { params: Promise<{ tab: s
         </div>
 
         {session.who === "external" && (
-          <div className="mb-5 p-3.5 text-[13px]" style={{ background: "#e9eef5", border: "1px solid #cdd9e8", color: "#26527f" }}>
+          <div className="mb-5 p-3.5 text-[13px]" style={{ background: "#edf0e6", border: "1px solid #d4dccf", color: "#4d6b4d" }}>
             You can see everything the founder uploads and upload on their behalf. Accepting items is for Prime Bottomline.
           </div>
         )}

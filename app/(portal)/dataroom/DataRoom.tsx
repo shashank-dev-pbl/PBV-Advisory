@@ -202,8 +202,8 @@ function Timeline(p: Props) {
             </div>
           ))}
           <div style={{ position: "absolute", left: 20, right: 20, top: 189, height: 3, background: "#d9d2c0", borderRadius: 2 }} />
-          <div style={{ position: "absolute", top: 10, bottom: 24, left: todayX, borderLeft: "2px dashed #b4531a", opacity: 0.6 }}>
-            <span style={{ position: "absolute", top: -2, left: 5, fontSize: 10.5, color: "#b4531a", fontWeight: 600 }}>Today</span>
+          <div style={{ position: "absolute", top: 10, bottom: 24, left: todayX, borderLeft: "2px dashed #004d00", opacity: 0.6 }}>
+            <span style={{ position: "absolute", top: -2, left: 5, fontSize: 10.5, color: "#004d00", fontWeight: 600 }}>Today</span>
           </div>
           {shown.map((e, i) => {
             const t = typeBy[e.type]; const c = CATEGORY_COLOUR[t?.category] ?? "#888";
@@ -339,7 +339,7 @@ function EventDetail({ ev, canEdit, companyId, lib, eventTypes, typeDocs, eventD
     return (
       <div className="flex flex-wrap items-center gap-3 border-b py-2" style={{ borderColor: "var(--rule)" }}>
         <div className="min-w-0 flex-1">
-          <div className="text-[13.5px] font-semibold">{d?.name}{d?.form && <span className="ml-1.5 px-1.5 py-px text-[10.5px] font-bold" style={{ background: "#f1ece0", color: "#26527f", borderRadius: 4 }}>{d.form}</span>}</div>
+          <div className="text-[13.5px] font-semibold">{d?.name}{d?.form && <span className="ml-1.5 px-1.5 py-px text-[10.5px] font-bold" style={{ background: "#f1ece0", color: "#4d6b4d", borderRadius: 4 }}>{d.form}</span>}</div>
           <div className="text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>
             {up ? `${up.filename} · ${up.by_name} · ${fmtDate(up.at.slice(0, 10))}` : naRow ? `“${naRow.na_reason}” · ${naRow.by_name}` : note ?? ""}
           </div>

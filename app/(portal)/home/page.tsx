@@ -31,7 +31,7 @@ export default async function HomePage() {
   return (
     <>
       <PageHeader title="My companies" sub="Only the companies you have been given access to." />
-      <div className="mx-auto w-full max-w-[900px] px-5 py-8 md:px-8">
+      <div className="mx-auto w-full max-w-[1280px] px-5 py-8 md:px-8">
         {cards.length === 0 && <p className="text-[14px]" style={{ color: "var(--ink-secondary)" }}>You are not on any company yet.</p>}
         <div className="flex flex-col gap-3">
           {cards.map(({ company, submitted, uploadsWaiting, filingsWaiting, late }) => {

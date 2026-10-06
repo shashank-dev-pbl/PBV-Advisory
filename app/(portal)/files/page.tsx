@@ -28,7 +28,7 @@ export default async function FilesPage() {
   return (
     <>
       <PageHeader title={company.name} accent="Files delivered" sub="What Prime Bottomline has delivered to the company" />
-      <div className="mx-auto w-full max-w-[900px] px-5 py-8 md:px-8">
+      <div className="mx-auto w-full max-w-[1280px] px-5 py-8 md:px-8">
         {rows.length === 0 ? (
           <p className="text-[14px]" style={{ color: "var(--ink-secondary)" }}>
             Nothing has been delivered yet. Each month&apos;s signed MIS appears here once PBA has published the month.

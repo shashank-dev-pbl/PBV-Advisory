@@ -26,7 +26,7 @@ export const RANK: Record<RowKey, number> = { late: 0, query: 1, todo: 2, submit
 export const STATUS_TAG: Record<RowKey, { label: string; bg: string; color: string }> = {
   todo: { label: "To do", bg: "#f1ece0", color: "#6b6357" },
   late: { label: "Late", bg: "#fbe9e7", color: "#b3261e" },
-  submitted: { label: "With us", bg: "#e9eef5", color: "#26527f" },
+  submitted: { label: "With us", bg: "#edf0e6", color: "#4d6b4d" },
   query: { label: "Question for you", bg: "#fdf3dd", color: "#8a6412" },
   accepted: { label: "Accepted", bg: "#e8efe6", color: "#1e4620" },
   nil: { label: "You said none", bg: "#e8efe6", color: "#1e4620" },
@@ -36,14 +36,14 @@ export const STATUS_TAG: Record<RowKey, { label: string; bg: string; color: stri
 export const TIERS: Record<DocPriority, { name: string; color: string; soft: string; tip: string }> = {
   must: {
     name: "Mandatory",
-    color: "#b4531a",
-    soft: "#fbeee4",
+    color: "#004d00",
+    soft: "#e4ece0",
     tip: "We cannot produce your monthly report without these. These are the only items we chase, and the only ones that can delay your MIS.",
   },
   good: {
     name: "Good to have",
-    color: "#26527f",
-    soft: "#e9eef5",
+    color: "#4d6b4d",
+    soft: "#edf0e6",
     tip: "These make the report sharper. We ask once and never chase. They never hold anything up.",
   },
   cosmetic: {
