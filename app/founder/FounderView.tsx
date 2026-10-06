@@ -1,14 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { Download, Trash2, TriangleAlert, MessageCircle, Send, X, LogOut, LayoutDashboard, CalendarDays } from "lucide-react";
+import { Download, Trash2, TriangleAlert, MessageCircle, Send, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { currentPeriod, formatPeriodLabel } from "@/lib/period";
 import { safeStorageSegment } from "@/lib/storagePath";
 import { isResolved, isReceived } from "@/lib/docItemStatus";
-import { DEV_BYPASS_AUTH } from "@/lib/devBypass";
-import type { Company, DocItem, DocItemMessage, Deliverable } from "@/lib/types";
+import type { Company, DocItem, DocItemMessage } from "@/lib/types";
 import { recordUpload, deleteUpload, deleteFile, markNilReturn, sendFounderMessage, markFounderRead, saveRevenueInfo, getSignedDownloadUrl } from "./actions";
 
 type ChipStyle = { label: string; bg: string; color: string };
@@ -72,12 +69,14 @@ function GroupSection({
   items,
   companyId,
   currentUserId,
+  mode,
   onPatch,
 }: {
   groupName: string;
   items: DocItem[];
   companyId: string;
   currentUserId: string;
+  mode: "founder" | "external";
   onPatch: (id: string, patch: Partial<DocItem>) => void;
 }) {
   return (
@@ -87,7 +86,7 @@ function GroupSection({
       </p>
       <div className="flex flex-col gap-2.5">
         {items.map((item) => (
-          <ChecklistCard key={item.id} item={item} companyId={companyId} currentUserId={currentUserId} onPatch={onPatch} />
+          <ChecklistCard key={item.id} item={item} companyId={companyId} currentUserId={currentUserId} mode={mode} onPatch={onPatch} />
         ))}
       </div>
     </section>
@@ -99,16 +98,18 @@ export type CurrentUser = { id: string; name: string | null; position: string | 
 export default function FounderView({
   company,
   docItems,
-  deliveredItems,
   currentUser,
+  mode = "founder",
 }: {
   company: Company;
   docItems: DocItem[];
-  deliveredItems: Deliverable[];
   currentUser: CurrentUser;
+  // An external practitioner can view and upload here but cannot answer for the founder or declare "we have none".
+  mode?: "founder" | "external";
 }) {
   const [items, setItems] = useState(docItems);
   const [showCosmetic, setShowCosmetic] = useState(false);
+  const [now] = useState(() => Date.now());
   const received = items.filter((i) => isReceived(i.status)).length;
   const total = items.length;
 
@@ -122,7 +123,7 @@ export default function FounderView({
     .map((i) => i.due_date)
     .filter((d): d is string => !!d)
     .sort()[0] ?? null;
-  const daysUntilDue = nextDue ? Math.ceil((new Date(nextDue).getTime() - Date.now()) / 86400000) : null;
+  const daysUntilDue = nextDue ? Math.ceil((new Date(nextDue).getTime() - now) / 86400000) : null;
 
   const mustGoodItems = items.filter((i) => i.priority !== "cosmetic");
   const cosmeticItems = items.filter((i) => i.priority === "cosmetic");
@@ -131,54 +132,14 @@ export default function FounderView({
 
   const questionCount = items.filter((i) => i.status === "query").length;
 
-  const needsRevenueInfo = !company.revenue_classification || !company.gross_net_billing;
+  const needsRevenueInfo = mode === "founder" && (!company.revenue_classification || !company.gross_net_billing);
 
   function patchItem(id: string, patch: Partial<DocItem>) {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--paper)" }}>
-      <div className="sticky top-0 z-40">
-        <header
-          className="flex items-center justify-between border-b px-5 py-4 md:px-8"
-          style={{ background: "var(--paper)", borderColor: "var(--rule)" }}
-        >
-          <div className="flex items-center gap-4">
-            <div>
-              <p className="eyebrow mb-1" style={{ color: "var(--bottomline-green)" }}>Prime Bottomline Advisory</p>
-              <h1 className="text-[22px] font-extrabold">{company.name} <span style={{ color: "var(--bottomline-green)" }}>· Founder</span></h1>
-              <p className="mt-0.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>{formatPeriodLabel(currentPeriod())}</p>
-            </div>
-            <CircularProgress pct={pct} />
-            <div>
-              <p className="text-[12px] font-bold tnum" style={{ color: "var(--ink)" }}>{mustResolved} of {mustTotal} essentials</p>
-              <p className="mt-0.5 text-[11px] tnum" style={{ color: "var(--ink-secondary)" }}>{received} of {total} in total</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/founder/dashboard"
-              className="btn-small"
-              style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)", gap: 6 }}
-            >
-              <LayoutDashboard size={13} strokeWidth={1.75} />
-              Dashboard
-            </Link>
-            <Link
-              href="/year"
-              className="btn-small"
-              style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)", gap: 6 }}
-            >
-              <CalendarDays size={13} strokeWidth={1.75} />
-              Year
-            </Link>
-            <div style={{ width: 1, height: 28, background: "var(--rule)" }} />
-            <UserMenu user={currentUser} />
-          </div>
-        </header>
-      </div>
-
+    <div>
       <main className="mx-auto w-full max-w-[760px] px-5 py-8 md:px-8">
         {needsRevenueInfo && (
           <RevenueInfoBanner
@@ -220,6 +181,7 @@ export default function FounderView({
               items={groupItemsList}
               companyId={company.id}
               currentUserId={currentUser.id}
+              mode={mode}
               onPatch={patchItem}
             />
           ))}
@@ -251,6 +213,7 @@ export default function FounderView({
                     items={groupItemsList}
                     companyId={company.id}
                     currentUserId={currentUser.id}
+                    mode={mode}
                     onPatch={patchItem}
                   />
                 ))}
@@ -265,18 +228,6 @@ export default function FounderView({
           If something is late we tell you the new delivery date rather than letting it drift.
         </p>
 
-        {deliveredItems.length > 0 && (
-          <section className="mt-10">
-            <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>
-              What you&apos;ve received from us
-            </p>
-            <div className="flex flex-col gap-2">
-              {deliveredItems.map((d) => (
-                <DeliverableDownloadRow key={d.id} deliverable={d} />
-              ))}
-            </div>
-          </section>
-        )}
       </main>
     </div>
   );
@@ -306,41 +257,6 @@ export function CircularProgress({ pct, size = 48, strokeWidth = 4, label }: { p
       <div className="absolute inset-0 flex items-center justify-center">
         <span className="text-[12px] font-extrabold tnum" style={{ color: "var(--bottomline-green)" }}>{label ?? `${pct}%`}</span>
       </div>
-    </div>
-  );
-}
-
-const ROLE_LABEL: Record<CurrentUser["role"], string> = {
-  founder: "Founder",
-  practitioner: "Practitioner",
-  pba: "PBA",
-};
-
-export function UserMenu({ user }: { user: CurrentUser }) {
-  async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    window.location.href = "/login";
-  }
-
-  return (
-    <div className="flex flex-shrink-0 items-center gap-3">
-      <div className="text-right">
-        <p className="truncate text-[13px] font-bold" style={{ color: "var(--ink)" }}>{user.name ?? ROLE_LABEL[user.role]}</p>
-        <p className="mt-0.5 text-[11px]" style={{ color: "var(--ink-secondary)" }}>{user.position ?? ROLE_LABEL[user.role]}</p>
-      </div>
-      {/* Sign-out hidden while DEV_BYPASS_AUTH is on — phone OTP isn't live yet, so
-          signing out would strand whoever clicked it with no way back in. */}
-      {!DEV_BYPASS_AUTH && (
-        <button
-          onClick={handleSignOut}
-          aria-label="Sign out"
-          title="Sign out"
-          style={{ background: "none", border: "none", cursor: "pointer", display: "flex", padding: 4 }}
-        >
-          <LogOut size={18} strokeWidth={1.75} style={{ color: "var(--ink-secondary)" }} />
-        </button>
-      )}
     </div>
   );
 }
@@ -566,11 +482,13 @@ function ChecklistCard({
   item,
   companyId,
   currentUserId,
+  mode,
   onPatch,
 }: {
   item: DocItem;
   companyId: string;
   currentUserId: string;
+  mode: "founder" | "external";
   onPatch: (id: string, patch: Partial<DocItem>) => void;
 }) {
   const [uploading, setUploading] = useState(false);
@@ -799,15 +717,17 @@ function ChecklistCard({
               )}
             </div>
           )}
-          <input
-            className="input-field mt-2"
-            style={{ minHeight: 36, padding: "8px 10px", fontSize: 13, width: "100%", background: "var(--paper)" }}
-            placeholder="Type your reply…"
-            value={reply}
-            onChange={(e) => setReply(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleInlineReply(); }}
-            disabled={replying}
-          />
+          {mode === "founder" && (
+            <input
+              className="input-field mt-2"
+              style={{ minHeight: 36, padding: "8px 10px", fontSize: 13, width: "100%", background: "var(--paper)" }}
+              placeholder="Type your reply…"
+              value={reply}
+              onChange={(e) => setReply(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleInlineReply(); }}
+              disabled={replying}
+            />
+          )}
           <p className="mt-1.5 text-[11.5px]" style={{ color: "#8a6412" }}>
             We can&apos;t accept this item until the question is answered.
           </p>
@@ -858,7 +778,7 @@ function ChecklistCard({
             </div>
           )}
 
-          {item.nil_return_allowed && !hasAnyFile && (
+          {mode === "founder" && item.nil_return_allowed && !hasAnyFile && (
             <button
               onClick={handleNilReturn}
               disabled={nilBusy}
@@ -932,26 +852,5 @@ export function FileRow({
         )}
       </div>
     </div>
-  );
-}
-
-function DeliverableDownloadRow({ deliverable }: { deliverable: Deliverable }) {
-  async function handleClick() {
-    if (!deliverable.output_path) return;
-    const url = await getSignedDownloadUrl(deliverable.output_path);
-    window.open(url, "_blank");
-  }
-  return (
-    <button
-      onClick={handleClick}
-      className="flex items-center justify-between gap-3 p-3 text-left"
-      style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}
-    >
-      <span className="text-[13px] font-semibold" style={{ color: "var(--ink)" }}>{deliverable.title}</span>
-      <span className="flex items-center gap-2 text-[11px]" style={{ color: "var(--ink-secondary)" }}>
-        <Download size={14} strokeWidth={1.75} />
-        {deliverable.delivered_at ? new Date(deliverable.delivered_at).toLocaleDateString() : ""}
-      </span>
-    </button>
   );
 }

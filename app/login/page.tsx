@@ -61,6 +61,8 @@ export default function LoginPage() {
       setStatus("error");
       return;
     }
+    // Links the number they just proved to the person an admin added (first sign-in only).
+    await supabase.rpc("claim_app_user");
     window.location.href = "/";
   }
 

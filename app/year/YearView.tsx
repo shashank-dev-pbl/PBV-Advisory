@@ -1,17 +1,14 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { safeStorageSegment } from "@/lib/storagePath";
 import { fyForPeriod } from "@/lib/period";
 import { markFiled, verifyFiling } from "./actions";
-import { UserMenu, type CurrentUser } from "../founder/FounderView";
+import type { CurrentUser } from "../founder/FounderView";
 import type { Company, Obligation, ObligationOwner } from "@/lib/types";
 
-const OWNER_LABEL: Record<ObligationOwner, string> = { founder: "Founder", practitioner: "Practitioner", pba: "PBA" };
-const ROLE_LABEL: Record<ObligationOwner, string> = { founder: "Founder", practitioner: "Practitioner", pba: "PBA" };
+const OWNER_LABEL: Record<ObligationOwner, string> = { founder: "Founder", practitioner: "External practitioner", pba: "PBA" };
 const STATUS_CHIP: Record<Obligation["status"], { label: string; bg: string; color: string }> = {
   pending: { label: "Not filed", bg: "#f1ece0", color: "var(--ink-secondary)" },
   filed: { label: "Awaiting PBA", bg: "#e9eef5", color: "#26527f" },
@@ -24,7 +21,7 @@ export default function YearView({
   obligations,
   financialYearStart,
 }: {
-  company: Company;
+  company: Pick<Company, "id" | "name">;
   currentUser: CurrentUser;
   obligations: Obligation[];
   financialYearStart: string;
@@ -48,26 +45,8 @@ export default function YearView({
   }, [items, lens, financialYearStart]);
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--paper)" }}>
-      <header className="flex items-center justify-between border-b px-5 py-4 md:px-8" style={{ borderColor: "var(--rule)" }}>
-        <div>
-          <p className="eyebrow" style={{ color: "var(--bottomline-green)" }}>Prime Bottomline Advisory</p>
-          <h1 className="text-[18px] font-extrabold">{company?.name} <span style={{ color: "var(--bottomline-green)" }}>· {ROLE_LABEL[currentUser.role]}</span></h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link
-            href={currentUser.role === "founder" ? "/founder" : currentUser.role === "practitioner" ? "/practitioner" : "/pba"}
-            className="btn-small"
-            style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)", gap: 6 }}
-          >
-            <ArrowLeft size={13} strokeWidth={1.75} />
-            Back
-          </Link>
-          <UserMenu user={currentUser} />
-        </div>
-      </header>
-
-      <main className="mx-auto w-full max-w-[900px] px-5 py-8 md:px-8">
+    <div>
+      <main>
         <div className="mb-6 flex gap-2">
           <button
             onClick={() => setLens("period")}

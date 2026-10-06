@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/permissions";
 import { parseMisWorkbook } from "@/lib/misReader";
 import { PERIOD_FIGURES_FIELDS } from "@/lib/types";
+import { periodHasEnded, formatPeriodLabel } from "@/lib/period";
 
 export type SubmitMisUploadResult =
   | { ok: true }
@@ -24,6 +25,9 @@ export async function submitMisUpload(params: {
   const appUser = await requireRole("practitioner");
   if (appUser.company_id !== params.companyId) {
     return { ok: false, message: "Not authorized for this company" };
+  }
+  if (!periodHasEnded(params.period)) {
+    return { ok: false, message: `${formatPeriodLabel(params.period)} has not ended yet — it can be uploaded from the 1st of next month.` };
   }
 
   const supabase = await createClient();
@@ -60,6 +64,18 @@ export async function submitMisUpload(params: {
 
   if (existingActive && existingActive.state === "submitted") {
     return { ok: false, message: "This month has already been submitted to PBA — it can't be replaced from here." };
+  }
+
+  const { data: latestRow } = await supabase
+    .from("period_figures")
+    .select("state, query_text")
+    .eq("company_id", params.companyId)
+    .eq("period", params.period)
+    .order("version", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (latestRow?.state === "published" && !latestRow.query_text) {
+    return { ok: false, message: `${formatPeriodLabel(params.period)} is already published. PBA needs to ask for a correction before a new workbook can be uploaded.` };
   }
 
   const { data: highestVersion } = await supabase
@@ -118,13 +134,17 @@ export async function submitMisUpload(params: {
     }
   }
 
-  revalidatePath("/practitioner");
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 
 export async function submitToPBA(periodFiguresId: string) {
   const appUser = await requireRole("practitioner");
   const supabase = await createClient();
+
+  const { data: target } = await supabase.from("period_figures").select("period, company_id").eq("id", periodFiguresId).maybeSingle();
+  if (!target || target.company_id !== appUser.company_id) throw new Error("You don't have access to this month");
+  if (!periodHasEnded(target.period)) throw new Error(`${formatPeriodLabel(target.period)} has not ended yet — it can be submitted from the 1st of next month.`);
 
   const { error } = await supabase
     .from("period_figures")
@@ -134,7 +154,7 @@ export async function submitToPBA(periodFiguresId: string) {
     .eq("company_id", appUser.company_id);
   if (error) throw new Error(error.message);
 
-  revalidatePath("/practitioner");
+  revalidatePath("/", "layout");
 }
 
 // Lets a mistaken upload be cleared out entirely — before publish only, since a
@@ -163,14 +183,14 @@ export async function deleteMisUpload(periodFiguresId: string) {
   if (error) throw new Error(error.message);
   await supabase.from("mis_upload").delete().eq("id", row.source_upload_id);
 
-  revalidatePath("/practitioner");
+  revalidatePath("/", "layout");
 }
 
 // The signed PDF is optional and separate from the workbook the portal reads —
 // it's the version the founder actually downloads (mockup: "Other files for
 // this month" → "Signed MIS, PDF"). Attachable at any state, not gated.
 export async function uploadSignedPdf(params: { periodFiguresId: string; storagePath: string; filename: string }) {
-  const appUser = await requireRole("practitioner");
+  const appUser = await requireRole("pba");
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -180,8 +200,7 @@ export async function uploadSignedPdf(params: { periodFiguresId: string; storage
     .eq("company_id", appUser.company_id);
   if (error) throw new Error(error.message);
 
-  revalidatePath("/practitioner");
-  revalidatePath("/founder/dashboard");
+  revalidatePath("/", "layout");
 }
 
 export async function getMisState(companyId: string, period: string) {

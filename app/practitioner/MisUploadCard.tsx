@@ -3,14 +3,13 @@
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { safeStorageSegment } from "@/lib/storagePath";
-import { submitMisUpload, submitToPBA, uploadSignedPdf, deleteMisUpload } from "./mis-actions";
+import { submitMisUpload, submitToPBA, deleteMisUpload } from "./mis-actions";
 import type { PeriodFiguresState } from "@/lib/types";
 
 type MisState = {
   id: string;
   state: PeriodFiguresState;
   query_text: string | null;
-  pdf_filename: string | null;
   mis_upload: { filename: string; uploaded_at: string; template_version: string } | null;
 } | null;
 
@@ -23,13 +22,11 @@ export default function MisUploadCard({
   period: string;
   initial: MisState;
 }) {
-  const [state, setState] = useState(initial);
+  const state = initial;
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const pdfInputRef = useRef<HTMLInputElement>(null);
-  const [pdfBusy, setPdfBusy] = useState(false);
 
   async function handleFile(file: File) {
     setBusy(true);
@@ -52,23 +49,6 @@ export default function MisUploadCard({
       setError(err instanceof Error ? err.message : "Upload failed — try again.");
       setBusy(false);
     }
-  }
-
-  async function handlePdfFile(file: File) {
-    if (!state) return;
-    setPdfBusy(true);
-    setError("");
-    try {
-      const supabase = createClient();
-      const path = `${companyId}/mis-pdf/${period}/${Date.now()}-${safeStorageSegment(file.name)}`;
-      const { error: uploadError } = await supabase.storage.from("docs").upload(path, file);
-      if (uploadError) throw uploadError;
-      await uploadSignedPdf({ periodFiguresId: state.id, storagePath: path, filename: file.name });
-      setState({ ...state, pdf_filename: file.name });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "PDF upload failed — try again.");
-    }
-    setPdfBusy(false);
   }
 
   async function handleSubmitToPBA() {
@@ -118,7 +98,7 @@ export default function MisUploadCard({
       </div>
       {state?.query_text && (
         <div className="mb-2 p-3" style={{ background: "#fdf3dd", border: "1px solid #e3d4a8" }}>
-          <p className="text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: "#8a6412" }}>Query from PBA</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: "#8a6412" }}>{state.state === "published" ? "PBA asked for a correction" : "Query from PBA"}</p>
           <p className="mt-1 text-[13px]" style={{ color: "#4d3c14" }}>{state.query_text}</p>
         </div>
       )}
@@ -190,9 +170,21 @@ export default function MisUploadCard({
                 </button>
               </div>
             ) : (
-              <p className="mt-3 text-[12.5px] font-semibold" style={{ color: "var(--bottomline-green)" }}>
-                Published — visible on the founder&apos;s dashboard.
-              </p>
+              <>
+                <p className="mt-3 text-[12.5px] font-semibold" style={{ color: "var(--bottomline-green)" }}>
+                  Published — visible on the founder&apos;s dashboard.
+                </p>
+                {state.query_text && (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={busy}
+                    className="btn-small mt-3"
+                    style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)" }}
+                  >
+                    {busy ? "Reading workbook…" : "Upload a corrected workbook"}
+                  </button>
+                )}
+              </>
             )}
           </>
         ) : (
@@ -225,49 +217,6 @@ export default function MisUploadCard({
         {error && <p className="mt-3 text-[12.5px]" style={{ color: "#8c1a1a" }}>{error}</p>}
       </div>
 
-      {state?.mis_upload && (
-        <div className="mt-8">
-          <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>
-            Other files for this month
-          </p>
-          <div className="mb-2 p-4 flex items-center justify-between gap-3" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>
-            <div>
-              <p className="text-[13px] font-bold" style={{ color: "var(--ink)" }}>Burn and runway sheet</p>
-              <p className="mt-0.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>Included as a tab in the MIS workbook. Read automatically.</p>
-            </div>
-            <span style={{ background: "var(--bottomline-green)", color: "#fff", fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 20, flexShrink: 0 }}>
-              In the workbook
-            </span>
-          </div>
-        <div className="p-4 flex items-center justify-between gap-3" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>
-          <div>
-            <p className="text-[13px] font-bold" style={{ color: "var(--ink)" }}>Signed MIS, PDF</p>
-            <p className="mt-0.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>
-              {state.pdf_filename ?? "Optional — the version the founder downloads. The workbook is what the portal reads."}
-            </p>
-          </div>
-          <button
-            onClick={() => pdfInputRef.current?.click()}
-            disabled={pdfBusy}
-            className="btn-small"
-            style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)", flexShrink: 0 }}
-          >
-            {pdfBusy ? "Uploading…" : state.pdf_filename ? "Replace PDF" : "Upload PDF"}
-          </button>
-          <input
-            ref={pdfInputRef}
-            type="file"
-            accept=".pdf"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void handlePdfFile(file);
-              e.target.value = "";
-            }}
-          />
-        </div>
-        </div>
-      )}
     </section>
   );
 }

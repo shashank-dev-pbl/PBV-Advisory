@@ -1,53 +1,6 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { currentPeriod } from "@/lib/period";
-import { getCurrentAppUser, needsOnboarding, DEV_BYPASS_AUTH } from "@/lib/auth";
-import type { Company, DocItem, Deliverable } from "@/lib/types";
-import FounderView from "./FounderView";
-import DataUnavailable from "../data-unavailable";
 
-export default async function FounderPage() {
-  const appUser = await getCurrentAppUser();
-  if (!appUser) redirect("/login");
-  if (needsOnboarding(appUser)) redirect("/onboarding");
-  if (!DEV_BYPASS_AUTH && appUser.role !== "founder") redirect("/");
-
-  const supabase = await createClient();
-  const companyId = appUser.company_id;
-
-  const { data: company } = await supabase
-    .from("company")
-    .select("*")
-    .eq("id", companyId)
-    .single<Company>();
-  // A transient Supabase blip (or the free-tier project waking from auto-pause)
-  // surfaces here as a null row, not a thrown error. Show a retry message
-  // instead of redirecting home — redirecting back into a role's own route
-  // just loops, since it would immediately redirect right back here.
-  if (!company) return <DataUnavailable />;
-
-  const period = currentPeriod();
-
-  const { data: docItems } = await supabase
-    .from("doc_item")
-    .select("*, doc_file(*), doc_item_message(*)")
-    .eq("company_id", companyId)
-    .in("period", ["ONCE", period])
-    .order("requested_at", { ascending: true });
-
-  const { data: deliverables } = await supabase
-    .from("deliverable")
-    .select("*")
-    .eq("company_id", companyId)
-    .eq("status", "delivered")
-    .order("delivered_at", { ascending: false });
-
-  return (
-    <FounderView
-      company={company as Company}
-      docItems={(docItems ?? []) as DocItem[]}
-      deliveredItems={(deliverables ?? []) as Deliverable[]}
-      currentUser={{ id: appUser.id, name: appUser.name, position: appUser.position, role: "founder" }}
-    />
-  );
+// Old address from before the shared menu — kept so existing links still land somewhere sensible.
+export default function Page() {
+  redirect("/uploads/month");
 }

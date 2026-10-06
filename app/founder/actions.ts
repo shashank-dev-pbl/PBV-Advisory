@@ -2,10 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireRole } from "@/lib/permissions";
+import { requireAppUser, requireRole, requireItem } from "@/lib/permissions";
 
+function refresh() {
+  revalidatePath("/", "layout");
+}
+
+// Upload, replace and delete: the founder and the external practitioner. PBA only reviews.
 export async function recordUpload(docItemId: string, storagePath: string, filename: string, label?: string) {
-  const supabase = await createClient();
+  const { supabase, appUser } = await requireItem(docItemId, "founder", "practitioner");
+  if (!storagePath.startsWith(`${appUser.company_id}/`)) throw new Error("That file is not in this company's folder");
 
   // Per spec: a replaced upload is superseded, never deleted — old file rows stay in the
   // database as the audit trail, the UI just shows the latest one (see latestOf()).
@@ -14,23 +20,22 @@ export async function recordUpload(docItemId: string, storagePath: string, filen
   const { error: fileError } = await supabase
     .from("doc_file")
     .insert({ doc_item_id: docItemId, storage_path: storagePath, filename, label: label ?? null });
-  if (fileError) throw fileError;
+  if (fileError) throw new Error(fileError.message);
 
   const { error: statusError } = await supabase
     .from("doc_item")
     .update({ status: "uploaded", uploaded_at: new Date().toISOString() })
     .eq("id", docItemId)
     .in("status", ["pending", "query"]);
-  if (statusError) throw statusError;
+  if (statusError) throw new Error(statusError.message);
 
-  revalidatePath("/founder");
-  revalidatePath("/practitioner");
+  refresh();
 }
 
 export async function deleteFile(docFileId: string, docItemId: string) {
-  const supabase = await createClient();
+  const { supabase } = await requireItem(docItemId, "founder", "practitioner");
 
-  const { data: file } = await supabase.from("doc_file").select("storage_path").eq("id", docFileId).single();
+  const { data: file } = await supabase.from("doc_file").select("storage_path").eq("id", docFileId).eq("doc_item_id", docItemId).single();
   if (file) {
     await supabase.storage.from("docs").remove([file.storage_path]);
     await supabase.from("doc_file").delete().eq("id", docFileId);
@@ -49,13 +54,11 @@ export async function deleteFile(docFileId: string, docItemId: string) {
       .in("status", ["uploaded", "query"]);
   }
 
-  revalidatePath("/founder");
-  revalidatePath("/practitioner");
+  refresh();
 }
 
 export async function markNilReturn(docItemId: string) {
-  const appUser = await requireRole("founder");
-  const supabase = await createClient();
+  const { supabase, appUser } = await requireItem(docItemId, "founder");
   await supabase
     .from("doc_item")
     .update({
@@ -66,12 +69,11 @@ export async function markNilReturn(docItemId: string) {
       query_text: null,
     })
     .eq("id", docItemId);
-  revalidatePath("/founder");
-  revalidatePath("/practitioner");
+  refresh();
 }
 
 export async function deleteUpload(docItemId: string) {
-  const supabase = await createClient();
+  const { supabase } = await requireItem(docItemId, "founder", "practitioner");
 
   const { data: existing } = await supabase
     .from("doc_file")
@@ -89,19 +91,18 @@ export async function deleteUpload(docItemId: string) {
     .eq("id", docItemId)
     .in("status", ["uploaded", "query"]);
 
-  revalidatePath("/founder");
-  revalidatePath("/practitioner");
+  refresh();
 }
 
 export async function sendFounderMessage(docItemId: string, body: string) {
-  const supabase = await createClient();
+  const { supabase } = await requireItem(docItemId, "founder");
 
   const { error: msgError } = await supabase
     .from("doc_item_message")
     .insert({ doc_item_id: docItemId, sender: "founder", body });
-  if (msgError) throw msgError;
+  if (msgError) throw new Error(msgError.message);
 
-  // Answering a query hands the item back to the practitioner's inbox for another look.
+  // Answering a query hands the item back to PBA's inbox for another look.
   const { error } = await supabase
     .from("doc_item")
     .update({ status: "uploaded", founder_last_read_at: new Date().toISOString() })
@@ -109,20 +110,21 @@ export async function sendFounderMessage(docItemId: string, body: string) {
     .eq("status", "query");
   if (error) throw new Error(error.message);
 
-  revalidatePath("/founder");
-  revalidatePath("/practitioner");
+  refresh();
 }
 
 export async function markFounderRead(docItemId: string) {
-  const supabase = await createClient();
+  const { supabase } = await requireItem(docItemId, "founder");
   await supabase
     .from("doc_item")
     .update({ founder_last_read_at: new Date().toISOString() })
     .eq("id", docItemId);
-  revalidatePath("/founder");
+  refresh();
 }
 
-export async function saveRevenueInfo(companyId: string, revenueClassification: string, grossNetBilling: string) {
+// The company is always the one the founder is acting in — the id argument from the browser is not trusted.
+export async function saveRevenueInfo(_companyId: string, revenueClassification: string, grossNetBilling: string) {
+  const appUser = await requireRole("founder");
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -131,14 +133,16 @@ export async function saveRevenueInfo(companyId: string, revenueClassification: 
       revenue_classification: revenueClassification,
       gross_net_billing: grossNetBilling,
     })
-    .eq("id", companyId);
+    .eq("id", appUser.company_id);
   if (error) throw new Error(error.message);
 
-  revalidatePath("/founder");
-  revalidatePath("/practitioner");
+  refresh();
 }
 
+// Only files inside the folder of the company the person is acting in. Storage RLS checks again.
 export async function getSignedDownloadUrl(storagePath: string) {
+  const appUser = await requireAppUser();
+  if (!storagePath.startsWith(`${appUser.company_id}/`)) throw new Error("You don't have access to this file");
   const supabase = await createClient();
   const { data, error } = await supabase.storage.from("docs").createSignedUrl(storagePath, 60 * 10);
   if (error) throw new Error(error.message);

@@ -1,16 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
-import { CircleCheck, ArrowRight, LayoutDashboard, CalendarDays } from "lucide-react";
-import { currentPeriod, formatPeriodLabel } from "@/lib/period";
-import type { Company, DocItem, DocItemMessage, Deliverable } from "@/lib/types";
+import { useState } from "react";
+import { ArrowRight } from "lucide-react";
+import type { Company, DocItem, DocItemMessage } from "@/lib/types";
 import { acceptItem, markNotApplicable, sendPractitionerMessage, markPractitionerRead } from "./actions";
-import { FileRow, VersionHistory, sortedFiles, sortedMessages, hasUnreadFor, isResolved, isReceived, ChatPopover, MessageButton, UserMenu, type ChatMessage, type CurrentUser } from "../founder/FounderView";
-import MisUploadCard from "./MisUploadCard";
-import FilingsTable from "./FilingsTable";
+import { FileRow, VersionHistory, sortedFiles, sortedMessages, hasUnreadFor, isResolved, isReceived, ChatPopover, MessageButton, type ChatMessage, type CurrentUser } from "../founder/FounderView";
 import DecisionHistory from "./DecisionHistory";
-import type { Obligation } from "@/lib/types";
 
 type TeamUser = { id: string; name: string | null; role: string };
 
@@ -19,27 +14,18 @@ function daysAgo(iso: string) {
   return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
 }
 
-export default function PractitionerView({
+export default function UploadsReview({
   company,
   docItems,
-  deliverables,
   currentUser,
-  period,
-  misState,
-  filings,
   teamUsers,
 }: {
   company: Company;
   docItems: DocItem[];
-  deliverables: Deliverable[];
   currentUser: CurrentUser;
-  period: string;
-  misState: Parameters<typeof MisUploadCard>[0]["initial"];
-  filings: Obligation[];
   teamUsers: TeamUser[];
 }) {
   const [items, setItems] = useState(docItems);
-  const [dlvs, setDlvs] = useState(deliverables);
 
   const received = items.filter((i) => isReceived(i.status)).length;
   const total = items.length;
@@ -50,117 +36,54 @@ export default function PractitionerView({
     ? [...outstanding].sort((a, b) => new Date(a.requested_at).getTime() - new Date(b.requested_at).getTime())[0]
     : null;
 
-  // Deliverable status is derived from doc_item acceptance, same rule as the DB trigger —
-  // only "Delivered" is still shown here, the ready/blocked states moved to decision history.
-  const delivered = useMemo(() => dlvs.filter((d) => d.status === "delivered"), [dlvs]);
-
   function patchItem(id: string, patch: Partial<DocItem>) {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--paper)" }}>
-      <div className="sticky top-0 z-40">
-        <header
-          className="flex items-center justify-between border-b px-5 py-4 md:px-8"
-          style={{ background: "var(--paper)", borderColor: "var(--rule)" }}
-        >
-          <div>
-            <p className="eyebrow mb-1" style={{ color: "var(--bottomline-green)" }}>Prime Bottomline Advisory</p>
-            <h1 className="text-[22px] font-extrabold">{company.name} <span style={{ color: "var(--bottomline-green)" }}>· Practitioner</span></h1>
-            <p className="mt-0.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>{formatPeriodLabel(currentPeriod())} · {received} of {total} received</p>
+    <div>
+      <p className="mb-6 text-[12.5px]" style={{ color: "var(--ink-secondary)" }}>
+        {received} of {total} received. Accept what is right, ask when something is not, mark what does not apply.
+      </p>
+
+      <section className="mb-10">
+        <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>
+          Inbox — {inbox.length} waiting for you
+        </p>
+        {inbox.length === 0 ? (
+          <p className="text-[13px]" style={{ color: "var(--ink-secondary)" }}>Nothing waiting. Nice.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {inbox.map((item) => (
+              <InboxRow key={item.id} item={item} currentUserId={currentUser.id} onPatch={patchItem} />
+            ))}
           </div>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/practitioner/dashboard"
-              className="btn-small"
-              style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)", gap: 6 }}
-            >
-              <LayoutDashboard size={13} strokeWidth={1.75} />
-              Dashboard
-            </Link>
-            <Link
-              href="/year"
-              className="btn-small"
-              style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)", gap: 6 }}
-            >
-              <CalendarDays size={13} strokeWidth={1.75} />
-              Year
-            </Link>
-            <div style={{ width: 1, height: 28, background: "var(--rule)" }} />
-            <UserMenu user={currentUser} />
-          </div>
-        </header>
-      </div>
-
-      <main className="mx-auto w-full max-w-[900px] px-5 py-8 md:px-8">
-        <div className="mb-6 p-4" style={{ background: "#eef3ec", border: "1px solid #cfdccd" }}>
-          <p className="text-[13px]" style={{ color: "#22452a" }}>
-            <strong>You upload; PBA verifies.</strong> Nothing on this screen reaches the founder until Prime Bottomline has checked it.
-          </p>
-        </div>
-
-        <MisUploadCard companyId={company.id} period={period} initial={misState} />
-
-        <FilingsTable companyId={company.id} period={period} filings={filings} />
-
-        <section className="mb-10">
-          <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>
-            Inbox — {inbox.length} waiting for you
-          </p>
-          {inbox.length === 0 ? (
-            <p className="text-[13px]" style={{ color: "var(--ink-secondary)" }}>Nothing waiting. Nice.</p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {inbox.map((item) => (
-                <InboxRow key={item.id} item={item} companyId={company.id} currentUserId={currentUser.id} onPatch={patchItem} />
-              ))}
-            </div>
-          )}
-        </section>
-
-        <DecisionHistory items={items} teamUsers={teamUsers} />
-
-        <section className="mt-10 border-t pt-5" style={{ borderColor: "var(--rule)" }}>
-          <p className="text-[13px] font-bold" style={{ color: "var(--ink)" }}>
-            Outstanding from client — {outstanding.length} items
-          </p>
-          {oldest && (
-            <p className="mt-1 flex items-center gap-1.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>
-              <ArrowRight size={13} strokeWidth={1.75} />
-              oldest: {oldest.title}, requested {daysAgo(oldest.requested_at)} days ago
-            </p>
-          )}
-        </section>
-
-        {delivered.length > 0 && (
-          <section className="mt-8">
-            <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>
-              Delivered
-            </p>
-            <div className="flex flex-col gap-1.5">
-              {delivered.map((d) => (
-                <p key={d.id} className="flex items-center gap-1.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>
-                  <CircleCheck size={14} strokeWidth={1.75} style={{ color: "var(--status-accepted)" }} />
-                  {d.title} — {d.delivered_at && new Date(d.delivered_at).toLocaleDateString()}
-                </p>
-              ))}
-            </div>
-          </section>
         )}
-      </main>
+      </section>
+
+      <DecisionHistory items={items} teamUsers={teamUsers} />
+
+      <section className="mt-10 border-t pt-5" style={{ borderColor: "var(--rule)" }}>
+        <p className="text-[13px] font-bold" style={{ color: "var(--ink)" }}>
+          Outstanding from client — {outstanding.length} items
+        </p>
+        {oldest && (
+          <p className="mt-1 flex items-center gap-1.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>
+            <ArrowRight size={13} strokeWidth={1.75} />
+            oldest: {oldest.title}, requested {daysAgo(oldest.requested_at)} days ago
+          </p>
+        )}
+      </section>
     </div>
   );
 }
 
 function InboxRow({
   item,
-  companyId,
   currentUserId,
   onPatch,
 }: {
   item: DocItem;
-  companyId: string;
   currentUserId: string;
   onPatch: (id: string, patch: Partial<DocItem>) => void;
 }) {

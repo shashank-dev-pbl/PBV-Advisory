@@ -2,6 +2,9 @@ export type DocStatus = "pending" | "uploaded" | "accepted" | "query" | "not_app
 export type DocPriority = "must" | "good" | "cosmetic";
 export type DeliverableStatus = "blocked" | "ready" | "in_progress" | "delivered";
 export type Role = "founder" | "practitioner" | "pba";
+// Build 4 vocabulary: who someone is (account type) and what they are at a given company.
+export type AccountType = "admin" | "pba" | "external" | "founder";
+export type CompanyRole = "founder" | "external" | "pba";
 
 export type Company = {
   id: string;
@@ -11,6 +14,9 @@ export type Company = {
   created_at: string;
   revenue_classification: string | null;
   gross_net_billing: string | null;
+  books_by: "auditor" | "pba";
+  status: "setting_up" | "live";
+  first_collect_period: string | null;
 };
 
 export type AppUser = {
@@ -25,6 +31,7 @@ export type AppUser = {
   can_verify: boolean;
   can_publish: boolean;
   firm_name: string | null;
+  account_type: AccountType | null;
 };
 
 export type DocFile = {
@@ -142,7 +149,7 @@ export const PERIOD_FIGURES_FIELDS = [
   "payables_total", "billed_month", "collections_month",
 ] as const;
 
-export type PeriodFiguresState = "draft" | "submitted" | "verified" | "published";
+export type PeriodFiguresState = "draft" | "submitted" | "verified" | "published" | "superseded";
 
 export type PeriodFigures = {
   id: string;

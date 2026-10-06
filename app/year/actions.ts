@@ -6,6 +6,8 @@ import { requireAppUser, requireRole } from "@/lib/permissions";
 import type { Obligation } from "@/lib/types";
 
 export async function getObligations(companyId: string): Promise<Obligation[]> {
+  const appUser = await requireAppUser();
+  if (companyId !== appUser.company_id) throw new Error("You don't have access to this company");
   const supabase = await createClient();
   const { data } = await supabase
     .from("obligation")
@@ -46,7 +48,7 @@ export async function markFiled(params: {
     .eq("company_id", appUser.company_id);
   if (error) throw new Error(error.message);
 
-  revalidatePath("/year");
+  revalidatePath("/", "layout");
 }
 
 export async function verifyFiling(obligationId: string) {
@@ -67,5 +69,5 @@ export async function verifyFiling(obligationId: string) {
     .eq("status", "filed");
   if (error) throw new Error(error.message);
 
-  revalidatePath("/year");
+  revalidatePath("/", "layout");
 }

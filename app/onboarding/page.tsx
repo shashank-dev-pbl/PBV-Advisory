@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
-import { getCurrentAppUser, needsOnboarding } from "@/lib/auth";
+import { getSession, needsOnboarding } from "@/lib/auth";
 import OnboardingForm from "./OnboardingForm";
 
 export default async function OnboardingPage() {
-  const appUser = await getCurrentAppUser();
-  if (!appUser) redirect("/login");
-  if (!needsOnboarding(appUser)) redirect("/");
+  const { user } = await getSession();
+  if (!user) redirect("/login");
+  if (!needsOnboarding(user)) redirect("/");
 
-  return <OnboardingForm role={appUser.role} />;
+  return <OnboardingForm role={user.role} />;
 }

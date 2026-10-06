@@ -32,3 +32,15 @@ export function fyForPeriod(period: string, financialYearStart: string): string 
   const endYear = m - 1 >= fyStartMonth ? y + 1 : y;
   return `FY${String(endYear).slice(-2)}`;
 }
+
+// The month being closed right now is always the one that has just ended — a month cannot be
+// submitted before it is over (the database refuses it too; see enforce_period_ended).
+export function closePeriod(now: Date = new Date()): string {
+  const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export function periodHasEnded(period: string, now: Date = new Date()): boolean {
+  const [y, m] = period.split("-").map(Number);
+  return new Date(y, m, 1).getTime() <= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+}
