@@ -84,7 +84,7 @@ function UploadRow({ item, who, companyId, userId, today, names, onPatch }: RowP
   const latest = files[0] ?? null;
   const messages = sortedMessages(item);
   const fromExt = item.supplied_by_external;
-  const canUpload = (isFounder && !fromExt) || isExternal;
+  const canUpload = isFounder || isExternal;
   const canDelete = canUpload && !done;
   const accepter = item.accepted_by ? names[item.accepted_by] ?? "Prime Bottomline" : "";
   const decider = item.na_by ? names[item.na_by] ?? "Prime Bottomline" : "";
@@ -281,11 +281,8 @@ function UploadRow({ item, who, companyId, userId, today, names, onPatch }: RowP
                 {confirmNil ? "Confirm — we have none" : "We have none"}
               </button>
             )}
-            {isFounder && fromExt && !done && (
-              <span className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>The external practitioner sends this to us directly. Shown so you know where it stands.</span>
-            )}
             {isExternal && fromExt && !done && files.length === 0 && (
-              <span className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>This one comes from you — upload it above.</span>
+              <span className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>Usually comes from you — the founder can upload it too.</span>
             )}
           </div>
 
