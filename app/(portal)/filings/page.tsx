@@ -2,6 +2,9 @@ import { pageGate } from "@/lib/gate";
 import { createClient } from "@/lib/supabase/server";
 import { getObligations } from "@/app/year/actions";
 import YearView from "@/app/year/YearView";
+import { externalFirmName } from "@/lib/firm";
+import { closePeriod, formatPeriodLabel } from "@/lib/period";
+import MonthlyLine from "./MonthlyLine";
 import PageHeader from "../PageHeader";
 import Locked from "../Locked";
 import NoCompany from "../NoCompany";
@@ -16,15 +19,21 @@ export default async function FilingsPage() {
   if (company.status === "setting_up") return <SettingUp page={"filings"} name={company.name} />;
 
   const supabase = await createClient();
-  const [{ data: row }, obligations] = await Promise.all([
+  const period = closePeriod();
+  const [{ data: row }, obligations, { data: line }, firm] = await Promise.all([
     supabase.from("company").select("financial_year_start").eq("id", company.id).single(),
     getObligations(company.id),
+    supabase.from("monthly_line").select("body, posted_by_name, posted_at").eq("company_id", company.id).eq("period", period).maybeSingle(),
+    externalFirmName(supabase, company.id),
   ]);
+  const [py, pm] = period.split("-").map(Number);
+  const dueLabel = new Date(py, pm, 5).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 
   return (
     <>
       <PageHeader title={company.name} accent="Filings" sub="A filing cannot be closed without its evidence attached. PBA verifies each one." />
       <div className="mx-auto w-full max-w-[900px] px-5 py-8 md:px-8">
+        <MonthlyLine firm={firm} periodLabel={formatPeriodLabel(period)} dueLabel={dueLabel} line={line} canPost={session.who === "external"} />
         <YearView
           company={{ id: company.id, name: company.name }}
           currentUser={{ id: user.id, name: user.name, position: user.position, role: user.role }}

@@ -3,8 +3,8 @@ import { pageGate } from "@/lib/gate";
 import { createClient } from "@/lib/supabase/server";
 import { closePeriod, currentPeriod, formatPeriodLabel, previousPeriods } from "@/lib/period";
 import { getPublishedHistory } from "@/lib/periodFiguresView";
-import { getObligations } from "@/app/year/actions";
-import MockupTiles from "@/app/founder/dashboard/MockupTiles";
+import Charts from "./Charts";
+import { externalFirmName } from "@/lib/firm";
 import DownloadLink from "@/app/founder/dashboard/DownloadLink";
 import { CircularProgress } from "@/app/founder/shared";
 import { isReceived } from "@/lib/docItemStatus";
@@ -24,7 +24,7 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const period = currentPeriod();
 
-  const [publishedHistory, { data: docItems }, { data: deliverableRows }, obligations] = await Promise.all([
+  const [publishedHistory, { data: docItems }, { data: deliverableRows }, { data: lineRow }, firm] = await Promise.all([
     getPublishedHistory(company.id, period, 6),
     supabase.from("doc_item").select("*").eq("company_id", company.id).in("period", ["ONCE", closePeriod()]),
     supabase
@@ -34,7 +34,8 @@ export default async function DashboardPage() {
       .in("period", previousPeriods(period, 6))
       .eq("state", "published")
       .order("period", { ascending: false }),
-    getObligations(company.id),
+    supabase.from("monthly_line").select("body, posted_by_name, posted_at, period").eq("company_id", company.id).order("period", { ascending: false }).limit(1).maybeSingle(),
+    externalFirmName(supabase, company.id),
   ]);
 
   const allDocItems = (docItems ?? []) as DocItem[];
@@ -46,11 +47,6 @@ export default async function DashboardPage() {
     ? [...outstanding].sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? ""))[0]
     : null;
 
-  // A "notice" only counts as open once someone has actually reported one (uploaded or asked a question
-  // on that checklist item) — the item existing in pending state means nothing has been flagged yet.
-  const openNoticeCount = allDocItems.filter(
-    (i) => /notice|litigation/i.test(i.title) && (i.status === "uploaded" || i.status === "query")
-  ).length;
 
   const deliverables = (deliverableRows ?? []) as Pick<PeriodFigures, "id" | "period" | "state" | "published_at" | "pdf_storage_path" | "pdf_filename">[];
   const latestDeliverable = deliverables[0] ?? null;
@@ -119,7 +115,21 @@ export default async function DashboardPage() {
             </p>
           </div>
         ) : (
-          <MockupTiles history={published} obligations={obligations} openNoticeCount={openNoticeCount} />
+          <>
+            <Charts history={published} />
+            <h2 className="mb-3 mt-8 text-[12px] font-semibold uppercase tracking-[0.12em]" style={{ color: "var(--ink-secondary)" }}>Compliance</h2>
+            <div className="p-4" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 }}>
+              {lineRow ? (
+                <>
+                  <p className="text-[11px] font-semibold uppercase tracking-[.1em]" style={{ color: "var(--ink-secondary)" }}>{firm}&apos;s confirmation for {formatPeriodLabel(lineRow.period)}</p>
+                  <p className="mt-1 text-[15px] font-semibold">{lineRow.body}</p>
+                  <p className="mt-1 text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>Posted {new Date(lineRow.posted_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · <Link href="/filings" className="underline">see the filings</Link></p>
+                </>
+              ) : (
+                <p className="text-[13px]" style={{ color: "var(--ink-secondary)" }}>{firm} has not posted this month&apos;s filings confirmation yet. It is due by the 5th.</p>
+              )}
+            </div>
+          </>
         )}
 
         {deliverables.length > 0 && (
@@ -178,7 +188,7 @@ export default async function DashboardPage() {
           </p>
         )}
         <p className="mt-10 text-center text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>
-          Figures prepared by the company&apos;s external practitioner and presented by Prime Bottomline Advisory.
+          Figures prepared by {firm} and presented by Prime Bottomline Advisory.
         </p>
       </div>
     </>
