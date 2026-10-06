@@ -7,12 +7,14 @@ import CloseReview from "@/app/pba/CloseReview";
 import PageHeader from "../PageHeader";
 import Locked from "../Locked";
 import NoCompany from "../NoCompany";
+import SettingUp from "../SettingUp";
 
 export default async function ClosePage({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
   const { session, locked } = await pageGate("close");
   if (locked) return <Locked page="close" who={session.who!} />;
   const company = session.company;
   if (!company) return <NoCompany page="close" admin={session.who === "admin"} />;
+  if (company.status === "setting_up") return <SettingUp page={"close"} name={company.name} />;
   const user = session.user!;
   const period = closePeriod();
 

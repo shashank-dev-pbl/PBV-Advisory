@@ -5,6 +5,7 @@ import DownloadLink from "@/app/founder/dashboard/DownloadLink";
 import PageHeader from "../PageHeader";
 import Locked from "../Locked";
 import NoCompany from "../NoCompany";
+import SettingUp from "../SettingUp";
 import UploadPdf from "./UploadPdf";
 
 export default async function FilesPage() {
@@ -12,6 +13,7 @@ export default async function FilesPage() {
   if (locked) return <Locked page="files" who={session.who!} />;
   const company = session.company;
   if (!company) return <NoCompany page="files" admin={session.who === "admin"} />;
+  if (company.status === "setting_up") return <SettingUp page={"files"} name={company.name} />;
 
   const supabase = await createClient();
   const { data } = await supabase

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ArrowRight } from "lucide-react";
-import type { Company, DocItem, DocItemMessage } from "@/lib/types";
+import type { DocItem, DocItemMessage } from "@/lib/types";
 import { acceptItem, markNotApplicable, sendPractitionerMessage, markPractitionerRead } from "./actions";
 import { FileRow, VersionHistory, sortedFiles, sortedMessages, hasUnreadFor, isResolved, isReceived, ChatPopover, MessageButton, type ChatMessage, type CurrentUser } from "../founder/FounderView";
 import DecisionHistory from "./DecisionHistory";
@@ -15,12 +15,10 @@ function daysAgo(iso: string) {
 }
 
 export default function UploadsReview({
-  company,
   docItems,
   currentUser,
   teamUsers,
 }: {
-  company: Company;
   docItems: DocItem[];
   currentUser: CurrentUser;
   teamUsers: TeamUser[];

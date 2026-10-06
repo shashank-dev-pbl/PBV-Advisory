@@ -9,6 +9,7 @@ import UploadsReview from "@/app/practitioner/UploadsReview";
 import PageHeader from "../../PageHeader";
 import Locked from "../../Locked";
 import NoCompany from "../../NoCompany";
+import SettingUp from "../../SettingUp";
 import type { Company, DocItem } from "@/lib/types";
 
 const TABS = {
@@ -27,6 +28,7 @@ export default async function UploadsPage({ params }: { params: Promise<{ tab: s
   const company = session.company;
   const user = session.user!;
   if (!company) return <NoCompany page={t.key} admin={session.who === "admin"} />;
+  if (company.status === "setting_up") return <SettingUp page={t.key} name={company.name} />;
 
   const supabase = await createClient();
   const period = currentPeriod();
@@ -83,7 +85,7 @@ export default async function UploadsPage({ params }: { params: Promise<{ tab: s
             Nothing is set up under quarterly &amp; yearly yet — those items arrive with the uploads restructure.
           </p>
         ) : reviewer ? (
-          <UploadsReview company={companyRow} docItems={docItems} currentUser={currentUser} teamUsers={teamUsers} />
+          <UploadsReview docItems={docItems} currentUser={currentUser} teamUsers={teamUsers} />
         ) : (
           <FounderView
             company={companyRow}

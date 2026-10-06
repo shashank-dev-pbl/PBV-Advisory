@@ -11,6 +11,7 @@ import { isReceived } from "@/lib/docItemStatus";
 import PageHeader from "../PageHeader";
 import Locked from "../Locked";
 import NoCompany from "../NoCompany";
+import SettingUp from "../SettingUp";
 import type { DocItem, PeriodFigures } from "@/lib/types";
 
 export default async function DashboardPage() {
@@ -18,6 +19,7 @@ export default async function DashboardPage() {
   if (locked) return <Locked page="dashboard" who={session.who!} />;
   const company = session.company;
   if (!company) return <NoCompany page="dashboard" admin={session.who === "admin"} />;
+  if (company.status === "setting_up") return <SettingUp page={"dashboard"} name={company.name} />;
 
   const supabase = await createClient();
   const period = currentPeriod();

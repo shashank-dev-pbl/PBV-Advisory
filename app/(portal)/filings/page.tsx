@@ -5,6 +5,7 @@ import YearView from "@/app/year/YearView";
 import PageHeader from "../PageHeader";
 import Locked from "../Locked";
 import NoCompany from "../NoCompany";
+import SettingUp from "../SettingUp";
 
 export default async function FilingsPage() {
   const { session, locked } = await pageGate("filings");
@@ -12,6 +13,7 @@ export default async function FilingsPage() {
   const company = session.company;
   const user = session.user!;
   if (!company) return <NoCompany page="filings" admin={session.who === "admin"} />;
+  if (company.status === "setting_up") return <SettingUp page={"filings"} name={company.name} />;
 
   const supabase = await createClient();
   const [{ data: row }, obligations] = await Promise.all([
