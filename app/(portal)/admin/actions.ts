@@ -6,6 +6,7 @@ import { getSession } from "@/lib/auth";
 import { DEV_BYPASS_AUTH } from "@/lib/devBypass";
 import { isCurrentUserPlatformAdmin } from "@/lib/admin";
 import { normalizePhone } from "@/lib/phone";
+import { closePeriod, monthlyDueDate } from "@/lib/period";
 import type { AccountType, CompanyRole } from "@/lib/types";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
@@ -45,11 +46,15 @@ const LEGACY_ROLE: Record<AccountType, "founder" | "practitioner" | "pba"> = { f
 
 // ---------- checklist generation ----------
 
-async function seedChecklist(supabase: Client, companyId: string, period: string) {
-  for (const kind of ["once", "monthly"] as const) {
-    const { data: templates } = await supabase.from("doc_item_template").select("*").eq("period_type", kind).order("sort_order");
-    if (templates && templates.length > 0) {
-      const rows = templates.map((t) => ({
+// One-time and quarterly/yearly items are a single standing row each; monthly items belong to the month being closed
+// and carry their own due date ("Day 3" = the 3rd of the month after it).
+async function seedChecklist(supabase: Client, companyId: string, closeMonth: string, only?: "monthly") {
+  const { data: templates } = await supabase.from("doc_item_template").select("*").order("sort_order");
+  const rows = (templates ?? [])
+    .filter((t) => !only || t.cadence === only)
+    .map((t) => {
+      const day = /^Day (\d+)$/.exec(t.due_rule ?? "");
+      return {
         company_id: companyId,
         code: t.code,
         group_name: t.group_name,
@@ -61,23 +66,32 @@ async function seedChecklist(supabase: Client, companyId: string, period: string
         needs_label: t.needs_label,
         nil_return_allowed: t.nil_return_allowed,
         register_ref: t.register_ref,
-        period: kind === "once" ? "ONCE" : period,
+        cadence: t.cadence,
+        due_rule: t.due_rule,
+        supplied_by_external: t.supplied_by_external,
+        period: t.cadence === "monthly" ? closeMonth : "ONCE",
+        due_date: t.cadence === "monthly" && day ? monthlyDueDate(closeMonth, Number(day[1])) : null,
         status: "pending" as const,
-      }));
-      const { error } = await supabase.from("doc_item").upsert(rows, { onConflict: "company_id,code,period", ignoreDuplicates: true });
-      if (error) throw new Error(`Could not generate the checklist: ${error.message}`);
-    }
+      };
+    });
+  if (rows.length > 0) {
+    const { error } = await supabase.from("doc_item").upsert(rows, { onConflict: "company_id,code,period", ignoreDuplicates: true });
+    if (error) throw new Error(`Could not generate the checklist: ${error.message}`);
+  }
+  if (only) return;
+
+  for (const kind of ["once", "monthly"] as const) {
     const { data: dTemplates } = await supabase.from("deliverable_template").select("*").eq("period_type", kind).order("sort_order");
     if (dTemplates && dTemplates.length > 0) {
-      const rows = dTemplates.map((t) => ({
+      const dRows = dTemplates.map((t) => ({
         company_id: companyId,
         code: t.code,
         title: t.title,
-        period: kind === "once" ? "ONCE" : period,
+        period: kind === "once" ? "ONCE" : closeMonth,
         input_codes: t.input_codes,
         status: "blocked" as const,
       }));
-      const { error } = await supabase.from("deliverable").upsert(rows, { onConflict: "company_id,code,period", ignoreDuplicates: true });
+      const { error } = await supabase.from("deliverable").upsert(dRows, { onConflict: "company_id,code,period", ignoreDuplicates: true });
       if (error) throw new Error(`Could not generate the deliverables: ${error.message}`);
     }
   }
@@ -159,7 +173,7 @@ export async function listCompanies(): Promise<CompanyRow[]> {
 
 export type AccessRow = { id: string; userId: string; name: string; mobile: string | null; role: CompanyRole; firm: string | null };
 
-export async function getCompanyDetail(companyId: string): Promise<{ company: CompanyRow; people: AccessRow[]; addable: { id: string; label: string; accountType: AccountType }[] } | null> {
+export async function getCompanyDetail(companyId: string): Promise<{ company: CompanyRow; people: AccessRow[]; addable: { id: string; label: string; accountType: AccountType }[]; monthlyReady: boolean; closeMonth: string } | null> {
   const { supabase } = await requireAdmin();
   const companies = await listCompanies();
   const company = companies.find((c) => c.id === companyId);
@@ -186,7 +200,14 @@ export async function getCompanyDetail(companyId: string): Promise<{ company: Co
     .filter((u) => !onIt.has(u.id) && u.account_type)
     .map((u) => ({ id: u.id, label: u.name ?? u.email, accountType: u.account_type as AccountType }));
 
-  return { company, people, addable };
+  const { count: monthlyCount } = await supabase
+    .from("doc_item")
+    .select("*", { count: "exact", head: true })
+    .eq("company_id", companyId)
+    .eq("cadence", "monthly")
+    .eq("period", closePeriod());
+
+  return { company, people, addable, monthlyReady: (monthlyCount ?? 0) > 0, closeMonth: closePeriod() };
 }
 
 export async function goLive(companyId: string) {
@@ -199,6 +220,16 @@ export async function goLive(companyId: string) {
   const { data: company, error } = await supabase.from("company").update({ status: "live" }).eq("id", companyId).select("id, name").single();
   if (error) throw friendly(error);
   await writeLog(supabase, adminName, { action: "company_live", companyId, companyName: company.name });
+  revalidatePath("/", "layout");
+}
+
+// Rolls the monthly checklist forward: creates the monthly items for the month that has just ended.
+export async function generateMonth(companyId: string) {
+  const { supabase, adminName } = await requireAdmin();
+  const month = closePeriod();
+  await seedChecklist(supabase, companyId, month, "monthly");
+  const { data: company } = await supabase.from("company").select("name").eq("id", companyId).single();
+  await writeLog(supabase, adminName, { action: "month_generated", companyId, companyName: company?.name, detail: month });
   revalidatePath("/", "layout");
 }
 

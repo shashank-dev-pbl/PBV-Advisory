@@ -73,6 +73,9 @@ export type DocItem = {
   allows_multiple: boolean;
   needs_label: boolean;
   nil_return_allowed: boolean;
+  cadence: "once" | "monthly" | "qy" | null;
+  due_rule: string | null;
+  supplied_by_external: boolean;
   requested_at: string;
   uploaded_at: string | null;
   accepted_at: string | null;

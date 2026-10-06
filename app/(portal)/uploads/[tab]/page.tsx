@@ -2,26 +2,28 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { pageGate } from "@/lib/gate";
 import { createClient } from "@/lib/supabase/server";
-import { currentPeriod, formatPeriodLabel } from "@/lib/period";
+import { closePeriod, formatPeriodLabel, monthlyDueDate } from "@/lib/period";
+import { isDone, rowKey, shortDate } from "@/lib/uploads";
 import type { PageKey } from "@/lib/access";
-import FounderView from "@/app/founder/FounderView";
-import UploadsReview from "@/app/practitioner/UploadsReview";
 import PageHeader from "../../PageHeader";
 import Locked from "../../Locked";
 import NoCompany from "../../NoCompany";
 import SettingUp from "../../SettingUp";
+import UploadsBoard from "./UploadsBoard";
+import RevenueInfoBanner from "./RevenueInfoBanner";
 import type { Company, DocItem } from "@/lib/types";
 
 const TABS = {
-  once: { key: "up-once" as PageKey, label: "One-time", blurb: "Collected at onboarding. Updated only if something changes." },
-  month: { key: "up-month" as PageKey, label: "Monthly", blurb: "Every month, due by the 3rd." },
-  qy: { key: "up-qy" as PageKey, label: "Quarterly & yearly", blurb: "Quarterly returns, year-end items, and notices whenever one arrives." },
+  once: { key: "up-once" as PageKey, label: "One-time", cadence: "once", blurb: "Things we need once. Update them only if something changes." },
+  month: { key: "up-month" as PageKey, label: "Monthly", cadence: "monthly", blurb: "" },
+  qy: { key: "up-qy" as PageKey, label: "Quarterly & yearly", cadence: "qy", blurb: "Quarterly returns, year-end items, and notices whenever one arrives." },
 } as const;
+type TabKey = keyof typeof TABS;
 
 export default async function UploadsPage({ params }: { params: Promise<{ tab: string }> }) {
   const { tab } = await params;
   if (!(tab in TABS)) notFound();
-  const t = TABS[tab as keyof typeof TABS];
+  const t = TABS[tab as TabKey];
 
   const { session, locked } = await pageGate(t.key);
   if (locked) return <Locked page={t.key} who={session.who!} />;
@@ -31,69 +33,78 @@ export default async function UploadsPage({ params }: { params: Promise<{ tab: s
   if (company.status === "setting_up") return <SettingUp page={t.key} name={company.name} />;
 
   const supabase = await createClient();
-  const period = currentPeriod();
+  const period = closePeriod();
+  const today = new Date().toISOString().slice(0, 10);
 
-  const { data: companyRow } = await supabase.from("company").select("*").eq("id", company.id).single<Company>();
-  if (!companyRow) return <NoCompany page={t.key} admin={session.who === "admin"} />;
-
-  let docItems: DocItem[] = [];
-  if (tab === "once" || tab === "month") {
-    const { data } = await supabase
+  const [{ data: companyRow }, { data }] = await Promise.all([
+    supabase.from("company").select("*").eq("id", company.id).single<Company>(),
+    supabase
       .from("doc_item")
       .select("*, doc_file(*), doc_item_message(*)")
       .eq("company_id", company.id)
-      .eq("period", tab === "once" ? "ONCE" : period)
-      .order("requested_at", { ascending: true });
-    docItems = (data ?? []) as DocItem[];
+      .in("period", ["ONCE", period])
+      .order("requested_at", { ascending: true }),
+  ]);
+  const all = (data ?? []) as DocItem[];
+  const items = all.filter((i) => i.cadence === t.cadence);
+
+  // How many are still open in each tab — shown on the tab itself.
+  const openCount = (cadence: string) => all.filter((i) => i.cadence === cadence && !isDone(rowKey(i, today))).length;
+
+  // Names for "Accepted by …" — whoever made a decision on these items.
+  const ids = [...new Set(all.flatMap((i) => [i.accepted_by, i.na_by]).filter((x): x is string => !!x))];
+  const names: Record<string, string> = {};
+  if (ids.length > 0) {
+    const { data: people } = await supabase.from("app_user").select("id, name").in("id", ids);
+    for (const p of people ?? []) if (p.name) names[p.id] = p.name;
   }
 
-  const reviewer = session.who === "pba" || session.who === "admin";
-  let teamUsers: { id: string; name: string | null; role: string }[] = [];
-  if (reviewer) {
-    const ids = [...new Set(docItems.flatMap((i) => [i.accepted_by, i.na_by]).filter((x): x is string => !!x))];
-    if (ids.length > 0) {
-      const { data } = await supabase.from("app_user").select("id, name, role").in("id", ids);
-      teamUsers = data ?? [];
-    }
-  }
-
-  const currentUser = { id: user.id, name: user.name, position: user.position, role: user.role };
+  const sub = tab === "month" ? `${formatPeriodLabel(period)} · due by ${shortDate(monthlyDueDate(period, 3))}` : t.blurb;
+  const needsRevenueInfo = session.who === "founder" && companyRow && (!companyRow.revenue_classification || !companyRow.gross_net_billing);
 
   return (
     <>
-      <PageHeader title={company.name} accent={`Uploads · ${t.label}`} sub={tab === "month" ? formatPeriodLabel(period) : t.blurb} />
+      <PageHeader title={company.name} accent={`Uploads · ${t.label}`} sub={sub} />
       <div className="mx-auto w-full max-w-[900px] px-5 py-8 md:px-8">
-        <div className="mb-6 flex flex-wrap gap-2">
-          {(Object.keys(TABS) as (keyof typeof TABS)[]).map((k) => (
-            <Link
-              key={k}
-              href={`/uploads/${k}`}
-              className="btn-small"
-              style={{
-                background: k === tab ? "var(--bottomline-green)" : "transparent",
-                color: k === tab ? "var(--paper)" : "var(--ink-secondary)",
-                border: "1px solid " + (k === tab ? "var(--bottomline-green)" : "var(--rule)"),
-              }}
-            >
-              {TABS[k].label}
-            </Link>
-          ))}
+        <div className="mb-5 flex gap-1 border-b" style={{ borderColor: "var(--rule)" }}>
+          {(Object.keys(TABS) as TabKey[]).map((k) => {
+            const n = openCount(TABS[k].cadence);
+            const on = k === tab;
+            return (
+              <Link
+                key={k}
+                href={`/uploads/${k}`}
+                className="px-3.5 py-2.5 text-[13.5px]"
+                style={{ borderBottom: `2px solid ${on ? "var(--bottomline-green)" : "transparent"}`, color: on ? "var(--bottomline-green)" : "var(--ink-secondary)", fontWeight: on ? 700 : 500, marginBottom: -1 }}
+              >
+                {TABS[k].label}
+                <small className="ml-1.5 text-[11px]" style={n ? { background: "#fdf3dd", color: "#8a6412", borderRadius: 10, padding: "1px 7px", fontWeight: 600 } : { color: "var(--ink-secondary)", fontWeight: 400 }}>
+                  {n ? `${n} open` : "done"}
+                </small>
+              </Link>
+            );
+          })}
         </div>
 
-        {tab === "qy" ? (
-          <p className="text-[14px]" style={{ color: "var(--ink-secondary)" }}>
-            Nothing is set up under quarterly &amp; yearly yet — those items arrive with the uploads restructure.
-          </p>
-        ) : reviewer ? (
-          <UploadsReview docItems={docItems} currentUser={currentUser} teamUsers={teamUsers} />
-        ) : (
-          <FounderView
-            company={companyRow}
-            docItems={docItems}
-            currentUser={currentUser}
-            mode={session.who === "founder" ? "founder" : "external"}
+        {session.who === "external" && (
+          <div className="mb-5 p-3.5 text-[13px]" style={{ background: "#e9eef5", border: "1px solid #cdd9e8", color: "#26527f" }}>
+            You can see everything the founder uploads and upload on their behalf. Accepting items is for Prime Bottomline.
+          </div>
+        )}
+        {(session.who === "pba" || session.who === "admin") && (
+          <div className="mb-5 p-3.5 text-[13px]" style={{ background: "#eef3ec", border: "1px solid #cfdccd", color: "#22452a" }}>
+            Accept what&apos;s usable. Ask a question on anything that isn&apos;t — the item stays open until the founder replies.
+          </div>
+        )}
+        {needsRevenueInfo && companyRow && (
+          <RevenueInfoBanner
+            companyId={company.id}
+            revenueClassification={companyRow.revenue_classification ?? ""}
+            grossNetBilling={companyRow.gross_net_billing ?? ""}
           />
         )}
+
+        <UploadsBoard key={`${company.id}-${tab}`} items={items} who={session.who!} companyId={company.id} userId={user.id} today={today} names={names} />
       </div>
     </>
   );

@@ -44,3 +44,11 @@ export function periodHasEnded(period: string, now: Date = new Date()): boolean 
   const [y, m] = period.split("-").map(Number);
   return new Date(y, m, 1).getTime() <= new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 }
+
+// "Day 3" for the month being closed means the 3rd of the month after it — returned as a plain date string.
+export function monthlyDueDate(period: string, day: number): string {
+  const [y, m] = period.split("-").map(Number);
+  const ny = m === 12 ? y + 1 : y;
+  const nm = m === 12 ? 1 : m + 1;
+  return `${ny}-${String(nm).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}

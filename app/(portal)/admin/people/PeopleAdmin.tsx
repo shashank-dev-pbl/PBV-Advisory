@@ -10,6 +10,7 @@ const TYPE_LABEL: Record<AccountType, string> = WHO_LABEL;
 const ACTION_TEXT: Record<string, string> = {
   company_created: "created",
   company_live: "took live",
+  month_generated: "created the monthly items for",
   person_added: "added",
   person_edited: "edited",
   access_granted: "gave access to",
@@ -23,7 +24,7 @@ function maskMobile(m: string | null) {
 
 function describe(l: LogRow) {
   const verb = ACTION_TEXT[l.action] ?? l.action;
-  if (l.action === "company_created" || l.action === "company_live") return `${l.who} ${verb} ${l.company}`;
+  if (l.action === "company_created" || l.action === "company_live" || l.action === "month_generated") return `${l.who} ${verb} ${l.company}${l.action === "month_generated" && l.detail ? ` (${l.detail})` : ""}`;
   if (l.action === "person_added" || l.action === "person_edited") return `${l.who} ${verb} ${l.target}${l.detail ? ` (${TYPE_LABEL[l.detail as AccountType] ?? l.detail})` : ""}`;
   return `${l.who} ${verb} ${l.target ?? "someone"}${l.company ? ` on ${l.company}` : ""}${l.detail ? ` as ${l.detail}` : ""}`;
 }

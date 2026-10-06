@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { safeStorageSegment } from "@/lib/storagePath";
 import { fyForPeriod } from "@/lib/period";
 import { markFiled, verifyFiling } from "./actions";
-import type { CurrentUser } from "../founder/FounderView";
+import type { CurrentUser } from "../founder/shared";
 import type { Company, Obligation, ObligationOwner } from "@/lib/types";
 
 const OWNER_LABEL: Record<ObligationOwner, string> = { founder: "Founder", practitioner: "External practitioner", pba: "PBA" };

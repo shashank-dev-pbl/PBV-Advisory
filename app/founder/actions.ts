@@ -72,28 +72,6 @@ export async function markNilReturn(docItemId: string) {
   refresh();
 }
 
-export async function deleteUpload(docItemId: string) {
-  const { supabase } = await requireItem(docItemId, "founder", "practitioner");
-
-  const { data: existing } = await supabase
-    .from("doc_file")
-    .select("storage_path")
-    .eq("doc_item_id", docItemId);
-
-  if (existing && existing.length > 0) {
-    await supabase.storage.from("docs").remove(existing.map((f) => f.storage_path));
-    await supabase.from("doc_file").delete().eq("doc_item_id", docItemId);
-  }
-
-  await supabase
-    .from("doc_item")
-    .update({ status: "pending", uploaded_at: null })
-    .eq("id", docItemId)
-    .in("status", ["uploaded", "query"]);
-
-  refresh();
-}
-
 export async function sendFounderMessage(docItemId: string, body: string) {
   const { supabase } = await requireItem(docItemId, "founder");
 
@@ -110,15 +88,6 @@ export async function sendFounderMessage(docItemId: string, body: string) {
     .eq("status", "query");
   if (error) throw new Error(error.message);
 
-  refresh();
-}
-
-export async function markFounderRead(docItemId: string) {
-  const { supabase } = await requireItem(docItemId, "founder");
-  await supabase
-    .from("doc_item")
-    .update({ founder_last_read_at: new Date().toISOString() })
-    .eq("id", docItemId);
   refresh();
 }
 

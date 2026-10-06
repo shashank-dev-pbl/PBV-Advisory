@@ -50,12 +50,3 @@ export async function sendPractitionerMessage(docItemId: string, body: string) {
   if (error) throw new Error(error.message);
   refresh();
 }
-
-export async function markPractitionerRead(docItemId: string) {
-  const { supabase } = await requireItem(docItemId, "pba");
-  await supabase
-    .from("doc_item")
-    .update({ practitioner_last_read_at: new Date().toISOString() })
-    .eq("id", docItemId);
-  refresh();
-}

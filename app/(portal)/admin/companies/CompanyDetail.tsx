@@ -3,16 +3,19 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { grantAccess, removeAccess, goLive, type AccessRow, type CompanyRow } from "../actions";
+import { grantAccess, removeAccess, goLive, generateMonth, type AccessRow, type CompanyRow } from "../actions";
+import { formatPeriodLabel } from "@/lib/period";
 
 const ROLE_LABEL = { founder: "Founder", external: "External practitioner", pba: "PBA practitioner" } as const;
 const TYPE_ROLE: Record<string, string> = { founder: "Founder", external: "External practitioner", pba: "PBA practitioner" };
 
 export default function CompanyDetail({
-  company, people, addable,
+  company, people, addable, monthlyReady, closeMonth,
 }: {
   company: CompanyRow;
   people: AccessRow[];
+  monthlyReady: boolean;
+  closeMonth: string;
   addable: { id: string; label: string; accountType: string }[];
 }) {
   const router = useRouter();
@@ -58,6 +61,15 @@ export default function CompanyDetail({
         <div className="mb-6 p-3 text-[12.5px]" style={{ background: "#fdf3dd", border: "1px solid #e3d4a8", color: "#6b5320" }}>
           A company cannot go live without a founder and a PBA practitioner on it.
           {!hasFounder && " Needs a founder."}{!hasPba && " Needs a PBA practitioner."}
+        </div>
+      )}
+
+      {!monthlyReady && company.status === "live" && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 p-3.5" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 }}>
+          <p className="text-[13px]">The {formatPeriodLabel(closeMonth)} monthly items have not been created yet.</p>
+          <button onClick={() => run(() => generateMonth(company.id))} disabled={busy} className="btn-small" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)" }}>
+            Create {formatPeriodLabel(closeMonth).split(" ")[0]}&apos;s monthly items
+          </button>
         </div>
       )}
 

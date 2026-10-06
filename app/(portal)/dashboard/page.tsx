@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { pageGate } from "@/lib/gate";
 import { createClient } from "@/lib/supabase/server";
-import { currentPeriod, formatPeriodLabel, previousPeriods } from "@/lib/period";
+import { closePeriod, currentPeriod, formatPeriodLabel, previousPeriods } from "@/lib/period";
 import { getPublishedHistory } from "@/lib/periodFiguresView";
 import { getObligations } from "@/app/year/actions";
 import MockupTiles from "@/app/founder/dashboard/MockupTiles";
 import DownloadLink from "@/app/founder/dashboard/DownloadLink";
-import { CircularProgress } from "@/app/founder/FounderView";
+import { CircularProgress } from "@/app/founder/shared";
 import { isReceived } from "@/lib/docItemStatus";
 import PageHeader from "../PageHeader";
 import Locked from "../Locked";
@@ -26,7 +26,7 @@ export default async function DashboardPage() {
 
   const [publishedHistory, { data: docItems }, { data: deliverableRows }, obligations] = await Promise.all([
     getPublishedHistory(company.id, period, 6),
-    supabase.from("doc_item").select("*").eq("company_id", company.id).in("period", ["ONCE", period]),
+    supabase.from("doc_item").select("*").eq("company_id", company.id).in("period", ["ONCE", closePeriod()]),
     supabase
       .from("period_figures")
       .select("id, period, state, published_at, pdf_storage_path, pdf_filename")
@@ -69,7 +69,7 @@ export default async function DashboardPage() {
         accent="Dashboard"
         sub={latestDeliverable
           ? `Figures for ${formatPeriodLabel(latestDeliverable.period)} · published ${latestDeliverable.published_at ? new Date(latestDeliverable.published_at).toLocaleDateString() : ""}`
-          : formatPeriodLabel(period)}
+          : formatPeriodLabel(closePeriod())}
       />
       <div className="mx-auto w-full max-w-[1100px] px-5 py-8 md:px-8">
         <div className="mb-8 grid gap-3.5 md:grid-cols-2">
@@ -78,7 +78,7 @@ export default async function DashboardPage() {
             <div className="flex-1">
               <p className="text-[10.5px] font-bold uppercase tracking-[0.06em]" style={{ color: "var(--ink-secondary)" }}>What we need from you</p>
               <p className="mt-0.5 text-[14px] font-bold" style={{ color: "var(--ink)" }}>
-                {outstanding.length === 0 ? "Nothing outstanding" : `${outstanding.length} item${outstanding.length === 1 ? "" : "s"} still open for ${formatPeriodLabel(period)}`}
+                {outstanding.length === 0 ? "Nothing outstanding" : `${outstanding.length} item${outstanding.length === 1 ? "" : "s"} still open for ${formatPeriodLabel(closePeriod())}`}
               </p>
               {oldestOutstanding && (
                 <p className="mt-0.5 text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>
@@ -115,7 +115,7 @@ export default async function DashboardPage() {
         {published.length === 0 ? (
           <div className="p-6 text-center" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 }}>
             <p className="text-[13px]" style={{ color: "var(--ink-secondary)" }}>
-              Your first set of numbers will appear here once we complete the {formatPeriodLabel(period)} close.
+              Your first set of numbers will appear here once we complete the {formatPeriodLabel(closePeriod())} close.
             </p>
           </div>
         ) : (
