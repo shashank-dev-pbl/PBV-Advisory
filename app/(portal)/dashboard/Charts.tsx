@@ -4,7 +4,7 @@ import { useState } from "react";
 import { runwayMonths, concentration, collectionDays, collectionEfficiency } from "@/lib/dashboardCalc";
 import type { MonthlyFinancials } from "@/lib/types";
 
-const C = { brand: "#1e4620", s1: "#3f6b3f", s2: "#6b8f5a", s3: "#b8a25a", amber: "#8a6412", good: "#1e7a3c", bad: "#a0301f", grid: "#ece6d7", muted: "#8b8779" };
+const C = { brand: "#1e4620", s1: "#2a78d6", s2: "#1baf7a", s3: "#eb6834", amber: "#c98500", good: "#1e7a3c", bad: "#a0301f", grid: "#ece6d7", muted: "#8b8779" };
 
 function L(v: number | null | undefined): string {
   if (v === null || v === undefined || Number.isNaN(v)) return "—";
@@ -220,10 +220,10 @@ export default function Charts({ history }: { history: MonthlyFinancials[] }) {
   const concSeries = history.map((m) => (concentration(m).topPct ?? 0) / 100);
   const ar = latest.receivables_total ?? 0;
   const age = [
-    { n: "0–30 days", v: latest.receivables_0_30 ?? 0, c: "#c9d6c0" },
-    { n: "31–60 days", v: latest.receivables_31_60 ?? 0, c: "#9bb38e" },
-    { n: "61–90 days", v: latest.receivables_61_90 ?? 0, c: "#3f6b3f" },
-    { n: "Over 90 days", v: latest.receivables_90_plus ?? 0, c: "#1e4620" },
+    { n: "0–30 days", v: latest.receivables_0_30 ?? 0, c: "#9ec5f4" },
+    { n: "31–60 days", v: latest.receivables_31_60 ?? 0, c: "#5598e7" },
+    { n: "61–90 days", v: latest.receivables_61_90 ?? 0, c: "#2a78d6" },
+    { n: "Over 90 days", v: latest.receivables_90_plus ?? 0, c: "#0f3d73" },
   ];
   const pm = prev ? mLabel(prev.period) : "";
   const collDays = collectionDays(latest);
