@@ -26,13 +26,27 @@ export default function LoginPage() {
     const supabase = createClient();
     const phone = normalizePhone(phoneInput);
 
-    const { data: registered, error: checkError } = await supabase.rpc("is_phone_registered", { p_phone: phone });
-    if (checkError) {
-      setErrorMsg(checkError.message);
+    // 'ok' = registered and added to a company (or a platform admin); 'no_company' = registered but not added to any.
+    let status: string | null = null;
+    const check = await supabase.rpc("phone_login_status", { p_phone: phone });
+    if (!check.error) {
+      status = check.data as string;
+    } else {
+      // Database not updated yet: fall back to the older "is this number registered" check.
+      const legacy = await supabase.rpc("is_phone_registered", { p_phone: phone });
+      if (legacy.error) {
+        setErrorMsg(legacy.error.message);
+        setStatus("error");
+        return;
+      }
+      status = legacy.data ? "ok" : "unknown";
+    }
+    if (status === "no_company") {
+      setErrorMsg("You aren't added to any company yet. Ask Prime Bottomline Advisory to add you, then try again.");
       setStatus("error");
       return;
     }
-    if (!registered) {
+    if (status !== "ok") {
       setErrorMsg("This number isn't registered. Contact Prime Bottomline Advisory to get access.");
       setStatus("error");
       return;

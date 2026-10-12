@@ -366,19 +366,19 @@ export async function grantAccess(userId: string, companyId: string, chosenRole?
   revalidatePath("/", "layout");
 }
 
-// A founder is invited by email alone — no mobile needed yet. They are linked to this record when they first
-// sign in with that email, and then see the company's dashboard.
-export async function inviteFounder(companyId: string, email: string, name?: string) {
+// A founder is added to a company by mobile number alone. When they sign in with that number the app finds
+// the company they were added to and sends the code; a number with no company is turned away at sign-in.
+export async function addFounder(companyId: string, mobileInput: string, name?: string) {
   const { supabase } = await requireAdmin();
-  const mail = email.trim().toLowerCase();
-  if (!/^\S+@\S+\.\S+$/.test(mail)) throw new Error("Enter the founder's email address");
-  const { data: existing } = await supabase.from("app_user").select("id, account_type").eq("email", mail).maybeSingle();
-  if (existing && existing.account_type !== "founder") throw new Error("That email already belongs to a practitioner or admin account. A founder needs their own email.");
+  const mobile = normalizePhone(mobileInput);
+  if (mobile.length !== 12) throw new Error("Enter the founder's 10-digit mobile number");
+  const { data: existing } = await supabase.from("app_user").select("id, account_type").eq("phone", mobile).maybeSingle();
+  if (existing && existing.account_type !== "founder") throw new Error("That number already belongs to a practitioner or admin account. A founder needs their own number.");
   let userId = existing?.id as string | undefined;
   if (!userId) {
     const { data: created, error } = await supabase
       .from("app_user")
-      .insert({ email: mail, name: name?.trim() || null, phone: null, account_type: "founder", role: "founder", can_verify: false, can_publish: false, company_id: null })
+      .insert({ phone: mobile, name: name?.trim() || null, account_type: "founder", role: "founder", can_verify: false, can_publish: false, company_id: null })
       .select("id")
       .single();
     if (error) throw friendly(error);

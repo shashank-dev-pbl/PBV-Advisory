@@ -4,7 +4,7 @@ import { adminError } from "@/lib/adminError";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { grantAccess, inviteFounder, removeAccess, goLive, generateMonth, type AccessRow, type CompanyRow } from "../actions";
+import { grantAccess, addFounder, removeAccess, goLive, generateMonth, type AccessRow, type CompanyRow } from "../actions";
 import { formatPeriodLabel } from "@/lib/period";
 
 const ROLE_LABEL = { founder: "Founder", external: "External practitioner", pba: "PBA practitioner" } as const;
@@ -26,7 +26,7 @@ export default function CompanyDetail({
   const [pick, setPick] = useState("");
   const [mode, setMode] = useState<"person" | "founder">("person");
   const [role, setRole] = useState<RoleKey>("external");
-  const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
   const [fname, setFname] = useState("");
 
   async function run(fn: () => Promise<void>) {
@@ -115,7 +115,7 @@ export default function CompanyDetail({
       <div className="p-4" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 }}>
         <p className="mb-3 text-[14px] font-bold">Give someone access to {company.name}</p>
         <div className="mb-3 flex gap-2">
-          {([["person", "Someone already added"], ["founder", "Invite a founder by email"]] as const).map(([k, l]) => (
+          {([["person", "Someone already added"], ["founder", "Add a founder by mobile"]] as const).map(([k, l]) => (
             <button key={k} onClick={() => { setMode(k); setError(""); }} className="btn-small"
               style={{ background: mode === k ? "var(--bottomline-green)" : "transparent", color: mode === k ? "var(--paper)" : "var(--ink-secondary)", border: "1px solid var(--bottomline-green)" }}>{l}</button>
           ))}
@@ -127,7 +127,7 @@ export default function CompanyDetail({
                 <option value="">Choose someone…</option>
                 {addable.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
               </select>
-              <span className="mt-1 block text-[11px] font-normal" style={{ color: "var(--ink-secondary)" }}>Practitioners and PBA staff are added under People &amp; access first. Founders are invited by email instead.</span>
+              <span className="mt-1 block text-[11px] font-normal" style={{ color: "var(--ink-secondary)" }}>Practitioners and PBA staff are added under People &amp; access first. Founders are added by mobile number instead.</span>
             </label>
             <label className="text-[12px] font-semibold">Role on {company.name}
               <select className="input-field mt-1" value={role} onChange={(e) => setRole(e.target.value as RoleKey)}>
@@ -138,20 +138,23 @@ export default function CompanyDetail({
           </div>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="text-[12px] font-semibold">Founder&apos;s email
-              <input type="email" className="input-field mt-1" placeholder="founder@theircompany.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <label className="text-[12px] font-semibold">Founder&apos;s mobile number
+              <div className="mt-1 flex items-stretch gap-2">
+                <span className="input-field flex items-center justify-center" style={{ flex: "0 0 auto", width: 56 }}>+91</span>
+                <input type="tel" inputMode="numeric" maxLength={10} className="input-field" placeholder="98765 43210" value={mobile} onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))} />
+              </div>
             </label>
             <label className="text-[12px] font-semibold">Name (optional)
               <input className="input-field mt-1" value={fname} onChange={(e) => setFname(e.target.value)} />
             </label>
-            <span className="text-[11px] md:col-span-2" style={{ color: "var(--ink-secondary)" }}>Only the email is needed. They accept the invite by signing in with it, and then see {company.name}&apos;s dashboard.</span>
+            <span className="text-[11px] md:col-span-2" style={{ color: "var(--ink-secondary)" }}>Only the mobile number is needed. When they sign in with it they get a code and land on {company.name}&apos;s dashboard.</span>
           </div>
         )}
         <div className="mt-3 flex items-center gap-3">
           {mode === "person" ? (
             <button onClick={() => run(async () => { await grantAccess(pick, company.id, role); setPick(""); })} disabled={busy || !pick} className="btn-small" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)" }}>Give access</button>
           ) : (
-            <button onClick={() => run(async () => { await inviteFounder(company.id, email, fname); setEmail(""); setFname(""); })} disabled={busy || !email} className="btn-small" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)" }}>Invite founder</button>
+            <button onClick={() => run(async () => { await addFounder(company.id, mobile, fname); setMobile(""); setFname(""); })} disabled={busy || !mobile} className="btn-small" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)" }}>Add founder</button>
           )}
           <span className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>Takes effect immediately and is recorded.</span>
         </div>
