@@ -25,7 +25,7 @@ export default function CompanyDetail({
   const [error, setError] = useState("");
   const [pick, setPick] = useState("");
   const [mode, setMode] = useState<"person" | "founder">("person");
-  const [role, setRole] = useState<RoleKey>("founder");
+  const [role, setRole] = useState<RoleKey>("external");
   const [email, setEmail] = useState("");
   const [fname, setFname] = useState("");
 
@@ -114,15 +114,14 @@ export default function CompanyDetail({
         {mode === "person" ? (
           <div className="grid gap-3 md:grid-cols-2">
             <label className="text-[12px] font-semibold">Person
-              <select className="input-field mt-1" value={pick} onChange={(e) => { setPick(e.target.value); const a = addable.find((x) => x.id === e.target.value); if (a && a.accountType !== "admin") setRole(ROLE_OF[a.accountType] ?? "founder"); }}>
+              <select className="input-field mt-1" value={pick} onChange={(e) => { setPick(e.target.value); const a = addable.find((x) => x.id === e.target.value); if (a && a.accountType !== "admin") setRole(ROLE_OF[a.accountType] ?? "external"); }}>
                 <option value="">Choose someone…</option>
                 {addable.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
               </select>
-              <span className="mt-1 block text-[11px] font-normal" style={{ color: "var(--ink-secondary)" }}>Not listed? Add them under People &amp; access first.</span>
+              <span className="mt-1 block text-[11px] font-normal" style={{ color: "var(--ink-secondary)" }}>Practitioners and PBA staff are added under People &amp; access first. Founders are invited by email instead.</span>
             </label>
             <label className="text-[12px] font-semibold">Role on {company.name}
               <select className="input-field mt-1" value={role} onChange={(e) => setRole(e.target.value as RoleKey)}>
-                <option value="founder">Founder</option>
                 <option value="external">External practitioner</option>
                 <option value="pba">PBA practitioner</option>
               </select>

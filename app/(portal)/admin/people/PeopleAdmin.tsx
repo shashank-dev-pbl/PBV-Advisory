@@ -42,7 +42,7 @@ export default function PeopleAdmin({
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [f, setF] = useState({ name: "", mobile: "", email: "", accountType: "founder" as AccountType, firmName: "", companyId: "" });
+  const [f, setF] = useState({ name: "", mobile: "", email: "", accountType: "external" as AccountType, firmName: "", companyId: "" });
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState({ name: "", email: "", firm: "" });
 
@@ -52,7 +52,7 @@ export default function PeopleAdmin({
     try {
       await addPerson({ ...f, companyId: f.companyId || null });
       setOpen(false);
-      setF({ name: "", mobile: "", email: "", accountType: "founder", firmName: "", companyId: "" });
+      setF({ name: "", mobile: "", email: "", accountType: "external", firmName: "", companyId: "" });
       router.refresh();
     } catch (e) {
       setError(adminError(e, "Could not add the person"));
@@ -98,7 +98,6 @@ export default function PeopleAdmin({
             </label>
             <label className="text-[12px] font-semibold">Account type
               <select className="input-field mt-1" value={f.accountType} onChange={(e) => setF({ ...f, accountType: e.target.value as AccountType })}>
-                <option value="founder">Founder</option>
                 <option value="external">External practitioner</option>
                 <option value="pba">PBA practitioner</option>
                 {adminTypeAllowed && <option value="admin">PBA admin</option>}

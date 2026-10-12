@@ -194,6 +194,7 @@ export async function getCompanyDetail(companyId: string): Promise<{ company: Co
     .from("app_user")
     .select("id, name, email, account_type, phone")
     .neq("account_type", "admin")
+    .neq("account_type", "founder")
     .order("name");
   const addable = (everyone ?? [])
     .filter((u) => !onIt.has(u.id) && u.account_type)
@@ -280,6 +281,7 @@ export async function addPerson(params: {
 }) {
   const { supabase, adminName } = await requireAdmin();
   const mobile = normalizePhone(params.mobile);
+  if (params.accountType === "founder") throw new Error("Founders are invited by email from the company's own page, not added here");
   if (!params.name.trim()) throw new Error("Give the person a name");
   if (mobile.length !== 12) throw new Error("Enter a 10-digit mobile number");
   if (!/^\S+@\S+\.\S+$/.test(params.email)) throw new Error("Enter an email address — it is only used for notices");
@@ -341,6 +343,19 @@ export async function grantAccess(userId: string, companyId: string, chosenRole?
   if (!user.account_type || user.account_type === "admin") throw new Error("PBA admins already see every company");
 
   const role: CompanyRole = chosenRole ?? ROLE_FOR[user.account_type as Exclude<AccountType, "admin">];
+  if (role === "founder") {
+    // A founder belongs to exactly one company.
+    const { data: elsewhere } = await supabase
+      .from("company_access")
+      .select("company:company_id(name)")
+      .eq("user_id", userId)
+      .eq("role", "founder")
+      .is("revoked_at", null)
+      .neq("company_id", companyId)
+      .limit(1);
+    const other = (elsewhere as unknown as { company: { name: string } | null }[] | null)?.[0];
+    if (other) throw new Error(`${user.name ?? user.email} is already the founder of ${other.company?.name ?? "another company"}. A founder belongs to one company only.`);
+  }
   if (!["founder", "external", "pba"].includes(role)) throw new Error("Choose a role");
   const { error } = await supabase.from("company_access").insert({ user_id: userId, company_id: companyId, role, granted_by_name: adminName });
   if (error) {
@@ -357,7 +372,8 @@ export async function inviteFounder(companyId: string, email: string, name?: str
   const { supabase } = await requireAdmin();
   const mail = email.trim().toLowerCase();
   if (!/^\S+@\S+\.\S+$/.test(mail)) throw new Error("Enter the founder's email address");
-  const { data: existing } = await supabase.from("app_user").select("id").eq("email", mail).maybeSingle();
+  const { data: existing } = await supabase.from("app_user").select("id, account_type").eq("email", mail).maybeSingle();
+  if (existing && existing.account_type !== "founder") throw new Error("That email already belongs to a practitioner or admin account. A founder needs their own email.");
   let userId = existing?.id as string | undefined;
   if (!userId) {
     const { data: created, error } = await supabase
