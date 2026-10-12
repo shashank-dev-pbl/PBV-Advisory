@@ -331,7 +331,7 @@ export async function editPerson(userId: string, params: { name: string; email: 
 
 // ---------- access ----------
 
-export async function grantAccess(userId: string, companyId: string) {
+export async function grantAccess(userId: string, companyId: string, chosenRole?: CompanyRole) {
   const { supabase, adminName } = await requireAdmin();
   const [{ data: user }, { data: company }] = await Promise.all([
     supabase.from("app_user").select("id, name, email, account_type").eq("id", userId).single(),
@@ -340,7 +340,8 @@ export async function grantAccess(userId: string, companyId: string) {
   if (!user || !company) throw new Error("Person or company not found");
   if (!user.account_type || user.account_type === "admin") throw new Error("PBA admins already see every company");
 
-  const role = ROLE_FOR[user.account_type as Exclude<AccountType, "admin">];
+  const role: CompanyRole = chosenRole ?? ROLE_FOR[user.account_type as Exclude<AccountType, "admin">];
+  if (!["founder", "external", "pba"].includes(role)) throw new Error("Choose a role");
   const { error } = await supabase.from("company_access").insert({ user_id: userId, company_id: companyId, role, granted_by_name: adminName });
   if (error) {
     if (error.code === "23505") throw new Error(`${user.name ?? user.email} already has access to ${company.name}`);
@@ -348,6 +349,26 @@ export async function grantAccess(userId: string, companyId: string) {
   }
   await writeLog(supabase, adminName, { action: "access_granted", targetUserId: userId, targetName: user.name ?? user.email, companyId, companyName: company.name, detail: role });
   revalidatePath("/", "layout");
+}
+
+// A founder is invited by email alone — no mobile needed yet. They are linked to this record when they first
+// sign in with that email, and then see the company's dashboard.
+export async function inviteFounder(companyId: string, email: string, name?: string) {
+  const { supabase } = await requireAdmin();
+  const mail = email.trim().toLowerCase();
+  if (!/^\S+@\S+\.\S+$/.test(mail)) throw new Error("Enter the founder's email address");
+  const { data: existing } = await supabase.from("app_user").select("id").eq("email", mail).maybeSingle();
+  let userId = existing?.id as string | undefined;
+  if (!userId) {
+    const { data: created, error } = await supabase
+      .from("app_user")
+      .insert({ email: mail, name: name?.trim() || null, phone: null, account_type: "founder", role: "founder", can_verify: false, can_publish: false, company_id: null })
+      .select("id")
+      .single();
+    if (error) throw friendly(error);
+    userId = created.id as string;
+  }
+  await grantAccess(userId, companyId, "founder");
 }
 
 // Takes effect immediately: the next request this person makes finds no active grant (see current_app_user()).

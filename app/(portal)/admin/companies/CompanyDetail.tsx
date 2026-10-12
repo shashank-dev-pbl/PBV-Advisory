@@ -4,11 +4,12 @@ import { adminError } from "@/lib/adminError";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { grantAccess, removeAccess, goLive, generateMonth, type AccessRow, type CompanyRow } from "../actions";
+import { grantAccess, inviteFounder, removeAccess, goLive, generateMonth, type AccessRow, type CompanyRow } from "../actions";
 import { formatPeriodLabel } from "@/lib/period";
 
 const ROLE_LABEL = { founder: "Founder", external: "External practitioner", pba: "PBA practitioner" } as const;
-const TYPE_ROLE: Record<string, string> = { founder: "Founder", external: "External practitioner", pba: "PBA practitioner" };
+type RoleKey = "founder" | "external" | "pba";
+const ROLE_OF: Record<string, RoleKey> = { founder: "founder", external: "external", pba: "pba" };
 
 export default function CompanyDetail({
   company, people, addable, monthlyReady, closeMonth,
@@ -23,6 +24,10 @@ export default function CompanyDetail({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [pick, setPick] = useState("");
+  const [mode, setMode] = useState<"person" | "founder">("person");
+  const [role, setRole] = useState<RoleKey>("founder");
+  const [email, setEmail] = useState("");
+  const [fname, setFname] = useState("");
 
   async function run(fn: () => Promise<void>) {
     setBusy(true);
@@ -100,17 +105,46 @@ export default function CompanyDetail({
 
       <div className="p-4" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 }}>
         <p className="mb-3 text-[14px] font-bold">Give someone access to {company.name}</p>
-        <label className="text-[12px] font-semibold">Person
-          <select className="input-field mt-1" value={pick} onChange={(e) => setPick(e.target.value)}>
-            <option value="">Choose someone already added…</option>
-            {addable.map((a) => <option key={a.id} value={a.id}>{a.label} — {TYPE_ROLE[a.accountType]}</option>)}
-          </select>
-          <span className="mt-1 block text-[11px] font-normal" style={{ color: "var(--ink-secondary)" }}>Not listed? Add them under People &amp; access first. Their role here follows their account type.</span>
-        </label>
+        <div className="mb-3 flex gap-2">
+          {([["person", "Someone already added"], ["founder", "Invite a founder by email"]] as const).map(([k, l]) => (
+            <button key={k} onClick={() => { setMode(k); setError(""); }} className="btn-small"
+              style={{ background: mode === k ? "var(--bottomline-green)" : "transparent", color: mode === k ? "var(--paper)" : "var(--ink-secondary)", border: "1px solid var(--bottomline-green)" }}>{l}</button>
+          ))}
+        </div>
+        {mode === "person" ? (
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="text-[12px] font-semibold">Person
+              <select className="input-field mt-1" value={pick} onChange={(e) => { setPick(e.target.value); const a = addable.find((x) => x.id === e.target.value); if (a && a.accountType !== "admin") setRole(ROLE_OF[a.accountType] ?? "founder"); }}>
+                <option value="">Choose someone…</option>
+                {addable.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
+              </select>
+              <span className="mt-1 block text-[11px] font-normal" style={{ color: "var(--ink-secondary)" }}>Not listed? Add them under People &amp; access first.</span>
+            </label>
+            <label className="text-[12px] font-semibold">Role on {company.name}
+              <select className="input-field mt-1" value={role} onChange={(e) => setRole(e.target.value as RoleKey)}>
+                <option value="founder">Founder</option>
+                <option value="external">External practitioner</option>
+                <option value="pba">PBA practitioner</option>
+              </select>
+            </label>
+          </div>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="text-[12px] font-semibold">Founder&apos;s email
+              <input type="email" className="input-field mt-1" placeholder="founder@theircompany.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </label>
+            <label className="text-[12px] font-semibold">Name (optional)
+              <input className="input-field mt-1" value={fname} onChange={(e) => setFname(e.target.value)} />
+            </label>
+            <span className="text-[11px] md:col-span-2" style={{ color: "var(--ink-secondary)" }}>Only the email is needed. They accept the invite by signing in with it, and then see {company.name}&apos;s dashboard.</span>
+          </div>
+        )}
         <div className="mt-3 flex items-center gap-3">
-          <button onClick={() => run(async () => { await grantAccess(pick, company.id); setPick(""); })} disabled={busy || !pick} className="btn-small" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)" }}>
-            Give access
-          </button>
+          {mode === "person" ? (
+            <button onClick={() => run(async () => { await grantAccess(pick, company.id, role); setPick(""); })} disabled={busy || !pick} className="btn-small" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)" }}>Give access</button>
+          ) : (
+            <button onClick={() => run(async () => { await inviteFounder(company.id, email, fname); setEmail(""); setFname(""); })} disabled={busy || !email} className="btn-small" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)" }}>Invite founder</button>
+          )}
           <span className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>Takes effect immediately and is recorded.</span>
         </div>
         {error && <p className="mt-3 text-[12.5px]" style={{ color: "#8c1a1a" }}>{error}</p>}
