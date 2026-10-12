@@ -1,7 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
+import { DEV_BYPASS_AUTH } from "@/lib/devBypass";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
+  if (DEV_BYPASS_AUTH) return NextResponse.next({ request });
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(

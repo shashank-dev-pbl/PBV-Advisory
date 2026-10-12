@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { COMPANY_COOKIE } from "@/lib/access";
+import { DEV_BYPASS_AUTH } from "@/lib/devBypass";
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -15,7 +16,10 @@ export async function createClient() {
       global: companyId ? { headers: { "x-company-id": companyId } } : undefined,
       cookies: {
         getAll() {
-          return cookieStore.getAll();
+          // Real sign-in is off: ignore any leftover sign-in cookie in the browser so every request is the
+          // same anonymous dev session, whoever happened to sign in on this machine before.
+          const all = cookieStore.getAll();
+          return DEV_BYPASS_AUTH ? all.filter((c) => !c.name.startsWith("sb-")) : all;
         },
         setAll(cookiesToSet) {
           try {
