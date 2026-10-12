@@ -63,12 +63,21 @@ export default function CompanyDetail({
           </button>
         )}
       </div>
-      {company.status !== "live" && (
-        <div className="mb-6 p-3 text-[12.5px]" style={{ background: "#fdf3dd", border: "1px solid #e3d4a8", color: "#6b5320" }}>
-          A company cannot go live without a founder and a PBA practitioner on it.
-          {!hasFounder && " Needs a founder."}{!hasPba && " Needs a PBA practitioner."}
+      {company.status !== "live" && (hasFounder && hasPba ? (
+        <div className="mb-6 flex items-start gap-2 p-3 text-[12.5px]" style={{ background: "#fdf3dd", border: "1px solid #e3d4a8", color: "#6b5320" }}>
+          <span aria-hidden style={{ fontWeight: 800 }}>⚠</span>
+          <span>Ready to go live. Going live opens {company.name} to the people on it and creates its checklist.</span>
         </div>
-      )}
+      ) : (
+        <div className="mb-6 p-3 text-[12.5px]" style={{ background: "#fbe9e7", border: "1px solid #e3b8b2", color: "#8c1a1a" }}>
+          <p className="mb-1 font-semibold">A company cannot go live until both of these are on it:</p>
+          {[["A founder", hasFounder], ["A PBA practitioner", hasPba]].map(([label, ok]) => (
+            <p key={label as string} className="flex items-center gap-2" style={{ color: ok ? "#004d00" : "#8c1a1a" }}>
+              <span aria-hidden style={{ fontWeight: 800 }}>{ok ? "✓" : "✗"}</span>{label as string}{ok ? "" : " — required"}
+            </p>
+          ))}
+        </div>
+      ))}
 
       {!monthlyReady && company.status === "live" && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 p-3.5" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 }}>
