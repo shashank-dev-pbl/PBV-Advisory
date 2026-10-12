@@ -25,7 +25,7 @@ export default function MonthlyLine({ firm, periodLabel, dueLabel, line, canPost
             <p className="mt-1 text-[14px]" style={{ color: "var(--ink-secondary)" }}>Not posted yet for {periodLabel}.</p>
           ) : null}
         </div>
-        <span className="px-2 py-0.5 text-[11.5px] font-semibold" style={{ borderRadius: 5, background: line ? "#eef3ec" : "#f1ece0", color: line ? "#1e4620" : "#57544a" }}>{line ? "Received" : "Waiting"}</span>
+        <span className="px-2 py-0.5 text-[11.5px] font-semibold" style={{ borderRadius: 5, background: line ? "#eef3ec" : "#f1ece0", color: line ? "#004d00" : "#57544a" }}>{line ? "Received" : "Waiting"}</span>
       </div>
       {canPost && (editing || !line) && (
         <div className="mt-3">

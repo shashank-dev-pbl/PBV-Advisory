@@ -92,7 +92,7 @@ export default async function UploadsPage({ params }: { params: Promise<{ tab: s
           </div>
         )}
         {(session.who === "pba" || session.who === "admin") && (
-          <div className="mb-5 p-3.5 text-[13px]" style={{ background: "#eef3ec", border: "1px solid #cfdccd", color: "#22452a" }}>
+          <div className="mb-5 p-3.5 text-[13px]" style={{ background: "#eef3ec", border: "1px solid #cfdccd", color: "#004d00" }}>
             Accept what&apos;s usable. Ask a question on anything that isn&apos;t — the item stays open until the founder replies.
           </div>
         )}

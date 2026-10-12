@@ -3,7 +3,7 @@
 // reviewer can correct a row without a release.
 
 export const CATEGORY_COLOUR: Record<string, string> = {
-  Founding: "#1e4620",
+  Founding: "#004d00",
   Fundraise: "#2a78d6",
   "Debt & charges": "#eb6834",
   "People & ESOP": "#1baf7a",

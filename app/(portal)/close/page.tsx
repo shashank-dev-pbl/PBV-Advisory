@@ -26,7 +26,7 @@ export default async function ClosePage({ searchParams }: { searchParams: Promis
         <PageHeader title={company.name} accent="Monthly close" sub={formatPeriodLabel(period)} />
         <div className="mx-auto w-full max-w-[1280px] px-5 py-8 md:px-8">
           <div className="mb-6 p-4" style={{ background: "#eef3ec", border: "1px solid #cfdccd" }}>
-            <p className="text-[13px]" style={{ color: "#22452a" }}>
+            <p className="text-[13px]" style={{ color: "#004d00" }}>
               <strong>You upload; Prime Bottomline checks and publishes.</strong> Nothing here reaches the founder until they do.
             </p>
           </div>

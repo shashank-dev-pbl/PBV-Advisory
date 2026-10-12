@@ -28,9 +28,9 @@ export const STATUS_TAG: Record<RowKey, { label: string; bg: string; color: stri
   late: { label: "Late", bg: "#fbe9e7", color: "#b3261e" },
   submitted: { label: "With us", bg: "#e9eef5", color: "#6b6357" },
   query: { label: "Question for you", bg: "#fdf3dd", color: "#8a6412" },
-  accepted: { label: "Accepted", bg: "#e8efe6", color: "#1e4620" },
-  nil: { label: "You said none", bg: "#e8efe6", color: "#1e4620" },
-  na: { label: "Not applicable", bg: "#e8efe6", color: "#1e4620" },
+  accepted: { label: "Accepted", bg: "#e8efe6", color: "#004d00" },
+  nil: { label: "You said none", bg: "#e8efe6", color: "#004d00" },
+  na: { label: "Not applicable", bg: "#e8efe6", color: "#004d00" },
 };
 
 export const TIERS: Record<DocPriority, { name: string; color: string; soft: string; tip: string }> = {

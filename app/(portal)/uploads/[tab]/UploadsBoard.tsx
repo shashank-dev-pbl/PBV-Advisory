@@ -14,7 +14,7 @@ type Names = Record<string, string>;
 
 const ICONS: Record<RowKey | "done", React.ReactNode> = {
   done: (
-    <svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" fill="#dfe9dc" /><path d="M5.3 9.2l2.4 2.4 5-5.2" fill="none" stroke="#1e4620" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" /></svg>
+    <svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" fill="#dfe9dc" /><path d="M5.3 9.2l2.4 2.4 5-5.2" fill="none" stroke="#004d00" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" /></svg>
   ),
   todo: <svg viewBox="0 0 18 18"><circle cx="9" cy="9" r="7.2" fill="none" stroke="#b9b3a3" strokeWidth="1.6" /></svg>,
   late: (

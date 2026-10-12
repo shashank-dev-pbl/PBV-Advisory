@@ -50,7 +50,7 @@ export default function DataRoom(p: Props) {
         ))}
       </div>
       {!p.canEdit && (
-        <div className="mb-5 p-3.5 text-[13px]" style={{ background: "#eef3ec", border: "1px solid #cfdccd", color: "#22452a" }}>
+        <div className="mb-5 p-3.5 text-[13px]" style={{ background: "#eef3ec", border: "1px solid #cfdccd", color: "#004d00" }}>
           Everything about the company&apos;s legal history in one place. Your practitioners keep it up to date; you can view and download anything.
         </div>
       )}
@@ -224,7 +224,7 @@ function Timeline(p: Props) {
                   style={{ position: "absolute", left, top, width: 150, height: 74, background: "#fff", border: "1px solid var(--rule)", borderTop: `3px solid ${c}`, borderRadius: 9, padding: "7px 10px", cursor: "pointer", zIndex: 2, overflow: "hidden", boxShadow: on ? `0 0 0 2px ${c}` : undefined }}>
                   <div style={{ fontSize: 10.5, color: "var(--ink-secondary)" }}>{fmtDate(e.event_date)}</div>
                   <div className="truncate" style={{ fontSize: 12.5, fontWeight: 650, marginTop: 1 }}>{e.title}</div>
-                  <div style={{ fontSize: 10.5, marginTop: 5, fontWeight: 600, color: st.missing ? "#a0301f" : "#1e4620" }}>{st.missing ? `${st.missing} missing` : "✓ All in"}</div>
+                  <div style={{ fontSize: 10.5, marginTop: 5, fontWeight: 600, color: st.missing ? "#a0301f" : "#004d00" }}>{st.missing ? `${st.missing} missing` : "✓ All in"}</div>
                 </div>
               </div>
             );
@@ -344,7 +344,7 @@ function EventDetail({ ev, canEdit, companyId, lib, eventTypes, typeDocs, eventD
             {up ? `${up.filename} · ${up.by_name} · ${fmtDate(up.at.slice(0, 10))}` : naRow ? `“${naRow.na_reason}” · ${naRow.by_name}` : note ?? ""}
           </div>
         </div>
-        <span className="px-2 py-0.5 text-[11.5px] font-semibold" style={{ borderRadius: 5, background: state === "uploaded" ? "#eef3ec" : state ? "#f1ece0" : optionalRow ? "#f1ece0" : "#fbe7e3", color: state === "uploaded" ? "#1e4620" : state ? "#57544a" : optionalRow ? "#57544a" : "#a0301f" }}>
+        <span className="px-2 py-0.5 text-[11.5px] font-semibold" style={{ borderRadius: 5, background: state === "uploaded" ? "#eef3ec" : state ? "#f1ece0" : optionalRow ? "#f1ece0" : "#fbe7e3", color: state === "uploaded" ? "#004d00" : state ? "#57544a" : optionalRow ? "#57544a" : "#a0301f" }}>
           {state === "uploaded" ? "Uploaded" : state ? "Not applicable" : optionalRow ? "If applicable" : "Missing"}
         </span>
         {up && <button className={btn} style={btnStyle} onClick={() => download(up.storage_path!)}>Download</button>}
@@ -389,7 +389,7 @@ function EventDetail({ ev, canEdit, companyId, lib, eventTypes, typeDocs, eventD
             <div className="text-[13.5px] font-semibold">{r.other_name}<span className="ml-1.5 px-1.5 py-px text-[10.5px] font-bold" style={{ background: "#f1ece0", color: "#57544a", borderRadius: 4 }}>Other</span></div>
             <div className="text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>{r.filename} · {r.by_name} · {fmtDate(r.at.slice(0, 10))}</div>
           </div>
-          <span className="px-2 py-0.5 text-[11.5px] font-semibold" style={{ borderRadius: 5, background: "#eef3ec", color: "#1e4620" }}>Uploaded</span>
+          <span className="px-2 py-0.5 text-[11.5px] font-semibold" style={{ borderRadius: 5, background: "#eef3ec", color: "#004d00" }}>Uploaded</span>
           <button className={btn} style={btnStyle} onClick={() => download(r.storage_path!)}>Download</button>
         </div>
       ))}

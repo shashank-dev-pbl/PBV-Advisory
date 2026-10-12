@@ -4,7 +4,7 @@ import { useState } from "react";
 import { runwayMonths, concentration, collectionDays, collectionEfficiency } from "@/lib/dashboardCalc";
 import type { MonthlyFinancials } from "@/lib/types";
 
-const C = { brand: "#1e4620", s1: "#2a78d6", s2: "#1baf7a", s3: "#eb6834", amber: "#c98500", good: "#1e7a3c", bad: "#a0301f", grid: "#ece6d7", muted: "#8b8779" };
+const C = { brand: "#004d00", s1: "#2a78d6", s2: "#1baf7a", s3: "#eb6834", amber: "#c98500", good: "#004d00", bad: "#a0301f", grid: "#ece6d7", muted: "#8b8779" };
 
 function L(v: number | null | undefined): string {
   if (v === null || v === undefined || Number.isNaN(v)) return "—";
