@@ -1,5 +1,6 @@
 "use client";
 
+import { adminError } from "@/lib/adminError";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { addPerson, editPerson, type LogRow, type PersonRow } from "../actions";
@@ -54,7 +55,7 @@ export default function PeopleAdmin({
       setF({ name: "", mobile: "", email: "", accountType: "founder", firmName: "", companyId: "" });
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not add the person");
+      setError(adminError(e, "Could not add the person"));
     }
     setBusy(false);
   }
@@ -67,7 +68,7 @@ export default function PeopleAdmin({
       setEditing(null);
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save");
+      setError(adminError(e, "Could not save"));
     }
     setBusy(false);
   }

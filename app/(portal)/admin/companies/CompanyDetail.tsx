@@ -1,5 +1,6 @@
 "use client";
 
+import { adminError } from "@/lib/adminError";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -30,7 +31,7 @@ export default function CompanyDetail({
       await fn();
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      setError(adminError(e, "Something went wrong"));
     }
     setBusy(false);
   }

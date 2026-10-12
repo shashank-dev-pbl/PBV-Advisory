@@ -1,5 +1,6 @@
 "use client";
 
+import { adminError } from "@/lib/adminError";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -26,7 +27,7 @@ export default function CompaniesAdmin({ companies, periodOptions }: { companies
       router.push(`/admin/companies?c=${id}`);
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not create the company");
+      setError(adminError(e, "Could not create the company"));
       setBusy(false);
     }
   }
