@@ -161,6 +161,17 @@ input, textarea, select, button {
   min-height: 44px;
 }
 
+/* Dropdowns: our own chevron with room on the right, instead of the browser's arrow jammed against the edge. */
+select.input-field {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 44px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b6357' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  cursor: pointer;
+}
+
 .input-field:focus {
   border-color: var(--bottomline-green);
   background: var(--paper);
