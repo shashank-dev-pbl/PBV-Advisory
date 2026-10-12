@@ -1,9 +1,30 @@
-import { WHO_LABEL, type Who } from "@/lib/access";
+"use client";
+
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { DEV_AS_COOKIE, WHO_LABEL, type Who } from "@/lib/access";
 
 const ORDER: Who[] = ["founder", "external", "pba", "admin"];
 
+function currentRole(): Who {
+  const hit = document.cookie.split("; ").find((c) => c.startsWith(`${DEV_AS_COOKIE}=`));
+  const v = hit?.split("=")[1] as Who | undefined;
+  return v && ORDER.includes(v) ? v : "external";
+}
+
 // Only rendered while real sign-in is off. Not part of the product: it stands in for signing in as each account type.
-export default function DevStrip({ who }: { who: Who }) {
+// Reads the role from the cookie on every navigation (and when the tab regains focus), so it can never show
+// a different role from the page — even if another tab switched it.
+export default function DevStrip({ note }: { note?: string }) {
+  const pathname = usePathname();
+  const [who, setWho] = useState<Who | null>(null);
+  useEffect(() => {
+    const sync = () => setWho(currentRole());
+    sync();
+    window.addEventListener("focus", sync);
+    return () => window.removeEventListener("focus", sync);
+  }, [pathname]);
+
   return (
     <div className="flex flex-wrap items-center gap-2 px-4 py-2 text-[12px]" style={{ background: "#1f1f1a", color: "#d9d6c8" }}>
       <b className="mr-1">Dev preview — view as:</b>
@@ -17,7 +38,7 @@ export default function DevStrip({ who }: { who: Who }) {
           {WHO_LABEL[w]}
         </a>
       ))}
-      <span className="ml-auto opacity-70">Real sign-in is off. This strip is not part of the product.</span>
+      <span className="ml-auto opacity-70">{note ? `${note} · ` : ""}Real sign-in is off. Not part of the product.</span>
     </div>
   );
 }

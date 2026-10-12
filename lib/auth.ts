@@ -19,6 +19,7 @@ export type Session = {
   who: Who | null;
   companies: CompanyAccess[];
   company: CompanyAccess | null;
+  devNote?: string; // dev bypass only: what the company lookup returned, shown in the dev strip
 };
 
 const EMPTY: Session = { user: null, who: null, companies: [], company: null };
@@ -53,17 +54,22 @@ function dbRole(role: CompanyRole | "admin"): AppUser["role"] {
 
 type AccessRow = { role: CompanyRole; company: { id: string; name: string; status: "setting_up" | "live" } | null };
 
+let lastLoadError = "";
+
 async function loadCompanies(supabase: Awaited<ReturnType<typeof createClient>>, userId: string, isAdmin: boolean): Promise<CompanyAccess[]> {
+  lastLoadError = "";
   if (isAdmin) {
-    const { data } = await supabase.from("company").select("id, name, status").order("created_at");
+    const { data, error } = await supabase.from("company").select("id, name, status").order("created_at");
+    if (error) lastLoadError = error.message;
     return (data ?? []).map((c) => ({ ...c, role: "admin" as const }));
   }
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("company_access")
     .select("role, company:company_id(id, name, status)")
     .eq("user_id", userId)
     .is("revoked_at", null)
     .order("granted_at");
+  if (error) lastLoadError = error.message;
   return ((data ?? []) as unknown as AccessRow[])
     .filter((r) => r.company)
     .map((r) => ({ ...r.company!, role: r.role }));
@@ -85,7 +91,8 @@ export const getSession = cache(async (): Promise<Session> => {
     const companies = await loadCompanies(supabase, base.id, who === "admin");
     const company = pickCompany(companies, selectedId);
     const user: AppUser = { ...base, company_id: company?.id ?? "", role: company ? dbRole(company.role) : base.role };
-    return { user, who, companies, company };
+    const devNote = `${companies.length} company row(s) for ${who}${lastLoadError ? ` · error: ${lastLoadError}` : ""}`;
+    return { user, who, companies, company, devNote };
   }
 
   let { data } = await supabase.rpc("current_app_user");

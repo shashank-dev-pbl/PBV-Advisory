@@ -23,7 +23,7 @@ export default async function PortalLayout({ children }: { children: React.React
 
   return (
     <>
-      {DEV_BYPASS_AUTH && <DevStrip who={session.who} />}
+      {DEV_BYPASS_AUTH && <DevStrip note={session.devNote} />}
       <PortalShell
         who={session.who}
         companies={session.companies.map((c) => ({ id: c.id, name: c.name, status: c.status }))}
