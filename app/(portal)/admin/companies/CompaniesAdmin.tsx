@@ -94,7 +94,7 @@ export default function CompaniesAdmin({ companies, periodOptions }: { companies
         </thead>
         <tbody>
           {companies.map((c) => (
-            <tr key={c.id} style={{ borderBottom: "1px solid var(--rule)" }}>
+            <tr key={c.id} onClick={() => router.push(`/admin/companies?c=${c.id}`)} className="cursor-pointer hover:bg-black/[0.03]" style={{ borderBottom: "1px solid var(--rule)" }}>
               <td className="px-3 py-2.5 text-[13.5px] font-bold"><Link href={`/admin/companies?c=${c.id}`} style={{ color: "var(--ink)" }}>{c.name}</Link></td>
               <td className="px-3 py-2.5 text-[13px]">{PLAN_LABEL[c.plan] ?? c.plan}</td>
               <td className="px-3 py-2.5 text-[13px]">{c.founder.join(", ") || <span style={{ color: "var(--ink-secondary)" }}>—</span>}</td>

@@ -194,11 +194,10 @@ export async function getCompanyDetail(companyId: string): Promise<{ company: Co
     .from("app_user")
     .select("id, name, email, account_type, phone")
     .neq("account_type", "admin")
-    .not("phone", "is", null)
     .order("name");
   const addable = (everyone ?? [])
     .filter((u) => !onIt.has(u.id) && u.account_type)
-    .map((u) => ({ id: u.id, label: u.name ?? u.email, accountType: u.account_type as AccountType }));
+    .map((u) => ({ id: u.id, label: `${u.name ?? u.email}${u.phone ? "" : " (no mobile yet)"}`, accountType: u.account_type as AccountType }));
 
   const { count: monthlyCount } = await supabase
     .from("doc_item")
