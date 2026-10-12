@@ -59,7 +59,14 @@ export default function PortalShell({ who, companies, companyId, closeWaiting, c
             className="input-field"
             style={{ minHeight: 34, padding: "6px 8px", fontSize: 13 }}
             value={companyId ?? ""}
-            onChange={(e) => startTransition(async () => { await switchCompany(e.target.value); router.refresh(); close(); })}
+            onChange={(e) => startTransition(async () => {
+              const id = e.target.value;
+              await switchCompany(id);
+              // On the admin Companies page, follow the selector so the page always shows the company chosen here.
+              if (pathname.startsWith("/admin/companies")) router.push(`/admin/companies?c=${id}`);
+              else router.refresh();
+              close();
+            })}
           >
             {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
