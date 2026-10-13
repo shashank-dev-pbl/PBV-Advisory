@@ -122,6 +122,7 @@ export default function LoginPage() {
                 required
                 placeholder="98765 43210"
                 maxLength={10}
+                autoFocus
                 value={phoneInput}
                 onChange={(e) => setPhoneInput(e.target.value.replace(/\D/g, "").slice(0, 10))}
                 className="input-field"
@@ -140,10 +141,13 @@ export default function LoginPage() {
             <input
               type="text"
               inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              autoFocus
               required
               placeholder="6-digit code"
               value={code}
-              onChange={(e) => setCode(e.target.value)}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
               className="input-field"
             />
             <button type="submit" disabled={status === "busy"} className="btn-primary">
