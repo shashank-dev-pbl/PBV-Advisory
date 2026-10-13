@@ -6,6 +6,13 @@ import { normalizePhone } from "@/lib/phone";
 import { DEV_BYPASS_AUTH } from "@/lib/devBypass";
 
 export default function LoginPage() {
+
+  const [phoneInput, setPhoneInput] = useState("");
+  const [code, setCode] = useState("");
+  const [step, setStep] = useState<"phone" | "code">("phone");
+  const [status, setStatus] = useState<"idle" | "busy" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
   // Phone OTP isn't live while DEV_BYPASS_AUTH is on — bounce straight back
   // rather than stranding anyone who lands here (a stale bookmark, a redirect
   // loop) on a form that can't actually sign them in.
@@ -22,12 +29,6 @@ export default function LoginPage() {
       setStatus("error");
     }
   }, []);
-
-  const [phoneInput, setPhoneInput] = useState("");
-  const [code, setCode] = useState("");
-  const [step, setStep] = useState<"phone" | "code">("phone");
-  const [status, setStatus] = useState<"idle" | "busy" | "error">("idle");
-  const [errorMsg, setErrorMsg] = useState("");
 
   async function handleSendCode(e: React.FormEvent) {
     e.preventDefault();
