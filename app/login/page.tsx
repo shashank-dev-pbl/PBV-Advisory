@@ -11,6 +11,16 @@ export default function LoginPage() {
   // loop) on a form that can't actually sign them in.
   useEffect(() => {
     if (DEV_BYPASS_AUTH) window.location.href = "/";
+    // Sent back here after a sign-in that did not produce an account: say why instead of looping silently.
+    const why = new URLSearchParams(window.location.search).get("e");
+    if (why) {
+      setErrorMsg(
+        why === "no_session"
+          ? "Your sign-in did not stick in the browser (cookies blocked?). Try again in a normal window."
+          : `Signed in, but no account was found: ${why}`,
+      );
+      setStatus("error");
+    }
   }, []);
 
   const [phoneInput, setPhoneInput] = useState("");
@@ -76,7 +86,12 @@ export default function LoginPage() {
       return;
     }
     // Links the number they just proved to the person an admin added (first sign-in only).
-    await supabase.rpc("claim_app_user");
+    const claim = await supabase.rpc("claim_app_user");
+    if (claim.error) {
+      setErrorMsg(`Signed in, but your account could not be linked: ${claim.error.message}`);
+      setStatus("error");
+      return;
+    }
     window.location.href = "/";
   }
 

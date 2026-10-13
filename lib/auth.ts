@@ -19,6 +19,7 @@ export type Session = {
   who: Who | null;
   companies: CompanyAccess[];
   company: CompanyAccess | null;
+  reason?: string; // why there is no user (shown on the sign-in page so a failed sign-in explains itself)
   devNote?: string; // dev bypass only: what the company lookup returned, shown in the dev strip
 };
 
@@ -95,12 +96,18 @@ export const getSession = cache(async (): Promise<Session> => {
     return { user, who, companies, company, devNote };
   }
 
-  let { data } = await supabase.rpc("current_app_user");
+  const { data: authData } = await supabase.auth.getUser();
+  if (!authData.user) return { ...EMPTY, reason: "no_session" };
+
+  let { data, error: whoError } = await supabase.rpc("current_app_user");
   if (!data || !(data as AppUser).id) {
-    await supabase.rpc("claim_app_user");
-    ({ data } = await supabase.rpc("current_app_user"));
+    const claim = await supabase.rpc("claim_app_user");
+    if (claim.error) return { ...EMPTY, reason: `claim_failed: ${claim.error.message}` };
+    ({ data, error: whoError } = await supabase.rpc("current_app_user"));
   }
-  if (!data || !(data as AppUser).id) return EMPTY;
+  if (!data || !(data as AppUser).id) {
+    return { ...EMPTY, reason: whoError ? `lookup_failed: ${whoError.message}` : `no_account_for_${authData.user.phone ?? "this_login"}` };
+  }
 
   const user = data as AppUser;
   const isAdmin = user.account_type === "admin";

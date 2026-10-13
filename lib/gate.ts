@@ -7,7 +7,7 @@ import { canOpen, type PageKey } from "@/lib/access";
 // address into the bar goes through here exactly like clicking the menu does.
 export async function pageGate(page: PageKey): Promise<{ session: Session; locked: boolean }> {
   const session = await getSession();
-  if (!session.user || !session.who) redirect("/login");
+  if (!session.user || !session.who) redirect(session.reason ? `/login?e=${encodeURIComponent(session.reason)}` : "/login");
   if (needsOnboarding(session.user)) redirect("/onboarding");
   return { session, locked: !canOpen(session.who, page) };
 }

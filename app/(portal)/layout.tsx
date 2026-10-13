@@ -7,7 +7,7 @@ import DevStrip from "./DevStrip";
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
-  if (!session.user || !session.who) redirect("/login");
+  if (!session.user || !session.who) redirect(session.reason ? `/login?e=${encodeURIComponent(session.reason)}` : "/login");
 
   // The badge on "Monthly close": months waiting for PBA to check.
   let closeWaiting = 0;
