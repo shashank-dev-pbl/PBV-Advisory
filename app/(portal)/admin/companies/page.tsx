@@ -19,18 +19,19 @@ export default async function CompaniesPage({ searchParams }: { searchParams: Pr
     </>
   );
   if (c) {
+    let detail: Awaited<ReturnType<typeof getCompanyDetail>> = null;
     try {
-      const detail = await getCompanyDetail(c);
-      if (detail) {
-        return (
-          <>
-            <PageHeader title="Companies" sub={detail.company.name} />
-            <CompanyDetail {...detail} />
-          </>
-        );
-      }
+      detail = await getCompanyDetail(c);
     } catch (e) {
       return failed(e);
+    }
+    if (detail) {
+      return (
+        <>
+          <PageHeader title="Companies" sub={detail.company.name} />
+          <CompanyDetail {...detail} />
+        </>
+      );
     }
   }
 
