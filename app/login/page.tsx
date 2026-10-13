@@ -20,11 +20,8 @@ export default function LoginPage() {
     if (DEV_BYPASS_AUTH) window.location.href = "/";
     // Sent back here after a sign-in that did not produce an account: say why instead of looping silently.
     const why = new URLSearchParams(window.location.search).get("e");
-    if (why) {
-      const message =
-        why === "no_session"
-          ? "Your sign-in did not stick in the browser (cookies blocked?). Try again in a normal window."
-          : `Signed in, but no account was found: ${why}`;
+    if (why && why !== "no_session") {
+      const message = `Signed in, but no account was found: ${why}`;
       setTimeout(() => { setErrorMsg(message); setStatus("error"); }, 0);
     }
   }, []);

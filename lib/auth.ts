@@ -97,7 +97,7 @@ export const getSession = cache(async (): Promise<Session> => {
   }
 
   const { data: authData } = await supabase.auth.getUser();
-  if (!authData.user) return { ...EMPTY, reason: "no_session" };
+  if (!authData.user) return EMPTY; // simply signed out: the plain login page, no message
 
   let { data, error: whoError } = await supabase.rpc("current_app_user");
   if (!data || !(data as AppUser).id) {
