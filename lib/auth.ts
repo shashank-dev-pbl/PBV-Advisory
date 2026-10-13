@@ -124,6 +124,8 @@ export async function getCurrentAppUser(): Promise<AppUser | null> {
   return s.user && s.user.company_id ? s.user : null;
 }
 
+// An admin registers a person with a name and a role, so only a person with no name at all (a founder added by
+// mobile alone) has anything to fill in. A missing job title is never a reason to interrupt someone.
 export function needsOnboarding(user: AppUser): boolean {
-  return !user.name || !user.position;
+  return !user.name;
 }

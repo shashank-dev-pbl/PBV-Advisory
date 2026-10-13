@@ -41,6 +41,7 @@ function friendly(error: { code?: string; message: string }): Error {
   return new Error(error.message);
 }
 
+const POSITION_FOR: Record<AccountType, string> = { founder: "Founder", external: "External practitioner", pba: "PBA practitioner", admin: "PBA admin" };
 const ROLE_FOR: Record<Exclude<AccountType, "admin">, CompanyRole> = { founder: "founder", external: "external", pba: "pba" };
 const LEGACY_ROLE: Record<AccountType, "founder" | "practitioner" | "pba"> = { founder: "founder", external: "practitioner", pba: "pba", admin: "pba" };
 
@@ -300,6 +301,7 @@ export async function addPerson(params: {
       phone: mobile,
       email: params.email.trim().toLowerCase(),
       account_type: params.accountType,
+      position: POSITION_FOR[params.accountType],
       role: LEGACY_ROLE[params.accountType],
       firm_name: params.accountType === "external" ? params.firmName!.trim() : null,
       can_verify: params.accountType === "pba" || params.accountType === "admin",
@@ -383,7 +385,7 @@ export async function addFounder(companyId: string, mobileInput: string, name?: 
   if (!userId) {
     const { data: created, error } = await supabase
       .from("app_user")
-      .insert({ phone: mobile, name: name?.trim() || null, account_type: "founder", role: "founder", can_verify: false, can_publish: false, company_id: null })
+      .insert({ phone: mobile, name: name?.trim() || null, account_type: "founder", position: "Founder", role: "founder", can_verify: false, can_publish: false, company_id: null })
       .select("id")
       .single();
     if (error) throw friendly(error);
