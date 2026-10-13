@@ -146,10 +146,12 @@ type AccessJoin = { company_id: string; role: CompanyRole; user: { name: string 
 
 export async function listCompanies(): Promise<CompanyRow[]> {
   const { supabase } = await requireAdmin();
-  const [{ data: companies }, { data: grants }] = await Promise.all([
+  const [{ data: companies, error: companiesError }, { data: grants, error: accessError }] = await Promise.all([
     supabase.from("company").select("id, name, plan, status, financial_year_start, books_by").order("created_at"),
     supabase.from("company_access").select("company_id, role, user:user_id(name, email, firm_name)").is("revoked_at", null),
   ]);
+  if (companiesError) throw new Error(`Could not load companies: ${companiesError.message}`);
+  if (accessError) throw new Error(`Could not load access: ${accessError.message}`);
   const byCompany = new Map<string, AccessJoin[]>();
   for (const g of (grants ?? []) as unknown as AccessJoin[]) {
     byCompany.set(g.company_id, [...(byCompany.get(g.company_id) ?? []), g]);
@@ -248,10 +250,13 @@ export type PersonRow = {
 
 export async function listPeople(): Promise<PersonRow[]> {
   const { supabase } = await requireAdmin();
-  const [{ data: users }, { data: grants }] = await Promise.all([
+  const [{ data: users, error: usersError }, { data: grants, error: grantsError }] = await Promise.all([
     supabase.from("app_user").select("id, name, phone, email, account_type, firm_name, last_login_at").order("created_at"),
     supabase.from("company_access").select("user_id, company:company_id(name)").is("revoked_at", null),
   ]);
+  // Show a failed query as an error instead of an empty table that looks like "nobody is here".
+  if (usersError) throw new Error(`Could not load people: ${usersError.message}`);
+  if (grantsError) throw new Error(`Could not load access: ${grantsError.message}`);
   const byUser = new Map<string, string[]>();
   for (const g of (grants ?? []) as unknown as { user_id: string; company: { name: string } | null }[]) {
     if (g.company) byUser.set(g.user_id, [...(byUser.get(g.user_id) ?? []), g.company.name]);
