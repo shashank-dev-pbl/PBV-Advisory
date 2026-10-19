@@ -1,5 +1,6 @@
 "use client";
 
+import { unwrap } from "@/lib/actionResult";
 import { adminError } from "@/lib/adminError";
 import { useState } from "react";
 import Link from "next/link";
@@ -24,7 +25,7 @@ export default function CompaniesAdmin({ companies, periodOptions }: { companies
     setBusy(true);
     setError("");
     try {
-      const id = await createCompany({ name, fyStartMonth: fy, plan, firstCollectPeriod: first, booksBy: books });
+      const id = unwrap(await createCompany({ name, fyStartMonth: fy, plan, firstCollectPeriod: first, booksBy: books }));
       await switchCompany(id);
       router.push(`/admin/companies?c=${id}`);
       router.refresh();

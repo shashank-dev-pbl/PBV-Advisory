@@ -1,5 +1,6 @@
 "use client";
 
+import { unwrap } from "@/lib/actionResult";
 import { useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { safeStorageSegment } from "@/lib/storagePath";
@@ -63,9 +64,9 @@ export default function ServicesClient({ companyId, canEdit, setting, regs, docs
         const cert = t.file ? { certPath: await upload(companyId, t.file), certName: t.file.name } : {};
         tanIn.push({ tan: t.tan, forms: t.forms, ...cert });
       }
-      const { created } = await saveServices({
+      const { created } = unwrap(await saveServices({
         startFy: Number(fy), effectiveFrom: from || null, entityType: entity || null, itrBasis: basis, trackItr, gst: gstIn, tan: tanIn, note: why,
-      });
+      }));
       setMsg(`Saved. ${created} new compliance ${created === 1 ? "entry" : "entries"} added.`);
       setGst([]); setTan([]); setWhy("");
     } catch (e) { setErr(e instanceof Error ? e.message : "Could not save"); }
@@ -219,7 +220,7 @@ function RegLine({ r, canEdit }: { r: RegRow; canEdit: boolean }) {
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <input className="input-field" style={{ maxWidth: 360 }} placeholder="Why? e.g. registration cancelled" value={reason} onChange={(e) => setReason(e.target.value)} />
           <button className="btn-small" style={{ background: "#8c1a1a", color: "#fff", border: "1px solid #8c1a1a" }} disabled={pending}
-            onClick={() => start(async () => { try { await closeRegistration(r.id, reason); setStopping(false); } catch (e) { setErr(e instanceof Error ? e.message : "Could not stop tracking"); } })}>
+            onClick={() => start(async () => { try { unwrap(await closeRegistration(r.id, reason)); setStopping(false); } catch (e) { setErr(e instanceof Error ? e.message : "Could not stop tracking"); } })}>
             {pending ? "Stopping…" : "Stop tracking"}</button>
           <span className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>Open entries are closed and kept in history. Nothing is deleted.</span>
           {err && <span className="text-[12px]" style={{ color: "#8c1a1a" }}>{err}</span>}
@@ -237,7 +238,7 @@ function Documents({ companyId, docs }: { companyId: string; docs: MasterDoc[] }
   async function onFile(f: File | undefined) {
     if (!f) return;
     setBusy(true); setErr("");
-    try { await uploadMasterDocument(kind, await upload(companyId, f), f.name); } catch (e) { setErr(e instanceof Error ? e.message : "Upload failed"); }
+    try { unwrap(await uploadMasterDocument(kind, await upload(companyId, f), f.name)); } catch (e) { setErr(e instanceof Error ? e.message : "Upload failed"); }
     setBusy(false);
     if (fileRef.current) fileRef.current.value = "";
   }

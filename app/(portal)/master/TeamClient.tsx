@@ -1,5 +1,6 @@
 "use client";
 
+import { unwrap } from "@/lib/actionResult";
 import { useState, useTransition } from "react";
 import type { Owner } from "@/lib/compliance";
 import { saveTeam } from "./actions";
@@ -48,7 +49,7 @@ export default function TeamClient({ canEdit, services, owners }: { canEdit: boo
             setErr(""); setMsg("");
             try {
               const full = Object.fromEntries(services.map((s) => [s.service, mine[s.service] ?? "practitioner"])) as Record<string, Owner>;
-              const { moved } = await saveTeam(full);
+              const { moved } = unwrap(await saveTeam(full));
               setMsg(`Saved. ${moved} open ${moved === 1 ? "entry" : "entries"} moved to the new owner.`);
             } catch (e) { setErr(e instanceof Error ? e.message : "Could not save"); }
           })}>{pending ? "Saving…" : "Save team"}</button>

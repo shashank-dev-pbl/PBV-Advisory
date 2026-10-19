@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getSession } from "@/lib/auth";
 import { DEV_BYPASS_AUTH } from "@/lib/devBypass";
+import { guarded } from "@/lib/actionResult";
 import { isCurrentUserPlatformAdmin } from "@/lib/admin";
 import { normalizePhone } from "@/lib/phone";
 import { closePeriod, monthlyDueDate } from "@/lib/period";
@@ -100,7 +101,7 @@ async function seedChecklist(supabase: Client, companyId: string, closeMonth: st
 
 // ---------- companies ----------
 
-export async function createCompany(params: {
+async function _createCompany(params: {
   name: string;
   fyStartMonth: "04" | "01";
   plan: "starter" | "builder" | "operator";
@@ -213,7 +214,7 @@ export async function getCompanyDetail(companyId: string): Promise<{ company: Co
   return { company, people, addable, monthlyReady: (monthlyCount ?? 0) > 0, closeMonth: closePeriod() };
 }
 
-export async function goLive(companyId: string) {
+async function _goLive(companyId: string) {
   const { supabase, adminName } = await requireAdmin();
   const { data: grants } = await supabase.from("company_access").select("role").eq("company_id", companyId).is("revoked_at", null);
   const roles = new Set((grants ?? []).map((g) => g.role));
@@ -227,7 +228,7 @@ export async function goLive(companyId: string) {
 }
 
 // Rolls the monthly checklist forward: creates the monthly items for the month that has just ended.
-export async function generateMonth(companyId: string) {
+async function _generateMonth(companyId: string) {
   const { supabase, adminName } = await requireAdmin();
   const month = closePeriod();
   await seedChecklist(supabase, companyId, month, "monthly");
@@ -277,7 +278,7 @@ export async function listPeople(): Promise<PersonRow[]> {
     }));
 }
 
-export async function addPerson(params: {
+async function _addPerson(params: {
   name: string;
   mobile: string;
   email: string;
@@ -319,13 +320,13 @@ export async function addPerson(params: {
   await writeLog(supabase, adminName, { action: "person_added", targetUserId: person.id, targetName: person.name, detail: params.accountType });
 
   if (params.companyId && params.accountType !== "admin") {
-    await grantAccess(person.id, params.companyId);
+    await _grantAccess(person.id, params.companyId);
   }
   revalidatePath("/", "layout");
   return person.id as string;
 }
 
-export async function editPerson(userId: string, params: { name: string; email: string; firmName?: string }) {
+async function _editPerson(userId: string, params: { name: string; email: string; firmName?: string }) {
   const { supabase, adminName } = await requireAdmin();
   const { data: person, error } = await supabase
     .from("app_user")
@@ -340,7 +341,7 @@ export async function editPerson(userId: string, params: { name: string; email: 
 
 // ---------- access ----------
 
-export async function grantAccess(userId: string, companyId: string, chosenRole?: CompanyRole) {
+async function _grantAccess(userId: string, companyId: string, chosenRole?: CompanyRole) {
   const { supabase, adminName } = await requireAdmin();
   const [{ data: user }, { data: company }] = await Promise.all([
     supabase.from("app_user").select("id, name, email, account_type").eq("id", userId).single(),
@@ -375,7 +376,7 @@ export async function grantAccess(userId: string, companyId: string, chosenRole?
 
 // A founder is added to a company by mobile number alone. When they sign in with that number the app finds
 // the company they were added to and sends the code; a number with no company is turned away at sign-in.
-export async function addFounder(companyId: string, mobileInput: string, name?: string) {
+async function _addFounder(companyId: string, mobileInput: string, name?: string) {
   const { supabase } = await requireAdmin();
   const mobile = normalizePhone(mobileInput);
   if (mobile.length !== 12) throw new Error("Enter the founder's 10-digit mobile number");
@@ -391,11 +392,11 @@ export async function addFounder(companyId: string, mobileInput: string, name?: 
     if (error) throw friendly(error);
     userId = created.id as string;
   }
-  await grantAccess(userId, companyId, "founder");
+  await _grantAccess(userId, companyId, "founder");
 }
 
 // Takes effect immediately: the next request this person makes finds no active grant (see current_app_user()).
-export async function removeAccess(accessId: string) {
+async function _removeAccess(accessId: string) {
   const { supabase, adminName } = await requireAdmin();
   const { data: row, error } = await supabase
     .from("company_access")
@@ -417,3 +418,13 @@ export async function listAccessLog(limit = 60): Promise<LogRow[]> {
   const { data } = await supabase.from("access_log").select("*").order("at", { ascending: false }).limit(limit);
   return (data ?? []).map((l) => ({ id: l.id, at: l.at, who: l.who_name, action: l.action, target: l.target_name, company: l.company_name, detail: l.detail }));
 }
+
+// Exported actions return their reason instead of throwing, so the message survives a production build.
+export async function createCompany(...args: Parameters<typeof _createCompany>) { return guarded(() => _createCompany(...args)); }
+export async function goLive(...args: Parameters<typeof _goLive>) { return guarded(() => _goLive(...args)); }
+export async function generateMonth(...args: Parameters<typeof _generateMonth>) { return guarded(() => _generateMonth(...args)); }
+export async function addPerson(...args: Parameters<typeof _addPerson>) { return guarded(() => _addPerson(...args)); }
+export async function editPerson(...args: Parameters<typeof _editPerson>) { return guarded(() => _editPerson(...args)); }
+export async function addFounder(...args: Parameters<typeof _addFounder>) { return guarded(() => _addFounder(...args)); }
+export async function grantAccess(...args: Parameters<typeof _grantAccess>) { return guarded(() => _grantAccess(...args)); }
+export async function removeAccess(...args: Parameters<typeof _removeAccess>) { return guarded(() => _removeAccess(...args)); }

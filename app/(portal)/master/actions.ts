@@ -9,6 +9,7 @@ import {
   type FilingType, type ItrBasis, type Owner, type Registration, type Rule, type Setting,
 } from "@/lib/compliance";
 import type { AppUser } from "@/lib/types";
+import { guarded } from "@/lib/actionResult";
 
 // Master > Services / Team / Custom types. Uploading a document only files it. Rows are generated when a
 // practitioner (or PBA, or an admin acting as PBA) saves the facts. A founder can upload and view, never save.
@@ -34,7 +35,7 @@ async function fileMasterDocument(supabase: Client, user: AppUser, kind: DocKind
 }
 
 // The Documents panel: anyone on the company can add a document.
-export async function uploadMasterDocument(kind: DocKind, storagePath: string, filename: string) {
+async function _uploadMasterDocument(kind: DocKind, storagePath: string, filename: string) {
   const user = await requireRole(...UPLOADERS);
   if (!(kind in KIND_TO_STANDARD)) throw new Error("Unknown document type");
   await fileMasterDocument(await createClient(), user, kind, storagePath, filename, null);
@@ -99,7 +100,7 @@ export type ServicesInput = {
 };
 
 // The Save button on Master > Services.
-export async function saveServices(input: ServicesInput): Promise<{ created: number }> {
+async function _saveServices(input: ServicesInput): Promise<{ created: number }> {
   const user = await requireRole(...MAINTAINERS);
   const supabase = await createClient();
 
@@ -156,7 +157,7 @@ export async function saveServices(input: ServicesInput): Promise<{ created: num
 }
 
 // Stops tracking a registration: its unfiled rows are closed ("no longer applicable") and kept in history, never deleted.
-export async function closeRegistration(registrationId: string, reason: string) {
+async function _closeRegistration(registrationId: string, reason: string) {
   const user = await requireRole(...MAINTAINERS);
   const supabase = await createClient();
   const why = reason.trim() || "Stopped tracking";
@@ -182,7 +183,7 @@ export async function closeRegistration(registrationId: string, reason: string) 
 const SERVICES = ["GST", "TDS", "ITR", "Custom"] as const;
 
 // Master > Team: the default owner for each service. Open rows of that service move to the new owner.
-export async function saveTeam(owners: Record<string, Owner>) {
+async function _saveTeam(owners: Record<string, Owner>) {
   const user = await requireRole(...MAINTAINERS);
   const supabase = await createClient();
   const rows = SERVICES.filter((s) => owners[s]).map((s) => {
@@ -215,7 +216,7 @@ export async function saveTeam(owners: Record<string, Owner>) {
 export type CustomTypeInput = { name: string; frequency: "monthly" | "quarterly" | "yearly"; day: number; month?: number; owner: Owner };
 
 // Master > Custom types: your own non-statutory item. It applies at once and starts generating rows.
-export async function addCustomType(input: CustomTypeInput): Promise<{ created: number }> {
+async function _addCustomType(input: CustomTypeInput): Promise<{ created: number }> {
   const user = await requireRole(...MAINTAINERS);
   const supabase = await createClient();
   const name = input.name.trim();
@@ -250,3 +251,10 @@ export async function addCustomType(input: CustomTypeInput): Promise<{ created: 
   refreshAll();
   return { created };
 }
+
+// Exported actions return their reason instead of throwing, so the message survives a production build.
+export async function uploadMasterDocument(...args: Parameters<typeof _uploadMasterDocument>) { return guarded(() => _uploadMasterDocument(...args)); }
+export async function saveServices(...args: Parameters<typeof _saveServices>) { return guarded(() => _saveServices(...args)); }
+export async function closeRegistration(...args: Parameters<typeof _closeRegistration>) { return guarded(() => _closeRegistration(...args)); }
+export async function saveTeam(...args: Parameters<typeof _saveTeam>) { return guarded(() => _saveTeam(...args)); }
+export async function addCustomType(...args: Parameters<typeof _addCustomType>) { return guarded(() => _addCustomType(...args)); }

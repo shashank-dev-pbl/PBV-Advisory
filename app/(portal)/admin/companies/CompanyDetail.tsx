@@ -1,5 +1,6 @@
 "use client";
 
+import { unwrap } from "@/lib/actionResult";
 import { adminError } from "@/lib/adminError";
 import { useState } from "react";
 import Link from "next/link";
@@ -58,7 +59,7 @@ export default function CompanyDetail({
         {company.status === "live" ? (
           <span className="pill" style={{ background: "var(--bottomline-green)", color: "#fff" }}>Live</span>
         ) : (
-          <button onClick={() => run(() => goLive(company.id))} disabled={busy || !hasFounder || !hasPba} className="btn-small" style={{ background: hasFounder && hasPba ? "var(--bottomline-green)" : "var(--rule)", color: "var(--paper)", border: "1px solid " + (hasFounder && hasPba ? "var(--bottomline-green)" : "var(--rule)"), cursor: hasFounder && hasPba ? "pointer" : "not-allowed" }}>
+          <button onClick={() => run(async () => unwrap(await goLive(company.id)))} disabled={busy || !hasFounder || !hasPba} className="btn-small" style={{ background: hasFounder && hasPba ? "var(--bottomline-green)" : "var(--rule)", color: "var(--paper)", border: "1px solid " + (hasFounder && hasPba ? "var(--bottomline-green)" : "var(--rule)"), cursor: hasFounder && hasPba ? "pointer" : "not-allowed" }}>
             Go live
           </button>
         )}
@@ -82,7 +83,7 @@ export default function CompanyDetail({
       {!monthlyReady && company.status === "live" && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 p-3.5" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 }}>
           <p className="text-[13px]">The {formatPeriodLabel(closeMonth)} monthly items have not been created yet.</p>
-          <button onClick={() => run(() => generateMonth(company.id))} disabled={busy} className="btn-small" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)" }}>
+          <button onClick={() => run(async () => unwrap(await generateMonth(company.id)))} disabled={busy} className="btn-small" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)" }}>
             Create {formatPeriodLabel(closeMonth).split(" ")[0]}&apos;s monthly items
           </button>
         </div>
@@ -105,7 +106,7 @@ export default function CompanyDetail({
               <td className="px-3 py-2.5 text-[13px]">{p.mobile ? `+${p.mobile.slice(0, 2)} ${p.mobile.slice(2, 5)}•• •••${p.mobile.slice(-2)}` : "—"}</td>
               <td className="px-3 py-2.5 text-[13px]">{ROLE_LABEL[p.role]}</td>
               <td className="px-3 py-2.5 text-right">
-                <button onClick={() => run(() => removeAccess(p.id))} disabled={busy} className="btn-small" style={{ background: "transparent", border: "1px solid #8c1a1a", color: "#8c1a1a" }}>Remove access</button>
+                <button onClick={() => run(async () => unwrap(await removeAccess(p.id)))} disabled={busy} className="btn-small" style={{ background: "transparent", border: "1px solid #8c1a1a", color: "#8c1a1a" }}>Remove access</button>
               </td>
             </tr>
           ))}
@@ -152,9 +153,9 @@ export default function CompanyDetail({
         )}
         <div className="mt-3 flex items-center gap-3">
           {mode === "person" ? (
-            <button onClick={() => run(async () => { await grantAccess(pick, company.id, role); setPick(""); })} disabled={busy || !pick} className="btn-small" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)" }}>Give access</button>
+            <button onClick={() => run(async () => { unwrap(await grantAccess(pick, company.id, role)); setPick(""); })} disabled={busy || !pick} className="btn-small" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)" }}>Give access</button>
           ) : (
-            <button onClick={() => run(async () => { await addFounder(company.id, mobile, fname); setMobile(""); setFname(""); })} disabled={busy || !mobile} className="btn-small" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)" }}>Add founder</button>
+            <button onClick={() => run(async () => { unwrap(await addFounder(company.id, mobile, fname)); setMobile(""); setFname(""); })} disabled={busy || !mobile} className="btn-small" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)" }}>Add founder</button>
           )}
           <span className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>Takes effect immediately and is recorded.</span>
         </div>

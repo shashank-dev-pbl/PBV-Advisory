@@ -1,5 +1,6 @@
 "use client";
 
+import { unwrap } from "@/lib/actionResult";
 import { useState, useTransition } from "react";
 import type { Owner } from "@/lib/compliance";
 import { addCustomType, closeRegistration } from "./actions";
@@ -48,7 +49,7 @@ export default function CustomClient({ canEdit, rows }: { canEdit: boolean; rows
             onClick={() => start(async () => {
               setErr(""); setMsg("");
               try {
-                const { created } = await addCustomType({ name, frequency, day: Number(day), month: Number(month), owner });
+                const { created } = unwrap(await addCustomType({ name, frequency, day: Number(day), month: Number(month), owner }));
                 setMsg(`Added. ${created} new compliance ${created === 1 ? "entry" : "entries"}.`); setName("");
               } catch (e) { setErr(e instanceof Error ? e.message : "Could not add"); }
             })}>{pending ? "Adding…" : "Add custom type"}</button>
@@ -77,7 +78,7 @@ function Row({ r, canEdit }: { r: CustomRow; canEdit: boolean }) {
       </div>
       {canEdit && r.status === "active" && (
         <button className="btn-small" style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)" }} disabled={pending}
-          onClick={() => start(async () => { try { await closeRegistration(r.registrationId, "Custom type removed"); } catch (e) { setErr(e instanceof Error ? e.message : "Could not stop"); } })}>
+          onClick={() => start(async () => { try { unwrap(await closeRegistration(r.registrationId, "Custom type removed")); } catch (e) { setErr(e instanceof Error ? e.message : "Could not stop"); } })}>
           Stop tracking</button>
       )}
       {err && <p className="w-full text-[12px]" style={{ color: "#8c1a1a" }}>{err}</p>}

@@ -1,5 +1,6 @@
 "use client";
 
+import { unwrap } from "@/lib/actionResult";
 import { adminError } from "@/lib/adminError";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -50,7 +51,7 @@ export default function PeopleAdmin({
     setBusy(true);
     setError("");
     try {
-      await addPerson({ ...f, companyId: f.companyId || null });
+      unwrap(await addPerson({ ...f, companyId: f.companyId || null }));
       setOpen(false);
       setF({ name: "", mobile: "", email: "", accountType: "external", firmName: "", companyId: "" });
       router.refresh();
@@ -64,7 +65,7 @@ export default function PeopleAdmin({
     setBusy(true);
     setError("");
     try {
-      await editPerson(p.id, { name: draft.name, email: draft.email, firmName: p.accountType === "external" ? draft.firm : undefined });
+      unwrap(await editPerson(p.id, { name: draft.name, email: draft.email, firmName: p.accountType === "external" ? draft.firm : undefined }));
       setEditing(null);
       router.refresh();
     } catch (e) {
