@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/permissions";
+import { newStandardVersion } from "@/lib/standardVersion";
 
 // Founders view and download only. Every write here is for the external practitioner and PBA (admins act as
 // PBA) and works only inside the company they are acting in. The database refuses the same writes again.
@@ -95,37 +96,4 @@ export async function uploadStandardDocument(kind: string, storagePath: string, 
   const supabase = await createClient();
   await newStandardVersion(supabase, user.company_id, kind, storagePath, filename, "One-time upload", null, user.name);
   revalidatePath("/dataroom");
-}
-
-async function newStandardVersion(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  companyId: string,
-  kind: string,
-  storagePath: string,
-  filename: string,
-  source: string,
-  sourceEventId: string | null,
-  by: string | null,
-) {
-  const { data: k } = await supabase.from("standard_kind").select("code").eq("code", kind).maybeSingle();
-  if (!k) throw new Error("Unknown document kind");
-  const { data: last } = await supabase
-    .from("standard_document")
-    .select("version")
-    .eq("company_id", companyId)
-    .eq("kind", kind)
-    .order("version", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const { error } = await supabase.from("standard_document").insert({
-    company_id: companyId,
-    kind,
-    version: (last?.version ?? 0) + 1,
-    storage_path: storagePath,
-    filename,
-    source,
-    source_event_id: sourceEventId,
-    by_name: by,
-  });
-  if (error) throw new Error(error.message);
 }

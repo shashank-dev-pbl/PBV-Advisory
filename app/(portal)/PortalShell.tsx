@@ -85,6 +85,8 @@ export default function PortalShell({ who, companies, companyId, closeWaiting, c
         ) : null}
       />
       <NavItem page="filings" who={who} pathname={pathname} onNavigate={close} />
+      <NavItem page="compliance" who={who} pathname={pathname} onNavigate={close} />
+      <NavItem page="master" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="files" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="dataroom" who={who} pathname={pathname} onNavigate={close} />
       {(canOpen(who, "companies") || canOpen(who, "people")) && (

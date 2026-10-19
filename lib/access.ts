@@ -6,7 +6,7 @@ export type Who = "founder" | "external" | "pba" | "admin";
 
 export type PageKey =
   | "home" | "dashboard" | "up-once" | "up-month" | "up-qy"
-  | "close" | "filings" | "files" | "dataroom" | "companies" | "people";
+  | "close" | "filings" | "compliance" | "master" | "files" | "dataroom" | "companies" | "people";
 
 export const PAGES: Record<PageKey, { label: string; href: string }> = {
   home: { label: "My companies", href: "/home" },
@@ -16,6 +16,8 @@ export const PAGES: Record<PageKey, { label: string; href: string }> = {
   "up-qy": { label: "Quarterly & yearly", href: "/uploads/qy" },
   close: { label: "Monthly close", href: "/close" },
   filings: { label: "Filings", href: "/filings" },
+  compliance: { label: "Compliance", href: "/compliance" },
+  master: { label: "Master documents", href: "/master" },
   files: { label: "Files delivered", href: "/files" },
   dataroom: { label: "Data room", href: "/dataroom" },
   companies: { label: "Companies", href: "/admin/companies" },
@@ -30,6 +32,8 @@ export const ACCESS: Record<PageKey, Who[]> = {
   "up-qy": ["founder", "external", "pba", "admin"],
   close: ["external", "pba", "admin"],
   filings: ["founder", "external", "pba", "admin"],
+  compliance: ["founder", "external", "pba", "admin"],
+  master: ["founder", "external", "pba", "admin"],
   files: ["founder", "external", "pba", "admin"],
   dataroom: ["founder", "external", "pba", "admin"],
   companies: ["admin"],
