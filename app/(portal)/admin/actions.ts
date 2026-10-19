@@ -288,7 +288,7 @@ async function _addPerson(params: {
 }) {
   const { supabase, adminName } = await requireAdmin();
   const mobile = normalizePhone(params.mobile);
-  if (params.accountType === "founder") throw new Error("Founders are invited by email from the company's own page, not added here");
+  if (params.accountType === "founder") throw new Error("Founders are added by mobile number from the company's own page, not here");
   if (!params.name.trim()) throw new Error("Give the person a name");
   if (mobile.length !== 12) throw new Error("Enter a 10-digit mobile number");
   const email = params.email.trim().toLowerCase();
