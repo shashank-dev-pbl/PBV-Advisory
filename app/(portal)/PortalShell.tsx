@@ -77,7 +77,7 @@ export default function PortalShell({ who, companies, companyId, closeWaiting, c
 
       <NavItem page="home" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="dashboard" who={who} pathname={pathname} onNavigate={close} />
-      <NavItem page="up-month" who={who} pathname={pathname} onNavigate={close} label="Uploads" href="/uploads/month" matchPrefix="/uploads" />
+      <NavItem page="up-once" who={who} pathname={pathname} onNavigate={close} label="Master" href="/master/once" matchPrefix="/master" />
       <NavItem
         page="close" who={who} pathname={pathname} onNavigate={close}
         extra={closeWaiting > 0 ? (
@@ -86,7 +86,6 @@ export default function PortalShell({ who, companies, companyId, closeWaiting, c
       />
       <NavItem page="filings" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="compliance" who={who} pathname={pathname} onNavigate={close} />
-      <NavItem page="master" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="files" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="dataroom" who={who} pathname={pathname} onNavigate={close} />
       {(canOpen(who, "companies") || canOpen(who, "people")) && (

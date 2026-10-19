@@ -82,7 +82,7 @@ export default async function DashboardPage() {
                 </p>
               )}
             </div>
-            <Link href="/uploads/month" className="btn-small" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)", flexShrink: 0 }}>
+            <Link href="/master/month" className="btn-small" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)", flexShrink: 0 }}>
               Upload
             </Link>
           </div>

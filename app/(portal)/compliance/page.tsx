@@ -88,7 +88,7 @@ export default async function CompliancePage({ searchParams }: { searchParams: P
         {generated.length === 0 && (
           <div className="mb-5 p-4 text-[13px]" style={box}>
             Nothing is tracked yet. Upload a GST certificate, TAN letter or certificate of incorporation under{" "}
-            <Link href="/master" className="font-semibold underline">Master documents</Link> and confirm its details to build the calendar.
+            <Link href="/master/once" className="font-semibold underline">Master</Link> and confirm its details to build the calendar.
           </div>
         )}
 
