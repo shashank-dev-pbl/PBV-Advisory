@@ -67,7 +67,7 @@ export default async function CompliancePage({ searchParams }: { searchParams: P
 
   return (
     <>
-      <PageHeader title={company.name} accent="Compliance" sub="Built from the registrations confirmed under Master documents" />
+      <PageHeader title={company.name} accent="Compliance" sub="Built from what is saved under Master → Docs → Services" />
       <div className="mx-auto w-full max-w-[1280px] px-5 py-8 md:px-8">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b" style={{ borderColor: "var(--rule)" }}>
           <div className="flex gap-1">
@@ -78,21 +78,24 @@ export default async function CompliancePage({ searchParams }: { searchParams: P
               </Link>
             ))}
           </div>
-          <div className="mb-2 flex items-center gap-2 text-[12.5px]">
+          {generated.length > 0 && <div className="mb-2 flex items-center gap-2 text-[12.5px]">
             <Link href={`/compliance?s=${service}&fy=${fy - 1}`} className="btn-small" style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)" }}>←</Link>
             <b>FY {fy}-{String(fy + 1).slice(-2)}</b>
             <Link href={`/compliance?s=${service}&fy=${fy + 1}`} className="btn-small" style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)" }}>→</Link>
-          </div>
+          </div>}
         </div>
 
-        {generated.length === 0 && (
-          <div className="mb-5 p-4 text-[13px]" style={box}>
-            Nothing is tracked yet. Switch on a service under{" "}
-            <Link href="/master/services" className="font-semibold underline">Master Docs → Services</Link> and save it to build the calendar.
-          </div>
-        )}
 
-        {service === "Summary" ? (
+        {service === "Summary" && generated.length === 0 ? (
+          <p className="text-[13px]" style={{ color: "var(--ink-secondary)" }}>Nothing to show yet.</p>
+        ) : service !== "Summary" && generated.filter((o) => o.category === service).length === 0 ? (
+          <div className="p-5 text-[13.5px]" style={box}>
+            <p className="font-semibold">No {service === "ITR" ? "income tax return" : service} compliance yet.</p>
+            <p className="mt-1" style={{ color: "var(--ink-secondary)" }}>
+              Go to <Link href="/master/services" className="font-semibold underline" style={{ color: "var(--bottomline-green)" }}>Master → Docs</Link>, add the {service === "GST" ? "GST registration" : service === "TDS" ? "TAN" : service === "ITR" ? "certificate of incorporation details" : "custom type"} and save to generate it.
+            </p>
+          </div>
+        ) : service === "Summary" ? (
           <>
             <div className="mb-6 grid grid-cols-2 gap-3.5 md:grid-cols-4">
               {stat("Overdue", open.filter(overdue).length, true)}
@@ -128,7 +131,7 @@ export default async function CompliancePage({ searchParams }: { searchParams: P
         ) : (
           <Matrix rows={generated.filter((o) => o.category === service && o.fy === fyLabel)} today={today} overdue={overdue} />
         )}
-        <p className="mt-6 text-[12px]" style={{ color: "var(--ink-secondary)" }}>Mark a filing as filed, with its proof, on the <Link href="/filings" className="underline">Filings</Link> page. PBA verifies each one.</p>
+        {generated.length > 0 && <p className="mt-6 text-[12px]" style={{ color: "var(--ink-secondary)" }}>Mark a filing as filed, with its proof, on the <Link href="/filings" className="underline">Filings</Link> page. PBA verifies each one.</p>}
       </div>
     </>
   );

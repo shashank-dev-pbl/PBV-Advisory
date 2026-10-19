@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 import { PAGES, canOpen, type PageKey, type Who } from "@/lib/access";
 import { switchCompany } from "./actions";
 
@@ -16,8 +16,8 @@ type Props = {
 };
 
 // Only the pages this person can open appear at all — no greyed-out, locked entries.
-function NavItem({ page, who, pathname, extra, label, href, matchPrefix, onNavigate }: {
-  page: PageKey; who: Who; pathname: string; extra?: React.ReactNode; label?: string; href?: string; matchPrefix?: string; onNavigate: () => void;
+function NavItem({ page, who, pathname, extra, label, href, matchPrefix, sub, onNavigate }: {
+  page: PageKey; who: Who; pathname: string; extra?: React.ReactNode; label?: string; href?: string; matchPrefix?: string; sub?: boolean; onNavigate: () => void;
 }) {
   if (!canOpen(who, page)) return null;
   const p = PAGES[page];
@@ -28,7 +28,7 @@ function NavItem({ page, who, pathname, extra, label, href, matchPrefix, onNavig
       onClick={onNavigate}
       className="flex items-center justify-between text-[13.5px]"
       style={{
-        padding: "8px 12px",
+        padding: sub ? "7px 12px" : "8px 12px",
         borderRadius: 7,
         color: on ? "var(--paper)" : "var(--ink)",
         background: on ? "var(--bottomline-green)" : "transparent",
@@ -45,6 +45,8 @@ export default function PortalShell({ who, companies, companyId, closeWaiting, c
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const inMaster = pathname.startsWith("/master") || pathname.startsWith("/compliance");
+  const [masterOpen, setMasterOpen] = useState(inMaster);
   const [, startTransition] = useTransition();
   const close = () => setOpen(false);
 
@@ -77,7 +79,21 @@ export default function PortalShell({ who, companies, companyId, closeWaiting, c
 
       <NavItem page="home" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="dashboard" who={who} pathname={pathname} onNavigate={close} />
-      <NavItem page="up-once" who={who} pathname={pathname} onNavigate={close} label="Master Docs" href="/master/services" matchPrefix="/master" />
+      <button
+        onClick={() => setMasterOpen((v) => !v)}
+        aria-expanded={masterOpen}
+        className="flex w-full items-center justify-between text-[13.5px]"
+        style={{ padding: "8px 12px", borderRadius: 7, color: "var(--ink)", background: "transparent", fontWeight: inMaster ? 700 : 500, textAlign: "left" }}
+      >
+        <span>Master</span>
+        <ChevronDown size={14} strokeWidth={2} style={{ transform: masterOpen ? "rotate(180deg)" : undefined, transition: "transform .15s" }} />
+      </button>
+      {masterOpen && (
+        <div className="mb-1 ml-3 flex flex-col gap-0.5 border-l pl-2" style={{ borderColor: "var(--rule)" }}>
+          <NavItem page="up-once" who={who} pathname={pathname} onNavigate={close} label="Docs" href="/master/services" matchPrefix="/master" sub />
+          <NavItem page="compliance" who={who} pathname={pathname} onNavigate={close} sub />
+        </div>
+      )}
       <NavItem
         page="close" who={who} pathname={pathname} onNavigate={close}
         extra={closeWaiting > 0 ? (
@@ -85,7 +101,6 @@ export default function PortalShell({ who, companies, companyId, closeWaiting, c
         ) : null}
       />
       <NavItem page="filings" who={who} pathname={pathname} onNavigate={close} />
-      <NavItem page="compliance" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="files" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="dataroom" who={who} pathname={pathname} onNavigate={close} />
       {(canOpen(who, "companies") || canOpen(who, "people")) && (
