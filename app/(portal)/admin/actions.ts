@@ -351,19 +351,6 @@ async function _grantAccess(userId: string, companyId: string, chosenRole?: Comp
   if (!user.account_type || user.account_type === "admin") throw new Error("PBA admins already see every company");
 
   const role: CompanyRole = chosenRole ?? ROLE_FOR[user.account_type as Exclude<AccountType, "admin">];
-  if (role === "founder") {
-    // A founder belongs to exactly one company.
-    const { data: elsewhere } = await supabase
-      .from("company_access")
-      .select("company:company_id(name)")
-      .eq("user_id", userId)
-      .eq("role", "founder")
-      .is("revoked_at", null)
-      .neq("company_id", companyId)
-      .limit(1);
-    const other = (elsewhere as unknown as { company: { name: string } | null }[] | null)?.[0];
-    if (other) throw new Error(`${user.name ?? user.email} is already the founder of ${other.company?.name ?? "another company"}. A founder belongs to one company only.`);
-  }
   if (!["founder", "external", "pba"].includes(role)) throw new Error("Choose a role");
   const { error } = await supabase.from("company_access").insert({ user_id: userId, company_id: companyId, role, granted_by_name: adminName });
   if (error) {
