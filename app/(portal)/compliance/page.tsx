@@ -88,7 +88,7 @@ export default async function CompliancePage({ searchParams }: { searchParams: P
         {generated.length === 0 && (
           <div className="mb-5 p-4 text-[13px]" style={box}>
             Nothing is tracked yet. Switch on a service under{" "}
-            <Link href="/master/services" className="font-semibold underline">Master → Services</Link> and save it to build the calendar.
+            <Link href="/master/services" className="font-semibold underline">Master Docs → Services</Link> and save it to build the calendar.
           </div>
         )}
 

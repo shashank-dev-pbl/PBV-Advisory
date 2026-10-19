@@ -70,7 +70,7 @@ export default async function UploadsPage({ params }: { params: Promise<{ tab: s
 
   return (
     <>
-      <PageHeader title={company.name} accent={`Master · ${t.label}`} sub={sub} />
+      <PageHeader title={company.name} accent="Master Docs" sub={sub} />
       <div className="mx-auto w-full max-w-[1280px] px-5 py-8 md:px-8">
         <div className="mb-5 flex gap-1 border-b" style={{ borderColor: "var(--rule)" }}>
           {(Object.keys(TABS) as TabKey[]).map((k) => {
