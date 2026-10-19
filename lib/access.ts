@@ -20,7 +20,7 @@ export const PAGES: Record<PageKey, { label: string; href: string }> = {
   files: { label: "Files delivered", href: "/files" },
   dataroom: { label: "Data room", href: "/dataroom" },
   companies: { label: "Companies", href: "/admin/companies" },
-  people: { label: "People & access", href: "/admin/people" },
+  people: { label: "People & Access", href: "/admin/people" },
 };
 
 export const ACCESS: Record<PageKey, Who[]> = {

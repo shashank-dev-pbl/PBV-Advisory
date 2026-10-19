@@ -16,7 +16,7 @@ export default async function PeoplePage() {
   } catch (e) {
     return (
       <>
-        <PageHeader title="People & access" sub="Who can sign in, and to what" />
+        <PageHeader title="People & Access" sub="Who can sign in, and to what" />
         <AdminError title="This page could not load" message={e instanceof Error ? e.message : String(e)} />
       </>
     );
@@ -24,7 +24,7 @@ export default async function PeoplePage() {
   const [people, companies, log] = data;
   return (
     <>
-      <PageHeader title="People & access" sub="Who can sign in, and to what" />
+      <PageHeader title="People & Access" sub="Who can sign in, and to what" />
       <PeopleAdmin people={people} companies={companies.map((c) => ({ id: c.id, name: c.name }))} log={log} adminTypeAllowed={!DEV_BYPASS_AUTH} />
     </>
   );

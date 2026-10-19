@@ -1,5 +1,6 @@
 "use client";
 
+import { formatMobileInput } from "@/lib/phone";
 import { unwrap } from "@/lib/actionResult";
 import { adminError } from "@/lib/adminError";
 import { useState } from "react";
@@ -90,7 +91,7 @@ export default function PeopleAdmin({
             <label className="text-[12px] font-semibold">Mobile number
               <div className="mt-1 flex gap-2">
                 <span className="input-field flex items-center justify-center" style={{ flex: "0 0 56px" }}>+91</span>
-                <input className="input-field" placeholder="10 digits" inputMode="numeric" maxLength={10} value={f.mobile} onChange={(e) => setF({ ...f, mobile: e.target.value.replace(/\D/g, "") })} />
+                <input className="input-field" placeholder="98765 43210" inputMode="numeric" maxLength={11} value={formatMobileInput(f.mobile)} onChange={(e) => setF({ ...f, mobile: e.target.value.replace(/\D/g, "").slice(0, 10) })} />
               </div>
               <span className="mt-1 block text-[11px] font-normal" style={{ color: "var(--ink-secondary)" }}>They sign in with a code texted here. Two people can&apos;t share a number.</span>
             </label>

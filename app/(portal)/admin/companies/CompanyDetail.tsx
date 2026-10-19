@@ -1,5 +1,6 @@
 "use client";
 
+import { formatMobileInput } from "@/lib/phone";
 import { unwrap } from "@/lib/actionResult";
 import { adminError } from "@/lib/adminError";
 import { useState } from "react";
@@ -128,7 +129,7 @@ export default function CompanyDetail({
                 <option value="">Choose someone…</option>
                 {addable.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
               </select>
-              <span className="mt-1 block text-[11px] font-normal" style={{ color: "var(--ink-secondary)" }}>Practitioners and PBA staff are added under People &amp; access first. Founders are added by mobile number instead.</span>
+              <span className="mt-1 block text-[11px] font-normal" style={{ color: "var(--ink-secondary)" }}>Practitioners and PBA staff are added under People &amp; Access first. Founders are added by mobile number instead.</span>
             </label>
             <label className="text-[12px] font-semibold">Role on {company.name}
               <select className="input-field mt-1" value={role} onChange={(e) => setRole(e.target.value as RoleKey)}>
@@ -142,7 +143,7 @@ export default function CompanyDetail({
             <label className="text-[12px] font-semibold">Founder&apos;s mobile number
               <div className="mt-1 flex items-stretch gap-2">
                 <span className="input-field flex items-center justify-center" style={{ flex: "0 0 auto", width: 56 }}>+91</span>
-                <input type="tel" inputMode="numeric" maxLength={10} className="input-field" placeholder="98765 43210" value={mobile} onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))} />
+                <input type="tel" inputMode="numeric" maxLength={11} className="input-field" placeholder="98765 43210" value={formatMobileInput(mobile)} onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))} />
               </div>
             </label>
             <label className="text-[12px] font-semibold">Name (optional)

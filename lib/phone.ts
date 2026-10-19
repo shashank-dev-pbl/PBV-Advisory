@@ -16,3 +16,9 @@ export function formatPhoneDisplay(phone: string): string {
   }
   return `+${digits}`;
 }
+
+// A 10-digit mobile as typed: "9148379624" -> "91483 79624", so it reads the same as the placeholder.
+export function formatMobileInput(digits: string): string {
+  const d = digits.replace(/\D/g, "").slice(0, 10);
+  return d.length > 5 ? `${d.slice(0, 5)} ${d.slice(5)}` : d;
+}

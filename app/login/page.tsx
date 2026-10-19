@@ -1,9 +1,60 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { normalizePhone } from "@/lib/phone";
+import { formatMobileInput, normalizePhone } from "@/lib/phone";
 import { DEV_BYPASS_AUTH } from "@/lib/devBypass";
+
+// Six single-digit boxes: typing moves forward, backspace moves back, and a pasted code fills all six.
+function OtpBoxes({ value, onChange, onComplete }: { value: string; onChange: (v: string) => void; onComplete: () => void }) {
+  const refs = useRef<(HTMLInputElement | null)[]>([]);
+  const digits = Array.from({ length: 6 }, (_, i) => value[i] ?? "");
+  const set = (next: string) => {
+    onChange(next);
+    if (next.length === 6) onComplete();
+  };
+  return (
+    <div className="flex gap-2" role="group" aria-label="6-digit code">
+      {digits.map((d, i) => (
+        <input
+          key={i}
+          ref={(el) => { refs.current[i] = el; }}
+          type="text"
+          inputMode="numeric"
+          autoComplete={i === 0 ? "one-time-code" : "off"}
+          maxLength={1}
+          autoFocus={i === 0}
+          aria-label={`Digit ${i + 1}`}
+          value={d}
+          onFocus={(e) => e.target.select()}
+          onChange={(e) => {
+            const c = e.target.value.replace(/\D/g, "").slice(-1);
+            if (!c) return;
+            set((value.slice(0, i) + c + value.slice(i + 1)).slice(0, 6));
+            refs.current[Math.min(i + 1, 5)]?.focus();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Backspace") {
+              e.preventDefault();
+              if (d) set(value.slice(0, i) + value.slice(i + 1));
+              else if (i > 0) { set(value.slice(0, i - 1) + value.slice(i)); refs.current[i - 1]?.focus(); }
+            } else if (e.key === "ArrowLeft" && i > 0) refs.current[i - 1]?.focus();
+            else if (e.key === "ArrowRight" && i < 5) refs.current[i + 1]?.focus();
+          }}
+          onPaste={(e) => {
+            const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+            if (!pasted) return;
+            e.preventDefault();
+            set(pasted);
+            refs.current[Math.min(pasted.length, 5)]?.focus();
+          }}
+          className="input-field text-center"
+          style={{ width: 0, flex: 1, minWidth: 0, padding: "10px 0", fontSize: 20, fontWeight: 700 }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function LoginPage() {
 
@@ -12,6 +63,8 @@ export default function LoginPage() {
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [status, setStatus] = useState<"idle" | "busy" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
+  const [otpKey, setOtpKey] = useState(0);
 
   // Phone OTP isn't live while DEV_BYPASS_AUTH is on — bounce straight back
   // rather than stranding anyone who lands here (a stale bookmark, a redirect
@@ -80,6 +133,8 @@ export default function LoginPage() {
     if (error) {
       setErrorMsg(error.message);
       setStatus("error");
+      setCode("");
+      setOtpKey((k) => k + 1); // fresh boxes, focus back on the first
       return;
     }
     // Links the number they just proved to the person an admin added (first sign-in only).
@@ -121,9 +176,9 @@ export default function LoginPage() {
                 inputMode="numeric"
                 required
                 placeholder="98765 43210"
-                maxLength={10}
+                maxLength={11}
                 autoFocus
-                value={phoneInput}
+                value={formatMobileInput(phoneInput)}
                 onChange={(e) => setPhoneInput(e.target.value.replace(/\D/g, "").slice(0, 10))}
                 className="input-field"
                 style={{ flex: 1 }}
@@ -137,19 +192,8 @@ export default function LoginPage() {
             )}
           </form>
         ) : (
-          <form onSubmit={handleVerifyCode} className="mt-8 flex flex-col gap-3">
-            <input
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              autoFocus
-              required
-              placeholder="6-digit code"
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              className="input-field"
-            />
+          <form ref={formRef} onSubmit={handleVerifyCode} className="mt-8 flex flex-col gap-3">
+            <OtpBoxes key={otpKey} value={code} onChange={setCode} onComplete={() => setTimeout(() => formRef.current?.requestSubmit(), 60)} />
             <button type="submit" disabled={status === "busy"} className="btn-primary">
               {status === "busy" ? "Verifying…" : "Verify and sign in"}
             </button>
