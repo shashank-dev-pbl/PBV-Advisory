@@ -291,7 +291,8 @@ async function _addPerson(params: {
   if (params.accountType === "founder") throw new Error("Founders are invited by email from the company's own page, not added here");
   if (!params.name.trim()) throw new Error("Give the person a name");
   if (mobile.length !== 12) throw new Error("Enter a 10-digit mobile number");
-  if (!/^\S+@\S+\.\S+$/.test(params.email)) throw new Error("Enter an email address — it is only used for notices");
+  const email = params.email.trim().toLowerCase();
+  if (email && !/^\S+@\S+\.\S+$/.test(email)) throw new Error("That email address doesn't look right. It is optional: leave it empty if they have none.");
   if (params.accountType === "external" && !params.firmName?.trim()) throw new Error("External practitioners need a firm name — it is shown on everything they upload");
   if (params.accountType === "admin" && DEV_BYPASS_AUTH) throw new Error("PBA admin accounts can only be added once real sign-in is on");
 
@@ -300,7 +301,7 @@ async function _addPerson(params: {
     .insert({
       name: params.name.trim(),
       phone: mobile,
-      email: params.email.trim().toLowerCase(),
+      email: email || null,
       account_type: params.accountType,
       position: POSITION_FOR[params.accountType],
       role: LEGACY_ROLE[params.accountType],
@@ -328,9 +329,11 @@ async function _addPerson(params: {
 
 async function _editPerson(userId: string, params: { name: string; email: string; firmName?: string }) {
   const { supabase, adminName } = await requireAdmin();
+  const email = params.email.trim().toLowerCase();
+  if (email && !/^\S+@\S+\.\S+$/.test(email)) throw new Error("That email address doesn't look right. It is optional: leave it empty if they have none.");
   const { data: person, error } = await supabase
     .from("app_user")
-    .update({ name: params.name.trim(), email: params.email.trim().toLowerCase(), ...(params.firmName !== undefined ? { firm_name: params.firmName.trim() || null } : {}) })
+    .update({ name: params.name.trim(), email: email || null, ...(params.firmName !== undefined ? { firm_name: params.firmName.trim() || null } : {}) })
     .eq("id", userId)
     .select("id, name")
     .single();

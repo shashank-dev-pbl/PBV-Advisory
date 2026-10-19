@@ -94,8 +94,8 @@ export default function PeopleAdmin({
               </div>
               <span className="mt-1 block text-[11px] font-normal" style={{ color: "var(--ink-secondary)" }}>They sign in with a code texted here. Two people can&apos;t share a number.</span>
             </label>
-            <label className="text-[12px] font-semibold">Email
-              <input className="input-field mt-1" placeholder="For notices and alerts" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
+            <label className="text-[12px] font-semibold">Email (optional)
+              <input className="input-field mt-1" placeholder="Only for notices — not needed to sign in" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
             </label>
             <label className="text-[12px] font-semibold">Account type
               <select className="input-field mt-1" value={f.accountType} onChange={(e) => setF({ ...f, accountType: e.target.value as AccountType })}>
@@ -156,12 +156,12 @@ export default function PeopleAdmin({
                 <>
                   <td className="px-3 py-2.5 text-[13.5px] font-bold">{p.name ?? "—"}</td>
                   <td className="px-3 py-2.5 text-[13px]" style={{ whiteSpace: "nowrap" }}>{maskMobile(p.mobile)}</td>
-                  <td className="px-3 py-2.5 text-[13px]">{p.email}</td>
+                  <td className="px-3 py-2.5 text-[13px]">{p.email || "—"}</td>
                   <td className="px-3 py-2.5 text-[13px]">{TYPE_LABEL[p.accountType]}{p.firm ? ` (${p.firm})` : ""}</td>
                   <td className="px-3 py-2.5 text-[13px]">{p.companies.join(", ") || <span style={{ color: "var(--ink-secondary)" }}>None yet</span>}</td>
                   <td className="px-3 py-2.5 text-[13px]" style={{ color: "var(--ink-secondary)" }}>{p.lastSignIn ? new Date(p.lastSignIn).toLocaleDateString() : "Never"}</td>
                   <td className="px-3 py-2.5 text-right">
-                    <button onClick={() => { setEditing(p.id); setDraft({ name: p.name ?? "", email: p.email, firm: p.firm ?? "" }); }} className="btn-small" style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)" }}>Edit</button>
+                    <button onClick={() => { setEditing(p.id); setDraft({ name: p.name ?? "", email: p.email ?? "", firm: p.firm ?? "" }); }} className="btn-small" style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)" }}>Edit</button>
                   </td>
                 </>
               )}
