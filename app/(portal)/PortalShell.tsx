@@ -77,7 +77,7 @@ export default function PortalShell({ who, companies, companyId, closeWaiting, c
 
       <NavItem page="home" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="dashboard" who={who} pathname={pathname} onNavigate={close} />
-      <NavItem page="up-once" who={who} pathname={pathname} onNavigate={close} label="Master" href="/master/once" matchPrefix="/master" />
+      <NavItem page="up-once" who={who} pathname={pathname} onNavigate={close} label="Master" href="/master/services" matchPrefix="/master" />
       <NavItem
         page="close" who={who} pathname={pathname} onNavigate={close}
         extra={closeWaiting > 0 ? (

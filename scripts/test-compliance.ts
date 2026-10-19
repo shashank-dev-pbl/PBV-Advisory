@@ -58,4 +58,20 @@ assert.equal(generateObligations(rules, [{ ...gst, status: "closed" }], setting,
 // Names say which registration and period
 assert.equal(find("gstr1", "2026-04")?.name, "GSTR-1 · 29ABCDE1234F1Z5 (Karnataka) · Apr 2026");
 assert.equal(find("tds_26q", "2026-06")?.name, "TDS return 26Q · BLRA12345B · Q1 FY27");
+// Team: a service's default owner overrides the rule's own
+const teamRows = generateObligations(rules, [gst], setting, today, { GST: "founder" });
+assert.equal(teamRows.every((r) => r.owner === "founder"), true);
+assert.equal(generateObligations(rules, [gst, tan], setting, today, { GST: "pba" }).find((r) => r.rule_code === "tds_payment")?.owner, "practitioner");
+// Custom types: bound to their own registration, so two custom types never cross
+const custom: Rule[] = [
+  { code: "custom_c1", service: "Custom", name: "Fire NOC", category: "Custom", registration_kind: "custom", frequency: "yearly", due_rule: { mmdd: "02-15", years_after_fy_start: 1 }, applies_when: {}, owner_default: "practitioner", sort: 0 },
+  { code: "custom_c2", service: "Custom", name: "Monthly return", category: "Custom", registration_kind: "custom", frequency: "monthly", due_rule: { day: 5, months_after: 1 }, applies_when: {}, owner_default: "practitioner", sort: 0 },
+];
+const regC1: Registration = { id: "c1", kind: "custom", identifier: "Fire NOC", state: null, filing_type: null, forms: [], status: "active" };
+const regC2: Registration = { id: "c2", kind: "custom", identifier: "Monthly return", state: null, filing_type: null, forms: [], status: "active" };
+const cRows = generateObligations(custom, [regC1, regC2], setting, today);
+assert.equal(cRows.filter((r) => r.rule_code === "custom_c1").length, 1);
+assert.equal(cRows.filter((r) => r.rule_code === "custom_c2").length, 12);
+assert.equal(cRows.find((r) => r.rule_code === "custom_c1")?.statutory_due_date, "2027-02-15");
+assert.equal(cRows.find((r) => r.rule_code === "custom_c1")?.name, "Fire NOC · FY 2026-27");
 console.log(`ok - ${rows.length} rows for FY 2026-27; all assertions passed`);

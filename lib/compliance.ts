@@ -4,7 +4,8 @@ import { fyForPeriod } from "@/lib/period";
 // No database, no clock except the `today` passed in, so it can be tested on its own.
 
 export type RuleFrequency = "monthly" | "quarterly" | "yearly";
-export type RegistrationKind = "gst" | "tan" | "entity";
+export type RegistrationKind = "gst" | "tan" | "entity" | "custom";
+export type Owner = "founder" | "practitioner" | "pba";
 export type FilingType = "regular" | "qrmp" | "composition";
 export type ItrBasis = "auto" | "non_audit" | "audit" | "tp";
 
@@ -17,7 +18,7 @@ export type Rule = {
   frequency: RuleFrequency;
   due_rule: { day?: number; months_after?: number; by_quarter?: Record<string, string>; mmdd?: string; years_after_fy_start?: number };
   applies_when: { filing_type?: string; form?: string; itr_basis?: string };
-  owner_default: "founder" | "practitioner" | "pba";
+  owner_default: Owner;
   sort: number;
 };
 
@@ -46,7 +47,7 @@ export type GeneratedObligation = {
   fy: string;
   period: string;                // YYYY-MM: the month, the quarter's last month, or the financial year's last month
   statutory_due_date: string;    // YYYY-MM-DD
-  owner: "founder" | "practitioner" | "pba";
+  owner: Owner;
 };
 
 export const ENTITY_TYPES = ["Private Limited", "Public Limited", "Small Company", "OPC", "LLP", "Section 8", "Other"] as const;
@@ -77,6 +78,7 @@ export function resolveItrBasis(setting: Pick<Setting, "itr_basis" | "entity_typ
 
 function applies(rule: Rule, reg: Registration, basis: string): boolean {
   if (rule.registration_kind !== reg.kind || reg.status !== "active") return false;
+  if (rule.registration_kind === "custom") return rule.code === `custom_${reg.id}`;
   const w = rule.applies_when ?? {};
   if (w.filing_type && w.filing_type !== reg.filing_type) return false;
   if (w.form && !reg.forms.includes(w.form)) return false;
@@ -95,7 +97,8 @@ function periodLabel(rule: Rule, fy: number, period: string, quarter?: number): 
   return `FY ${fy}-${String(fy + 1).slice(-2)}`;
 }
 
-export function generateObligations(rules: Rule[], regs: Registration[], setting: Setting, today: Date = new Date()): GeneratedObligation[] {
+// `owners` is the Team page: the default owner per service, which overrides a rule's own default.
+export function generateObligations(rules: Rule[], regs: Registration[], setting: Setting, today: Date = new Date(), owners: Partial<Record<string, Owner>> = {}): GeneratedObligation[] {
   const basis = resolveItrBasis(setting);
   const lastFy = fyStartYear(today);
   const from = setting.effective_from; // periods ending before this are skipped
@@ -115,7 +118,7 @@ export function generateObligations(rules: Rule[], regs: Registration[], setting
           fy: fyForPeriod(period, "2026-04-01"),
           period,
           statutory_due_date: due,
-          owner: rule.owner_default,
+          owner: owners[rule.service] ?? rule.owner_default,
         });
       };
 

@@ -12,7 +12,7 @@ type Ob = {
   status: "pending" | "filed" | "verified"; rule_code: string | null; registration_id: string | null; closed_reason: string | null;
 };
 
-const SERVICES = ["GST", "TDS", "ITR"] as const;
+const SERVICES = ["GST", "TDS", "ITR", "Custom"] as const;
 const MONTHS = ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
 const box = { background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 } as const;
 const dueOf = (o: Ob) => o.due_override ?? o.statutory_due_date;
@@ -87,8 +87,8 @@ export default async function CompliancePage({ searchParams }: { searchParams: P
 
         {generated.length === 0 && (
           <div className="mb-5 p-4 text-[13px]" style={box}>
-            Nothing is tracked yet. Upload a GST certificate, TAN letter or certificate of incorporation under{" "}
-            <Link href="/master/once" className="font-semibold underline">Master</Link> and confirm its details to build the calendar.
+            Nothing is tracked yet. Switch on a service under{" "}
+            <Link href="/master/services" className="font-semibold underline">Master → Services</Link> and save it to build the calendar.
           </div>
         )}
 
