@@ -57,12 +57,13 @@ export async function TeamTab({ companyId, canEdit }: { companyId: string; canEd
   const [team, counts] = await Promise.all([supabase.from("compliance_team").select("service, owner").eq("company_id", companyId), entryCounts(companyId)]);
   const error = team.error ?? counts.error;
   if (error) return <LoadError what="Team" message={error.message} />;
+  // Only services that are actually being tracked get a line, as in CXO Lens.
   const services = [
     { service: "GST", label: "GST", entries: counts.perCategory.get("GST") ?? 0 },
     { service: "TDS", label: "TDS", entries: counts.perCategory.get("TDS") ?? 0 },
     { service: "ITR", label: "Income tax return", entries: counts.perCategory.get("ITR") ?? 0 },
     { service: "Custom", label: "Custom types", entries: counts.perCategory.get("Custom") ?? 0 },
-  ];
+  ].filter((s) => s.entries > 0);
   return <TeamClient canEdit={canEdit} services={services} owners={Object.fromEntries((team.data ?? []).map((t) => [t.service, t.owner])) as Record<string, Owner>} />;
 }
 

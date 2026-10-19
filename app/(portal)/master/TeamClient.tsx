@@ -17,7 +17,10 @@ export default function TeamClient({ canEdit, services, owners }: { canEdit: boo
       <p className="mb-4 text-[13px]" style={{ color: "var(--ink-secondary)" }}>
         Who does the work for each service. The person chosen is the default owner of that service&apos;s entries. Until it is set, an entry belongs to the external practitioner. Changing it moves the entries that are still open.
       </p>
-      <div className="overflow-x-auto">
+      {services.length === 0 && (
+        <div className="p-4 text-[13px]" style={box}>No service is being tracked yet. Set one up under Services first, and it will appear here.</div>
+      )}
+      {services.length > 0 && <div className="overflow-x-auto">
         <table className="w-full" style={{ ...box, borderCollapse: "collapse" }}>
           <thead><tr style={{ borderBottom: "1px solid var(--rule)" }}>
             {["Service", "Entries", "Default owner"].map((h) => <th key={h} className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.04em]" style={{ color: "var(--ink-secondary)" }}>{h}</th>)}
@@ -36,10 +39,10 @@ export default function TeamClient({ canEdit, services, owners }: { canEdit: boo
             ))}
           </tbody>
         </table>
-      </div>
+      </div>}
       {err && <p className="mt-3 text-[12.5px]" style={{ color: "#8c1a1a" }}>{err}</p>}
       {msg && <p className="mt-3 text-[12.5px]" style={{ color: "#004d00" }}>{msg}</p>}
-      {canEdit && (
+      {canEdit && services.length > 0 && (
         <button className="btn-small mt-4" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)" }} disabled={pending}
           onClick={() => start(async () => {
             setErr(""); setMsg("");
