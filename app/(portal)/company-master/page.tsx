@@ -5,7 +5,7 @@ import PageHeader from "../PageHeader";
 import Locked from "../Locked";
 import NoCompany from "../NoCompany";
 import SettingUp from "../SettingUp";
-import MasterWizard, { type FileRow, type LogItem, type Explainer } from "./MasterWizard";
+import MasterWizard, { type FileRow, type LogItem, type Explainer, type SummaryRow } from "./MasterWizard";
 import type { Answers, EventTypeDoc, LibDoc, MasterFiling, MasterRule } from "@/lib/master/types";
 
 export default async function CompanyMasterPage() {
@@ -16,18 +16,19 @@ export default async function CompanyMasterPage() {
   if (company.status === "setting_up") return <SettingUp page="cmaster" name={company.name} />;
 
   const supabase = await createClient();
-  const [master, rules, filings, eventDocs, library, explainers, files, log, firm] = await Promise.all([
+  const [master, rules, filings, eventDocs, library, explainers, files, log, firm, summaries] = await Promise.all([
     supabase.from("company_master").select("answers, steps_done, completed").eq("company_id", company.id).maybeSingle(),
     supabase.from("master_rule").select("*").eq("active", true).order("sort"),
     supabase.from("master_filing").select("*").eq("active", true).order("sort"),
     supabase.from("event_type_doc").select("event_type, doc_code, need, condition_note").order("sort"),
     supabase.from("doc_library").select("code, name, form").order("sort"),
-    supabase.from("doc_explainer").select("doc_type, name, what_it_is, why_it_matters"),
-    supabase.from("file_version").select("id, req_key, period, version, storage_path, filename, by_name, at, reason, removed").eq("company_id", company.id).is("period", null).order("version", { ascending: false }),
+    supabase.from("doc_explainer").select("*"),
+    supabase.from("file_version").select("id, req_key, period, version, storage_path, filename, by_name, at, reason, removed").eq("company_id", company.id).order("version", { ascending: false }),
     supabase.from("master_log").select("id, at, who_name, step, kind, note, reason").eq("company_id", company.id).order("at", { ascending: false }).limit(40),
     externalFirmName(supabase, company.id),
+    supabase.from("file_summary").select("req_key, period_key, field, value, entered_by_name, entered_at").eq("company_id", company.id),
   ]);
-  const error = master.error ?? rules.error ?? filings.error ?? eventDocs.error ?? library.error ?? explainers.error ?? files.error ?? log.error;
+  const error = master.error ?? rules.error ?? filings.error ?? eventDocs.error ?? library.error ?? explainers.error ?? files.error ?? log.error ?? summaries.error;
   if (error) {
     return (
       <>
@@ -44,7 +45,7 @@ export default async function CompanyMasterPage() {
 
   return (
     <>
-      <PageHeader title={company.name} accent="Company master" sub={`${done.length} of 12 steps done`} />
+      <PageHeader title={company.name} accent="Company master" />
       <MasterWizard
         companyId={company.id}
         firmName={firm}
@@ -58,6 +59,7 @@ export default async function CompanyMasterPage() {
         }}
         explainers={(explainers.data ?? []) as Explainer[]}
         files={(files.data ?? []) as FileRow[]}
+        summaries={(summaries.data ?? []) as SummaryRow[]}
         log={(log.data ?? []) as LogItem[]}
       />
     </>

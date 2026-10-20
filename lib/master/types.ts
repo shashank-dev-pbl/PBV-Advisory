@@ -5,6 +5,8 @@ export type Scheme = "regular" | "qrmp" | "composition";
 export type Owner = "founder" | "external" | "pba";
 
 export type Answers = {
+  ack?: Record<string, boolean>;          // questions the person has pressed Next on (the conversation moves on)
+  later?: Record<string, boolean>;        // documents marked Later: they stay open on the owner's list
   na?: Record<string, string>;            // documents marked Not applicable: request key -> reason
   has?: { loans?: boolean; debentures?: boolean; rounds?: boolean; investments?: boolean };   // "does the company have any?" answered, including No
   entity?: Entity;
@@ -17,9 +19,9 @@ export type Answers = {
   salaries?: { pays?: boolean; employees?: number; contractors?: number; payrollTool?: string; pf?: boolean; esi?: boolean; ptStates?: string[]; foundersPaid?: boolean };
   tds?: { types?: ("salaries" | "vendors" | "rent" | "nonresident")[] };
   revenue?: { types?: string[]; partners?: boolean; sharing?: "full" | "own"; gateways?: string[]; advances?: boolean; exports?: boolean };
-  loans?: { id: string; lender: string; type: string; sanctioned?: number; takenOn?: string; secured?: boolean }[];
+  loans?: { id: string; lender: string; type: string; sanctioned?: number; takenOn?: string; secured?: boolean | string }[];
   debentures?: { id: string; issuedOn?: string; type: "secured_ncd" | "unsecured_ncd" | "ccd" | "ocd"; amount?: number; status: "outstanding" | "redeemed"; redeemedOn?: string }[];
-  rounds?: { id: string; round: string; instrument: "equity" | "ccps" | "ccd" | "ocps_ocd" | "note" | "grant" | "venture_debt"; closedOn?: string; amount?: number; foreign?: boolean }[];
+  rounds?: { id: string; round: string; instrument: "equity" | "ccps" | "ccd" | "ocps_ocd" | "note" | "grant" | "venture_debt"; closedOn?: string; amount?: number; foreign?: boolean | string }[];
   investments?: { id: string; what: "fd" | "mf" | "shares" | "odi" | "loan_given" | "other"; heldWith?: string; amount?: number }[];
 };
 

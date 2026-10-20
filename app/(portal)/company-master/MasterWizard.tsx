@@ -1,25 +1,29 @@
 "use client";
 
+import "../proto.css";
 import { useMemo, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { safeStorageSegment } from "@/lib/storagePath";
-import { getSignedDownloadUrl } from "@/app/founder/actions";
 import { unwrap } from "@/lib/actionResult";
-import { fmtDate, fmtDateTime } from "@/lib/dates";
-import { buildPlan, currentFyStart, type EngineData } from "@/lib/master/engine";
-import { STEPS, answered, valueAt, visibleQuestions, type Field, type Question, type Step } from "@/lib/master/steps";
+import { fmtDate } from "@/lib/dates";
+import { buildPlan, booksOwner, type EngineData } from "@/lib/master/engine";
+import { STEP_DEFS, defaultTracking, isAnswered, lastEndedMonth, stepComplete, trackingOptions, valueAt, visibleQuestions, type Ctx, type Opt, type Q } from "@/lib/master/questions";
 import type { Answers, Owner, Plan } from "@/lib/master/types";
 import { recordFile, removeFile, saveAnswers, setStepDone } from "./actions";
+import Drawer, { type DrawerTarget, type ExplainerFull, type SummaryValue } from "./Drawer";
+import { Modal, Own, type ModalState } from "./ui";
 
-export type FileRow = { id: string; req_key: string; version: number; storage_path: string; filename: string; by_name: string | null; at: string; reason: string | null; removed: boolean };
+export type FileRow = { id: string; req_key: string; period: string | null; version: number; storage_path: string; filename: string; by_name: string | null; at: string; reason: string | null; removed: boolean };
 export type LogItem = { id: string; at: string; who_name: string | null; step: number | null; kind: string; note: string; reason: string | null };
-export type Explainer = { doc_type: string; name: string; what_it_is: string | null; why_it_matters: string | null };
+export type Explainer = ExplainerFull;
+export type SummaryRow = { req_key: string; period_key: string; field: string; value: string | null; entered_by_name: string | null; entered_at: string };
 
-const box = { background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 } as const;
-const green = { background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)" } as const;
-const quiet = { background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)" } as const;
+const lockSvg = (<svg className="lockic" viewBox="0 0 16 16"><rect x="3.5" y="7" width="9" height="6.5" rx="1.2" fill="none" stroke="currentColor" strokeWidth="1.5" /><path d="M5.5 7V5a2.5 2.5 0 015 0v2" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>);
+const monthLabel = (ym: string) => new Date(`${ym}-01T00:00:00`).toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+const monthShort = (ym: string) => new Date(`${ym}-01T00:00:00`).toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+const uid = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID().slice(0, 8) : Math.random().toString(36).slice(2, 10));
+const fk = (key: string, period?: string | null) => `${key}|${period ?? ""}`;
 const planKeys = (p: Plan) => new Set<string>([...p.standard.map((s) => s.key), ...p.events.map((e) => e.key), ...p.recurring.map((r) => r.key), ...p.filings.map((f) => f.key)]);
-const pretty = (v: unknown) => (typeof v === "boolean" ? (v ? "Yes" : "No") : String(v ?? "").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()));
 
 function setPath(a: Answers, path: string, value: unknown): Answers {
   const next = JSON.parse(JSON.stringify(a)) as Record<string, unknown>;
@@ -29,461 +33,383 @@ function setPath(a: Answers, path: string, value: unknown): Answers {
   o[keys[keys.length - 1]] = value;
   return next as Answers;
 }
-const uid = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID().slice(0, 8) : Math.random().toString(36).slice(2, 10));
-const monthLabel = (m: string) => new Date(`${m}-01T00:00:00`).toLocaleDateString("en-IN", { month: "long", year: "numeric" });
-function defaultTracking(a: Answers, today = new Date()): string {
-  const fy = currentFyStart(today);
-  const inc = a.incorporatedOn?.slice(0, 7);
-  return inc && inc > fy ? inc : fy;
+// Answers that make later answers meaningless clear them, so nothing stale is asked.
+function cleanup(a: Answers, id: string, value: unknown): Answers {
+  const n = JSON.parse(JSON.stringify(a)) as Answers;
+  if (id === "gst" && value === false) n.gst = { registered: false, gstins: [] };
+  if (id === "salaries" && value === false) n.salaries = { pays: false };
+  if (id === "hasLoans" && value === false) n.loans = [];
+  if (id === "hasDebs" && value === false) n.debentures = [];
+  if (id === "hasRounds" && value === false) n.rounds = [];
+  if (id === "hasHold" && value === false) n.investments = [];
+  if (id === "partners" && value === false) n.revenue = { ...n.revenue, sharing: undefined };
+  return n;
 }
-function catchUpMonths(start: string, today = new Date()): number {
-  const [y, m] = start.split("-").map(Number);
-  return Math.max(0, (today.getFullYear() - y) * 12 + (today.getMonth() + 1 - m));
-}
+const OPT_LABEL = (o: string | Opt) => (Array.isArray(o) ? o : [o, o]) as [string, string];
 
-const FILING_STEP: Record<string, string> = {
-  F01: "4 GST", F02: "4 GST", F03: "4 GST", F04: "4 GST", F05: "4 GST", F06: "4 GST", F07: "6 TDS", F08: "6 TDS", F09: "6 TDS", F10: "6 TDS",
-  F11: "5 Salaries", F12: "5 Salaries", F13: "5 Salaries", F14: "5 Salaries",
-};
-const FREQ = { monthly: "every month", quarter_end: "every quarter end", march: "every March", quarter_months_1_2: "months 1 and 2 of each quarter", half_yearly: "September and March" } as Record<string, string>;
+// Event document -> the explainer that describes it.
+const CODE_EXPLAINER: Record<string, string> = { COI: "coi", PAN: "pan", TAN: "tan", BR: "br", PAS3: "pas3", MGT14: "mgt14", CHG4: "chg4", CHG1: "chg", CHG9: "chg", CHGC: "chg", REDEEM: "red", DCERT: "dcert", TERM: "ts", SSA: "sha", SHA: "sha" };
 
-export default function MasterWizard({ companyId, firmName, initialAnswers, initialDone, data, explainers, files, log }: {
-  companyId: string; firmName: string | null; initialAnswers: Answers; initialDone: number[]; data: EngineData; explainers: Explainer[]; files: FileRow[]; log: LogItem[];
+export default function MasterWizard({ companyId, firmName, initialAnswers, initialDone, data, explainers, files, summaries, log }: {
+  companyId: string; firmName: string | null; initialAnswers: Answers; initialDone: number[]; data: EngineData; explainers: Explainer[]; files: FileRow[]; summaries: SummaryRow[]; log: LogItem[];
 }) {
   const [answers, setAnswers] = useState<Answers>(initialAnswers);
-  const [done, setDone] = useState<number[]>(initialDone);
+  const [doneSet, setDoneSet] = useState<number[]>(initialDone.map((n) => n - 1));      // 0-based here, 1-based in the database
   const [fileRows, setFileRows] = useState<FileRow[]>(files);
-  const firstOpen = Math.min(12, (done.length ? Math.max(...done) : 0) + 1);
-  const [current, setCurrent] = useState<number>(done.includes(12) ? 12 : firstOpen);
+  const [sums, setSums] = useState<SummaryRow[]>(summaries);
+  const firstOpen = Math.min(11, doneSet.length ? Math.max(...doneSet) + 1 : 0);
+  const [view, setView] = useState<number | null>(null);        // a finished step being looked at
+  const [cur, setCur] = useState<number>(doneSet.includes(11) ? 11 : firstOpen);
+  const [edit, setEdit] = useState<string | null>(null);
+  const [modal, setModal] = useState<ModalState | null>(null);
+  const [drawer, setDrawer] = useState<{ key: string; period: string | null; name: string; ctx: string } | null>(null);
+  const [hist, setHist] = useState<Record<string, boolean>>({});
+  const [fresh, setFresh] = useState<Set<string>>(new Set());
   const [err, setErr] = useState("");
-  const [pending, start] = useTransition();
-  const [fresh, setFresh] = useState<Set<string>>(new Set());   // lines the last answer just added, highlighted in the right panel
+  const [, start] = useTransition();
+  const fileInput = useRef<HTMLInputElement>(null);
+  const pending = useRef<{ key: string; name: string; period: string | null; reason: string } | null>(null);
 
+  const done = (i: number) => doneSet.includes(i);
   const plan = useMemo(() => buildPlan(answers, data), [answers, data]);
+  const closer = booksOwner(answers);
+  const lib = useMemo(() => new Map(data.library.map((d) => [d.code, { name: d.name, form: d.form }])), [data.library]);
+  const ownLabel = (o: Owner) => (o === "founder" ? "Founder" : o === "pba" ? "PBA practitioner" : answers.books?.firmName || firmName || "External practitioner");
   const explain = useMemo(() => new Map(explainers.map((e) => [e.doc_type, e])), [explainers]);
-  const ruleStep = useMemo(() => new Map(data.rules.map((r) => [r.rule_id, r.step])), [data.rules]);
-  const step = STEPS[current - 1];
-  const isDone = done.includes(current);
-  const ownerLabel = (o: Owner) => (o === "founder" ? "Founder" : o === "pba" ? "PBA practitioner" : firmName ?? "External practitioner");
+  const ruleOf = useMemo(() => new Map(data.rules.map((r) => [r.rule_id, r])), [data.rules]);
 
   const byKey = useMemo(() => {
     const m = new Map<string, FileRow[]>();
-    for (const f of fileRows) m.set(f.req_key, [...(m.get(f.req_key) ?? []), f]);
+    for (const f of fileRows) m.set(fk(f.req_key, f.period), [...(m.get(fk(f.req_key, f.period)) ?? []), f]);
     return m;
   }, [fileRows]);
-  const currentFile = (key: string) => (byKey.get(key) ?? []).filter((f) => !f.removed).sort((a, b) => b.version - a.version)[0];
+  const versionsOf = (key: string, period?: string | null) => (byKey.get(fk(key, period)) ?? []).slice().sort((a, b) => b.version - a.version);
+  const currentOf = (key: string, period?: string | null) => versionsOf(key, period).find((f) => !f.removed);
+  const has = (key: string, period?: string | null) => !!currentOf(key, period);
+  const ctx: Ctx = { plan, closer, lib };
 
-  function commit(next: Answers, what: string, why?: string) {
-    const before = answers;
+  function apply(next: Answers) {
     const was = planKeys(plan);
     setFresh(new Set([...planKeys(buildPlan(next, data))].filter((k) => !was.has(k))));
     setAnswers(next);
+  }
+  function persist(next: Answers, what: string, step: number, why?: string) {
     setErr("");
     start(async () => {
-      try { unwrap(await saveAnswers({ answers: next, step: current, what, why })); }
-      catch (e) { setAnswers(before); setErr(e instanceof Error ? e.message : "Could not save"); }
+      try { unwrap(await saveAnswers({ answers: next, step: step + 1, what, why })); }
+      catch (e) { setErr(e instanceof Error ? e.message : "Could not save"); }
     });
   }
+  const stepIndex = view ?? cur;
+  const commit = (next: Answers, what: string, why?: string) => { apply(next); persist(next, what, stepIndex, why); };
+  const ackQ = (q: Q) => commit(setPath(answers, `ack.${q.id}`, true), `Answered: ${"ask" in q ? q.ask : q.id}`);
+  const unack = (id: string, why?: string) => commit(setPath(answers, `ack.${id}`, false), `Reopened an answer`, why);
+
+  /* ---------------- uploads ---------------- */
+  function pickFile(key: string, name: string, period: string | null, reason: string) {
+    pending.current = { key, name, period, reason };
+    setModal(null);
+    fileInput.current?.click();
+  }
+  function uploadAct(key: string, name: string, period: string | null) {
+    const up = currentOf(key, period);
+    if (up) {
+      setModal({ title: `Replace ${name}?`, reason: true, confirm: "Replace file",
+        body: <>The current file (version {up.version}, uploaded by {up.by_name ?? "—"}) stays in the history. The new file becomes version {up.version + 1} everywhere it is used — the master and the data room.</>,
+        onOk: (r) => pickFile(key, name, period, r) });
+    } else pickFile(key, name, period, "");
+  }
+  function removeAct(key: string, name: string, period: string | null) {
+    setModal({ title: `Remove ${name}?`, reason: true, danger: true, confirm: "Remove",
+      body: <>It will disappear from the data room and the master will ask for it again. Nothing is deleted — every version stays in the history.</>,
+      onOk: (r) => {
+        setModal(null);
+        start(async () => {
+          try {
+            unwrap(await removeFile(key, r || "Removed", period));
+            setFileRows((rows) => rows.map((f) => (f.req_key === key && (f.period ?? null) === (period ?? null) && !f.removed ? { ...f, removed: true } : f)));
+          } catch (e) { setErr(e instanceof Error ? e.message : "Could not remove"); }
+        });
+      } });
+  }
+  async function onFile(f: File | undefined) {
+    const p = pending.current;
+    if (fileInput.current) fileInput.current.value = "";
+    if (!f || !p) return;
+    setErr("");
+    try {
+      const path = `${companyId}/master/${safeStorageSegment(p.key)}/${Date.now()}-${safeStorageSegment(f.name)}`;
+      const { error } = await createClient().storage.from("docs").upload(path, f);
+      if (error) throw error;
+      unwrap(await recordFile({ reqKey: p.key, storagePath: path, filename: f.name, reason: p.reason || undefined, period: p.period }));
+      const prev = versionsOf(p.key, p.period)[0];
+      setFileRows((rows) => [{ id: uid(), req_key: p.key, period: p.period, version: (prev?.version ?? 0) + 1, storage_path: path, filename: f.name, by_name: "You", at: new Date().toISOString(), reason: p.reason || null, removed: false }, ...rows]);
+    } catch (e) { setErr(e instanceof Error ? e.message : "Upload failed"); }
+  }
+  const later = (key: string) => commit(setPath(answers, `later.${key.replace(/\./g, "_")}`, true), "Marked a document as later");
+
+  /* ---------------- drawer ---------------- */
+  function docTypeFor(key: string): string {
+    const rule = ruleOf.get(key.split(":")[0]);
+    if (rule && rule.section === "event") return CODE_EXPLAINER[key.split(":").pop() ?? ""] ?? "generic";
+    return rule?.doc_type ?? "generic";
+  }
+  function drawerTarget(): DrawerTarget | null {
+    if (!drawer) return null;
+    const rule = ruleOf.get(drawer.key.split(":")[0]);
+    const owner: Owner = rule?.owner_key === "books" ? closer : rule?.owner_key === "pba" ? "pba" : rule && rule.section === "event" ? "founder" : "founder";
+    const pk = drawer.period ?? "";
+    return {
+      key: drawer.key, period: drawer.period, name: drawer.name, ctx: drawer.ctx, explainer: explain.get(docTypeFor(drawer.key)) ?? explain.get("generic") ?? null,
+      owner, ownerLabel: ownLabel(owner), versions: versionsOf(drawer.key, drawer.period),
+      values: sums.filter((s) => s.req_key === drawer.key && s.period_key === pk).map((s) => ({ field: s.field, value: s.value, entered_by_name: s.entered_by_name, entered_at: s.entered_at })),
+    };
+  }
+
+  /* ---------------- stage ---------------- */
+  const i = stepIndex;
+  const { all, out } = i === 11 ? { all: [], out: [] as Q[] } : visibleQuestions(i, answers, ctx, has);
+  const complete = i < 11 && stepComplete(i, answers, ctx, has);
+  const reviewing = view !== null;
+  const remaining = all.length - out.length;
+
+  function answerText(q: Q): string {
+    if (q.kind === "choice") { const v = valueAt(answers, q.key); const o = q.opts.find((o) => o[0] === v); return o ? o[1] : String(v); }
+    if (q.kind === "date") return fmtDate(String(valueAt(answers, q.key) ?? ""));
+    if (q.kind === "multi") return ((valueAt(answers, q.key) as string[]) ?? []).join(", ");
+    if (q.kind === "fields") return q.fields.map((f) => String(valueAt(answers, f[0]) ?? "")).filter(Boolean).join(" · ");
+    if (q.kind === "rows") return `${((valueAt(answers, q.list) as unknown[]) ?? []).length} added`;
+    if (q.kind === "month") return `From ${monthLabel(answers.trackingStart ?? "")}`;
+    return "";
+  }
+  function confirmChange(q: Q) {
+    if (done(i)) {
+      setModal({ title: "Change a finished step?", reason: true, confirm: "Change it",
+        body: <>You&apos;re changing “{"ask" in q ? q.ask : ""}”. What the company is asked for will update from next month, and the data room will follow. The old answer is kept in the history.</>,
+        onOk: (r) => { setModal(null); setEdit(q.id); unack(q.id, r); } });
+    } else unack(q.id);
+  }
+
+  function control(q: Q) {
+    if (q.kind === "choice") {
+      const v = valueAt(answers, q.key);
+      return <div className="opts">{q.opts.map((o) => (
+        <button key={String(o[0])} className={`opt ${v === o[0] ? "on" : ""}`} onClick={() => commit(setPath(cleanup(setPath(answers, q.key, o[0]), q.id, o[0]), `ack.${q.id}`, true), `${q.ask} → ${o[1]}`)}>{o[1]}</button>
+      ))}</div>;
+    }
+    if (q.kind === "date") {
+      const v = String(valueAt(answers, q.key) ?? "");
+      return <div className="next"><input type="date" value={v} max={new Date().toISOString().slice(0, 10)} style={{ border: "1px solid var(--line)", borderRadius: 7, padding: "7px 10px" }}
+        onChange={(e) => { let n = setPath(answers, q.key, e.target.value); if (q.id === "inc" && !n.trackingStart) n = setPath(n, "trackingStart", defaultTracking(n)); apply(n); }} />
+        <button className="b solid" disabled={!v} onClick={() => ackQ(q)}>Next</button></div>;
+    }
+    if (q.kind === "month") {
+      const opts = trackingOptions(answers);
+      return <div className="next"><select style={{ border: "1px solid var(--line)", borderRadius: 7, padding: "7px 10px" }} value={answers.trackingStart ?? ""} onChange={(e) => apply(setPath(answers, "trackingStart", e.target.value))}>
+        {opts.map((m) => <option key={m} value={m}>{monthLabel(m)}{m === defaultTracking(answers) ? " — start of this FY" : ""}</option>)}</select>
+        <button className="b solid" onClick={() => ackQ(q)}>Next</button></div>;
+    }
+    if (q.kind === "multi") {
+      const v = (valueAt(answers, q.key) as string[] | undefined) ?? [];
+      const toggle = (o: string) => {
+        let a = v;
+        if (o === "None") a = a.includes("None") ? [] : ["None"]; else { a = a.filter((x) => x !== "None"); a = a.includes(o) ? a.filter((x) => x !== o) : [...a, o]; }
+        apply(setPath(setPath(answers, q.key, a), `ack.${q.id}`, false));
+      };
+      return <><div className="opts">{q.opts.map((o) => <button key={o} className={`opt ${v.includes(o) ? "on" : ""}`} onClick={() => toggle(o)}>{o}</button>)}</div>
+        <div className="next"><button className="b solid" disabled={!v.length} onClick={() => ackQ(q)}>Next</button></div></>;
+    }
+    if (q.kind === "fields") {
+      return <><div className="fields">{q.fields.map(([path, label, kind, opts]) => (
+        <div className="f" key={path}><label>{label}</label>
+          {kind === "select" ? <select value={String(valueAt(answers, path) ?? "")} onChange={(e) => apply(setPath(answers, path, e.target.value))}><option value="">Choose…</option>{(opts ?? []).map((o) => <option key={o}>{o}</option>)}</select>
+            : <input type={kind === "number" ? "number" : "text"} value={String(valueAt(answers, path) ?? "")} onChange={(e) => apply(setPath(answers, path, kind === "number" ? (e.target.value === "" ? undefined : Number(e.target.value)) : e.target.value))} />}
+        </div>))}</div>
+        <div className="next"><button className="b solid" onClick={() => {
+          if (q.req.every((p) => String(valueAt(answers, p) ?? "").trim())) ackQ(q);
+          else { setErr("Fill in the required details first."); }
+        }}>Next</button><span className="help">{q.req.length < q.fields.length ? "Fields marked optional can be left blank." : ""}</span></div></>;
+    }
+    if (q.kind === "rows") {
+      const rows = ((valueAt(answers, q.list) as Record<string, unknown>[] | undefined) ?? []);
+      const tpl = q.cols.map((c) => `${c[3]}fr`).join(" ") + " 24px";
+      const setRow = (n: number, k: string, v: string) => apply(setPath(answers, q.list, rows.map((r, j) => (j === n ? { ...r, [k]: v } : r))));
+      return <><div className="rows"><div className="row head" style={{ gridTemplateColumns: tpl }}>{q.cols.map((c) => <span key={c[0]}>{c[1]}</span>)}<span /></div>
+        {rows.length === 0 ? <div className="row" style={{ color: "var(--muted)", fontSize: 12.5 }}>Nothing added yet.</div> : rows.map((r, n) => (
+          <div className="row" key={String(r.id)} style={{ gridTemplateColumns: tpl }}>
+            {q.cols.map(([k, label, kind, , opts]) => kind === "select"
+              ? <select key={k} value={String(r[k] ?? "")} onChange={(e) => setRow(n, k, e.target.value)}>{(opts ?? []).map((o) => { const [a, b] = OPT_LABEL(o as string | Opt); return <option key={a} value={a}>{b}</option>; })}</select>
+              : <input key={k} type={kind} value={String(r[k] ?? "")} placeholder={label} onChange={(e) => setRow(n, k, e.target.value)} />)}
+            <button className="x" aria-label="Remove" onClick={() => commit(setPath(answers, q.list, rows.filter((_, j) => j !== n)), `Removed a row: ${q.ask}`)}>×</button>
+          </div>))}</div>
+        <span className="add" role="button" onClick={() => commit(setPath(answers, q.list, [...rows, { id: uid(), ...q.blank }]), `Added a row: ${q.ask}`)}>+ Add another</span>
+        <div className="next"><button className="b solid" onClick={() => {
+          if (rows.length && rows.every((r) => q.req.every((k) => String(r[k] ?? "").trim()))) ackQ(q); else setErr("Complete every line first, or remove the ones you do not need.");
+        }}>Done adding</button></div></>;
+    }
+    return null;
+  }
+
+  function uploadBox(key: string, name: string, code: string | null, owner: Owner, period: string | null = null, na?: boolean) {
+    const up = currentOf(key, period);
+    const n = versionsOf(key, period).filter((f) => !f.removed || true).length;
+    const open = hist[fk(key, period)];
+    const naNow = !!answers.na?.[key.replace(/\./g, "_")];
+    const tap = () => setDrawer({ key, period, name, ctx: "Company master" });
+    const chip = n ? <button className="cnt-chip" onClick={() => setHist({ ...hist, [fk(key, period)]: !open })}>Uploaded {n} time{n > 1 ? "s" : ""} {open ? "▴" : "▾"}</button> : null;
+    const history = open ? (
+      <div style={{ flexBasis: "100%" }}><div className="hist">{versionsOf(key, period).map((h) => (
+        <div key={h.id} className={`hrow ${currentOf(key, period)?.id === h.id ? "cur" : ""} ${h.removed ? "rem" : ""}`}><span className="hv">{h.removed ? "Removed" : `v${h.version}`}</span>
+          <span className="hd">{h.version > 1 ? "Replaced" : "Uploaded"} by {h.by_name} · {fmtDate(h.at)}{h.reason ? ` — “${h.reason}”` : ""} <span className="hf">{h.filename}</span></span>{currentOf(key, period)?.id === h.id && <span className="chip ok">Current</span>}</div>))}</div></div>) : null;
+    const title = <div className="dn tap" onClick={tap}><b>{name}</b><span className="ib">i</span>{code && <span className="fc">{code}</span>}</div>;
+    if (up) {
+      return <div className="drop up" style={{ flexWrap: "wrap" }}><div className="dn tap" onClick={tap}><b>{name}</b><span className="ib">i</span>{code && <span className="fc">{code}</span>}
+        <div className="dm">v{up.version} · uploaded by {up.by_name}{up.by_name && owner !== "founder" && false ? "" : ""} · {fmtDate(up.at)} · also in the data room</div></div>
+        {chip}<button className="b quiet xs" onClick={() => uploadAct(key, name, period)}>Replace</button><button className="b quiet xs danger-t" onClick={() => removeAct(key, name, period)}>Remove</button>{history}</div>;
+    }
+    if (naNow) return <div className="drop later"><div className="dn">{title}<div className="dm">Not applicable</div></div><button className="b quiet xs" onClick={() => commit(setPath(answers, `na.${key.replace(/\./g, "_")}`, undefined), `${name}: applicable again`)}>Undo</button></div>;
+    if (answers.later?.[key.replace(/\./g, "_")]) {
+      return <div className="drop later" style={{ flexWrap: "wrap" }}><div className="dn tap" onClick={tap}><b>{name}</b><span className="ib">i</span>{code && <span className="fc">{code}</span>}<div className="dm">Later — added to {ownLabel(owner)}&apos;s list</div></div>
+        {chip}<Own owner={owner} label={ownLabel(owner)} /><button className="b xs" onClick={() => uploadAct(key, name, period)}>Upload now</button>{history}</div>;
+    }
+    return <div className="drop" style={{ flexWrap: "wrap" }}><div className="dn tap" onClick={tap}><b>{name}</b><span className="ib">i</span>{code && <span className="fc">{code}</span>}
+      <div className="dm">{n ? "Removed earlier — upload a new version." : "Drop a file here, or choose one. Anyone on the company can upload."}</div></div>
+      {chip}<Own owner={owner} label={ownLabel(owner)} /><button className="b solid xs" onClick={() => uploadAct(key, name, period)}>Upload</button><button className="b quiet xs" onClick={() => later(key)}>Later</button>
+      {na && <button className="b quiet xs" onClick={() => commit(setPath(answers, `na.${key.replace(/\./g, "_")}`, "Not applicable"), `${name}: not applicable`)}>Not applicable</button>}{history}</div>;
+  }
+
+  function turn(q: Q, last: boolean) {
+    if (q.kind === "note") return q.text ? <div className="sys" key={q.id}>ⓘ <div dangerouslySetInnerHTML={{ __html: q.text }} /></div> : null;
+    const ok = isAnswered(q, answers, has);
+    let body: React.ReactNode;
+    if (q.kind === "upload") body = uploadBox(q.key, q.ask.replace(/^Upload (the )?/, "").replace(/^./, (c) => c.toUpperCase()), null, q.owner, q.period ?? null);
+    else if (q.kind === "docs") {
+      const n = q.docs.filter((d) => has(d.key) || answers.later?.[d.key.replace(/\./g, "_")] || answers.na?.[d.key.replace(/\./g, "_")]).length;
+      body = <><div className="help">{n} of {q.docs.length} sorted · becomes a <b>{q.ev}</b> event on the data room timeline</div>
+        <div className="doclist">{q.docs.map((d) => <div key={d.key}>{uploadBox(d.key, d.name, d.code, d.owner, null, d.na)}</div>)}</div>
+        {n < q.docs.length && <div className="next"><button className="b quiet xs" onClick={() => {
+          let a = answers; q.docs.forEach((d) => { if (!has(d.key) && !a.later?.[d.key.replace(/\./g, "_")] && !a.na?.[d.key.replace(/\./g, "_")]) a = setPath(a, `later.${d.key.replace(/\./g, "_")}`, true); }); commit(a, "Marked the rest as later");
+        }}>Mark the rest as later</button></div>}</>;
+    } else if (ok && edit !== q.id) body = <div className="answered"><span className="achip">{answerText(q)}</span><span className="change" role="button" onClick={() => confirmChange(q)}>Change</span></div>;
+    else body = <div className="ans">{control(q)}</div>;
+    return (
+      <div className={`turn ${last && !ok ? "fresh" : ""}`} key={q.id}><span className="av">PBA</span>
+        <div className={`bubble ${ok ? "done" : ""}`}><div className="ask">{q.ask}</div>{q.help && !ok && <div className="help">{q.help}</div>}{body}</div></div>
+    );
+  }
+
+  /* ---------------- panel ---------------- */
+  function panel() {
+    type Item = { key: string; name: string; owner: Owner; why?: string };
+    const monthly: Item[] = [], quarterly: Item[] = [], once: Item[] = plan.standard.map((s) => ({ key: s.key, name: s.name, owner: s.owner }));
+    for (const r of plan.recurring) (r.schedule === "monthly" ? monthly : quarterly).push({ key: r.key, name: r.name, owner: r.owner });
+    for (const f of plan.filings) ((f.schedule === "monthly" || f.schedule === "quarter_months_1_2") ? monthly : quarterly).push({ key: f.key, name: `${f.name} (filing)`, owner: f.owner });
+    const events = plan.events;
+    const ev = events.length;
+    const trackFrom = answers.trackingStart;
+    const catchN = trackFrom ? Math.max(0, (new Date().getFullYear() - +trackFrom.slice(0, 4)) * 12 + (new Date().getMonth() + 1 - +trackFrom.slice(5))) : 0;
+    const grp = (label: string, arr: Item[]) => arr.length ? (<><div className="pg">{label} · {arr.length}</div>{arr.map((x) => <div key={x.key} className={`pi ${fresh.has(x.key) ? "new" : ""}`}><span className="pn" title={x.name}>{x.name}</span><Own owner={x.owner} label={ownLabel(x.owner)} /></div>)}</>) : null;
+    const nothing = !monthly.length && !quarterly.length && !once.length && !ev;
+    return (
+      <div className="panel" id="panel"><div className="ph"><div className="t">What this master generates</div><div className="d">Builds up as you answer.</div>
+        <div className="counts"><div className="cnt"><b>{monthly.length}</b><span>monthly</span></div><div className="cnt"><b>{quarterly.length}</b><span>quarterly / yearly</span></div><div className="cnt"><b>{once.length}</b><span>one-time</span></div><div className="cnt"><b>{ev}</b><span>timeline events</span></div></div></div>
+        <div className="pl">{nothing && <div className="empty">Nothing yet. Answer the first question to start.</div>}
+          {answers.incorporatedOn && catchN > 0 && <><div className="pg">History</div><div className="pi"><span className="pn">Catch-up: {catchN} months, {monthShort(trackFrom!)} – {monthShort(lastEndedMonth())}</span></div></>}
+          {grp("Every month", monthly)}{grp("Every quarter / year", quarterly)}{grp("Once", once)}
+          {ev > 0 && <><div className="pg">Data room timeline · {ev}</div>{events.map((e) => <div key={e.key} className={`pi ${fresh.has(e.key) ? "new" : ""}`}><span className="pn">{e.kind === "incorp" ? `Incorporation${e.date ? ` · ${fmtDate(e.date)}` : ""}` : e.title}</span></div>)}</>}
+        </div></div>
+    );
+  }
+
+  /* ---------------- review ---------------- */
+  function review() {
+    const a = answers;
+    const entity = ({ private: "Private limited", opc: "One person company", public: "Public limited", llp: "LLP", section8: "Section 8", partnership: "Partnership firm" } as Record<string, string>)[a.entity ?? ""] ?? "—";
+    const total = plan.standard.length + plan.events.length + plan.recurring.length + plan.filings.length;
+    const laterN = Object.keys(a.later ?? {}).length;
+    const finished = done(11);
+    return (
+      <>
+        <div className="sthead"><div><div className="n">Step 12 of 12</div><h2>Review and finish</h2></div></div>
+        <div className="turn"><span className="av">PBA</span><div className="bubble"><div className="ask">Here&apos;s what the master will set up for {a.details?.legalName || "the company"}.</div>
+          <div className="help">Every answer can be changed later from any finished step. Changes apply from the next month and are recorded with who made them and why.</div></div></div>
+        <div className="summary">
+          <div><span>Entity</span>{entity}, incorporated {a.incorporatedOn ? fmtDate(a.incorporatedOn) : "—"}</div>
+          <div><span>Books</span>{a.books?.software || "—"}, closed by {ownLabel(closer)}</div>
+          <div><span>Bank accounts</span>{a.banks?.length ?? 0}</div>
+          <div><span>GSTINs</span>{a.gst?.registered ? (a.gst.gstins ?? []).map((g) => g.scheme).join(", ") || "—" : "Not registered"}</div>
+          <div><span>People</span>{a.salaries?.pays ? `${a.salaries.employees ?? 0} employees, ${a.salaries.contractors ?? 0} contractors · PF ${a.salaries.pf ? "yes" : "no"} · ESI ${a.salaries.esi ? "yes" : "no"}` : "No salaries"}</div>
+          <div><span>Loans · debentures · rounds</span>{a.has?.loans ? a.loans?.length ?? 0 : 0} · {a.has?.debentures ? a.debentures?.length ?? 0 : 0} · {a.has?.rounds ? a.rounds?.length ?? 0 : 0}</div>
+          <div><span>Items generated</span>{total}</div>
+          <div><span>Documents marked &quot;later&quot;</span>{laterN} — sitting on the owners&apos; lists</div>
+        </div>
+        <div className="complete"><div><div className="t">{finished ? "Master is live" : "Finish the master"}</div><div className="d">{finished ? "Requests start with the next cycle. Catch-up months are open now." : "The checklist is generated and the first requests go out."}</div></div>
+          <div className="acts">{finished ? <span className="achip">Live ✓</span> : <button className="b solid" onClick={finishStep}>Finish and go live</button>}</div></div>
+      </>
+    );
+  }
+
   function finishStep() {
     setErr("");
     start(async () => {
       try {
-        unwrap(await setStepDone(current, true));
-        setDone((d) => [...new Set([...d, current])]);
-        if (current < 12) setCurrent(current + 1);
+        unwrap(await setStepDone(i + 1, true));
+        setDoneSet((d) => [...new Set([...d, i])]);
       } catch (e) { setErr(e instanceof Error ? e.message : "Could not save"); }
     });
   }
+  function proceed() { setView(null); setCur(i + 1); if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" }); }
 
-  const visible = visibleQuestions(step, answers);
-  const firstUnanswered = visible.findIndex((q) => !answered(q, answers));
-  const shown = isDone || current === 12 ? visible : firstUnanswered === -1 ? visible : visible.slice(0, firstUnanswered + 1);
-  const ready = firstUnanswered === -1;
+  const nDone = doneSet.length;
+  const dt = drawerTarget();
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 py-6 md:px-8">
-      <div className="mb-5 h-1.5 w-full overflow-hidden" style={{ background: "var(--rule)", borderRadius: 4 }}>
-        <div style={{ width: `${(done.length / 12) * 100}%`, height: "100%", background: "var(--bottomline-green)" }} />
-      </div>
-      <div className="grid gap-5 lg:grid-cols-[210px_minmax(0,1fr)_340px]">
-        <nav className="flex gap-2 overflow-x-auto lg:flex-col lg:gap-1" aria-label="Steps">
-          {STEPS.map((s) => {
-            const d = done.includes(s.n);
-            const locked = !d && s.n > firstOpen;
-            const on = s.n === current;
-            return (
-              <button key={s.n} disabled={locked} onClick={() => setCurrent(s.n)} className="flex flex-shrink-0 items-center gap-2.5 px-3 py-2 text-left text-[13.5px]"
-                style={{ borderRadius: 7, background: on ? "var(--bottomline-green)" : "transparent", color: on ? "var(--paper)" : locked ? "var(--ink-secondary)" : "var(--ink)", opacity: locked ? 0.55 : 1, fontWeight: on ? 700 : 500 }}>
-                <span className="flex h-5 w-5 items-center justify-center text-[11px] font-bold" style={{ borderRadius: "50%", border: `1.5px solid ${on ? "var(--paper)" : "var(--bottomline-green)"}`, background: d && !on ? "var(--bottomline-green)" : "transparent", color: d && !on ? "#fff" : "inherit" }}>
-                  {d ? "✓" : s.n}
-                </span>
-                <span className="whitespace-nowrap">{s.title}</span>
-              </button>
-            );
-          })}
-        </nav>
+    <div className="p5">
+      <input ref={fileInput} type="file" hidden onChange={(e) => onFile(e.target.files?.[0])} />
+      <div className="prog"><div style={{ width: `${(nDone / 12) * 100}%` }} /></div>
+      <div className="layout">
+        <div className="steps">{STEP_DEFS.map((s, n) => {
+          const st = done(n) ? "done" : n === cur ? "cur" : "locked";
+          return (
+            <div key={n} className={`step ${st}${view === n ? " view" : ""}`} onClick={() => { if (!done(n) && n !== cur) return; setView(n === cur ? null : n); }}>
+              <span className="dot">{done(n) ? "✓" : n + 1}</span>
+              <div><div className="sl">{s.t}{st === "locked" && lockSvg}</div><div className="ss">{s.s}</div></div>
+            </div>);
+        })}</div>
 
-        <section className="min-w-0">
-          <h2 className="text-[19px] font-extrabold">{step.n}. {step.title}</h2>
-          <p className="mb-4 mt-1 text-[13px]" style={{ color: "var(--ink-secondary)" }}>{step.blurb}</p>
-          {isDone && current !== 12 && <p className="mb-3 text-[12px]" style={{ color: "var(--ink-secondary)" }}>This step is done. Anything you change asks why, and is kept in the history. Files already uploaded are never deleted.</p>}
-          {err && <p className="mb-3 p-2.5 text-[12.5px]" style={{ background: "#fbe9e7", color: "#8c1a1a", border: "1px solid #e3b8b2" }}>{err}</p>}
-
-          {current === 12 ? (
-            <Review answers={answers} plan={plan} done={done} jump={setCurrent} ruleStep={ruleStep} finish={finishStep} finished={done.includes(12)} pending={pending} />
-          ) : (
-            <div className="grid gap-3.5">
-              {shown.map((q) => (
-                <QuestionCard key={q.id} q={q} step={step} answers={answers} locked={isDone} commit={commit} plan={plan} explain={explain} ownerLabel={ownerLabel}
-                  currentFile={currentFile} versions={(k) => (byKey.get(k) ?? [])} companyId={companyId}
-                  onFile={(row) => setFileRows((r) => [row, ...r.map((x) => (x.req_key === row.req_key && !x.removed ? { ...x, removed: true } : x))])}
-                  onRemoved={(k) => setFileRows((r) => r.map((x) => (x.req_key === k && !x.removed ? { ...x, removed: true } : x)))}
-                  setErr={setErr} />
-              ))}
-              {!isDone && (
-                <div className="flex flex-wrap items-center gap-3">
-                  <button className="btn-small" style={{ ...green, opacity: ready ? 1 : 0.5 }} disabled={!ready || pending} onClick={finishStep}>{pending ? "Saving…" : current === 11 ? "Complete, then review" : "Complete"}</button>
-                  {!ready && <span className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>Answer the question above to continue.</span>}
-                </div>
+        <div className="stage">
+          {err && <div className="sys warn" style={{ marginLeft: 0 }}>{err}</div>}
+          {i === 11 ? review() : (
+            <>
+              {reviewing && <div className="reviewbar">Reviewing a finished step. Changes here update what&apos;s generated from next month.<button className="b xs" onClick={() => setView(null)}>Back to step {cur + 1}</button></div>}
+              <div className="sthead"><div><div className="n">Step {i + 1} of 12</div><h2>{STEP_DEFS[i].t}</h2></div><span className="badge">{done(i) ? <span className="achip">Complete ✓</span> : null}</span></div>
+              {out.map((q, k) => turn(q, k === out.length - 1))}
+              {!complete && remaining > 0 && <div className="locknote" style={{ marginLeft: 42 }}>{remaining} more question{remaining > 1 ? "s" : ""} will appear as you answer.</div>}
+              {complete && (
+                <div className="complete"><div><div className="t">{done(i) ? `Step ${i + 1} is complete` : `That covers ${STEP_DEFS[i].t.toLowerCase()}`}</div><div className="d">{done(i) ? "Its items are on the right." : "Mark it complete to unlock the next step."}</div></div>
+                  <div className="acts">
+                    {!done(i) && <button className="b solid" onClick={finishStep}>Complete step {i + 1}</button>}
+                    {done(i) && !reviewing && <button className="b solid" onClick={proceed}>Proceed to step {i + 2}: {STEP_DEFS[i + 1].t} →</button>}
+                  </div></div>
               )}
-              {isDone && current < 12 && <div><button className="btn-small" style={quiet} onClick={() => setCurrent(Math.min(12, firstOpen))}>Go to the next step</button></div>}
-            </div>
+            </>
           )}
-
-          <section className="mt-8">
-            <h3 className="mb-2 text-[12px] font-bold uppercase tracking-[0.1em]">History</h3>
-            <div className="p-3" style={box}>
-              {log.length === 0 ? <p className="text-[12.5px]" style={{ color: "var(--ink-secondary)" }}>Nothing recorded yet.</p> : log.slice(0, 12).map((l) => (
-                <p key={l.id} className="py-0.5 text-[12px]"><span style={{ color: "var(--ink-secondary)" }}>{fmtDateTime(l.at)} · {l.who_name}{l.step ? ` · step ${l.step}` : ""} · </span>{l.note}{l.reason ? <i style={{ color: "var(--ink-secondary)" }}> — {l.reason}</i> : null}</p>
-              ))}
+          <section style={{ marginTop: 28 }}>
+            <div className="pg">History</div>
+            <div className="hist" style={{ borderTop: 0 }}>
+              {log.length === 0 ? <div className="hrow">Nothing recorded yet.</div> : log.slice(0, 10).map((l) => (
+                <div className="hrow" key={l.id}><span className="hd">{fmtDate(l.at)} · {l.who_name}{l.step ? ` · step ${l.step}` : ""} · {l.note}{l.reason ? ` — “${l.reason}”` : ""}</span></div>))}
             </div>
           </section>
-        </section>
-
-        <SetsUp plan={plan} ruleStep={ruleStep} fresh={fresh} ownerLabel={ownerLabel} />
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------ the right panel */
-
-function SetsUp({ plan, ruleStep, fresh, ownerLabel }: { plan: Plan; ruleStep: Map<string, string>; fresh: Set<string>; ownerLabel: (o: Owner) => string }) {
-  type Line = { key: string; text: string; sub: string };
-  const groups = new Map<string, Line[]>();
-  const add = (step: string, line: Line) => groups.set(step, [...(groups.get(step) ?? []), line]);
-  for (const s of plan.standard) add(ruleStep.get(s.rule_id) ?? "Other", { key: s.key, text: s.name, sub: `once · ${ownerLabel(s.owner)}` });
-  for (const e of plan.events) add(ruleStep.get(e.rule_id) ?? "Other", { key: e.key, text: `${e.title} (timeline)`, sub: `${e.docs.length} documents` });
-  for (const r of plan.recurring) add(ruleStep.get(r.rule_id) ?? "Other", { key: r.key, text: r.name, sub: `${r.schedule === "monthly" ? "every month" : r.schedule === "quarter_end" ? "every quarter end" : "every March"} · ${ownerLabel(r.owner)}` });
-  for (const f of plan.filings) add(FILING_STEP[f.filing_id] ?? "Other", { key: f.key, text: f.name, sub: `${FREQ[f.schedule] ?? f.schedule} · ${f.ticks.length === 2 ? "paid + filed" : f.ticks[0]} · ${ownerLabel(f.owner)}` });
-  const ordered = [...groups.entries()].sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }));
-  const total = plan.standard.length + plan.events.length + plan.recurring.length + plan.filings.length;
-  return (
-    <aside className="min-w-0 self-start p-4 lg:sticky lg:top-4" style={box} aria-label="What this sets up">
-      <h3 className="mb-0.5 text-[13px] font-bold">What this sets up</h3>
-      <p className="mb-3 text-[12px]" style={{ color: "var(--ink-secondary)" }}>{total === 0 ? "Nothing yet. Each answer adds what the company is asked for." : `${total} things so far, from your answers.`}</p>
-      <div className="max-h-[70vh] overflow-y-auto pr-1">
-        {ordered.map(([step, lines]) => (
-          <div key={step} className="mb-3">
-            <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.08em]" style={{ color: "var(--ink-secondary)" }}>{step}</p>
-            {lines.map((l) => (
-              <div key={l.key} className="mb-1 px-2 py-1" style={{ borderRadius: 6, background: fresh.has(l.key) ? "#fdf3dd" : "transparent", border: "1px solid transparent" }}>
-                <p className="text-[12.5px] font-semibold leading-snug">{l.text}</p>
-                <p className="text-[11px]" style={{ color: "var(--ink-secondary)" }}>{l.sub}</p>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-    </aside>
-  );
-}
-
-/* ------------------------------------------------------------ one question */
-
-type CardProps = {
-  q: Question; step: Step; answers: Answers; locked: boolean; commit: (a: Answers, what: string, why?: string) => void; plan: Plan; explain: Map<string, Explainer>;
-  ownerLabel: (o: Owner) => string; currentFile: (k: string) => FileRow | undefined; versions: (k: string) => FileRow[]; companyId: string;
-  onFile: (row: FileRow) => void; onRemoved: (k: string) => void; setErr: (s: string) => void;
-};
-
-function QuestionCard(p: CardProps) {
-  const { q, answers, locked } = p;
-  const [editing, setEditing] = useState(false);
-  const [why, setWhy] = useState("");
-  const isFiles = q.type === "upload" || q.type === "docs";
-  // On a finished step every answer is read-only until Change, which asks why.
-  const readOnly = locked && !editing && !isFiles;
-  const commitWithWhy = (a: Answers, what: string) => { p.commit(a, what, locked ? why : undefined); };
-
-  return (
-    <div className="p-4" style={box}>
-      <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-[14px] font-bold">{q.label}</p>
-          {q.help && <p className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>{q.help}</p>}
         </div>
-        {locked && !isFiles && !editing && <button className="btn-small" style={quiet} onClick={() => setEditing(true)}>Change</button>}
+
+        {panel()}
       </div>
-      {locked && editing && !isFiles && (
-        <div className="mb-3 p-3 text-[12.5px]" style={{ background: "#fdf3dd", border: "1px solid #e3d4a8", color: "#6b5320" }}>
-          Changing this updates what the company is asked for. Anything already uploaded is kept.
-          <input className="input-field mt-2" placeholder="Why are you changing it? (kept in the history)" value={why} onChange={(e) => setWhy(e.target.value)} />
-          <button className="btn-small mt-2" style={quiet} onClick={() => { setEditing(false); setWhy(""); }}>Done</button>
-        </div>
-      )}
-      {readOnly ? <p className="text-[13.5px]">{summarise(q, answers)}</p> : (
-        <Body {...p} commit={commitWithWhy} disabled={locked && editing && !why.trim()} />
-      )}
-    </div>
-  );
-}
-
-function summarise(q: Question, a: Answers): string {
-  const v = "path" in q ? valueAt(a, q.path) : undefined;
-  if (q.type === "rows") return (v as unknown[] | undefined)?.length ? `${(v as unknown[]).length} ${q.noun}${(v as unknown[]).length === 1 ? "" : "s"}: ${(v as Record<string, unknown>[]).map((r) => pretty(r[q.columns[0].key])).join(", ")}` : "None";
-  if (q.type === "multi") return Array.isArray(v) && v.length ? v.map(pretty).join(", ") : "—";
-  if (q.type === "fields") return q.fields.map((f) => `${f.label.split(" (")[0]}: ${pretty((v as Record<string, unknown> | undefined)?.[f.key]) || "—"}`).join(" · ");
-  if (q.type === "month") return v ? monthLabel(String(v)) : "—";
-  if (q.type === "date") return v ? fmtDate(String(v)) : "—";
-  const opt = q.type === "choice" ? q.options.find((o) => o.value === v)?.label : undefined;
-  return opt ?? (v === undefined ? "—" : pretty(v));
-}
-
-function Body(p: CardProps & { disabled: boolean }) {
-  const { q, answers, commit, disabled } = p;
-  const val = "path" in q ? valueAt(answers, q.path) : undefined;
-
-  if (q.type === "choice") {
-    return (
-      <div className="flex flex-wrap gap-2">
-        {q.options.map((o) => {
-          const on = val === o.value;
-          return <button key={String(o.value)} disabled={disabled} className="px-3.5 py-2 text-[13px] font-semibold" style={{ borderRadius: 8, border: `1.5px solid ${on ? "var(--bottomline-green)" : "var(--rule)"}`, background: on ? "var(--bottomline-green)" : "transparent", color: on ? "var(--paper)" : "var(--ink)", opacity: disabled ? 0.5 : 1 }}
-            onClick={() => commit(applyChoice(setPath(answers, q.path, o.value), q.id, o.value), `${q.label} → ${o.label}`)}>{o.label}</button>;
-        })}
-      </div>
-    );
-  }
-  if (q.type === "multi") {
-    const arr = (Array.isArray(val) ? val : []) as string[];
-    return (
-      <div className="flex flex-wrap gap-2">
-        {q.options.map((o) => {
-          const v = String(o.value);
-          const on = arr.includes(v);
-          const toggle = () => {
-            const isNone = q.none !== undefined && v === q.none;
-            const next = isNone ? (on ? [] : [v]) : on ? arr.filter((x) => x !== v) : [...arr.filter((x) => x !== q.none), v];
-            // "None" is an answer: stored as an empty list for the engine, with the marker kept for the screen
-            commit(setPath(answers, q.path, next), `${q.label} → ${next.length ? next.map(pretty).join(", ") : "none"}`);
-          };
-          return <button key={v} disabled={disabled} className="px-3 py-1.5 text-[12.5px] font-semibold" style={{ borderRadius: 20, border: `1.5px solid ${on ? "var(--bottomline-green)" : "var(--rule)"}`, background: on ? "var(--bottomline-green)" : "transparent", color: on ? "var(--paper)" : "var(--ink)", opacity: disabled ? 0.5 : 1 }} onClick={toggle}>{o.label}</button>;
-        })}
-      </div>
-    );
-  }
-  if (q.type === "date" || q.type === "month") {
-    return (
-      <div>
-        <input type={q.type} disabled={disabled} className="input-field" style={{ maxWidth: 260 }} value={String(val ?? "")}
-          onChange={(e) => {
-            let next = setPath(answers, q.path, e.target.value);
-            if (q.id === "incorporatedOn" && e.target.value && !answers.trackingStart) next = setPath(next, "trackingStart", defaultTracking(next));
-            commit(next, `${q.label} → ${e.target.value}`);
-          }} />
-        {q.id === "trackingStart" && typeof val === "string" && val && <p className="mt-1.5 text-[12px]" style={{ color: "var(--ink-secondary)" }}>{catchUpMonths(val) === 0 ? "No catch-up months." : `${catchUpMonths(val)} catch-up month${catchUpMonths(val) === 1 ? "" : "s"}: their documents and filings are asked for at once.`}</p>}
-      </div>
-    );
-  }
-  if (q.type === "fields") return <FieldsForm q={q} answers={answers} commit={commit} disabled={disabled} />;
-  if (q.type === "rows") return <RowsForm q={q} answers={answers} commit={commit} disabled={disabled} />;
-  if (q.type === "upload") {
-    const items = p.plan.standard.filter((s) => q.rules.includes(s.rule_id));
-    if (items.length === 0) return <p className="text-[12.5px]" style={{ color: "var(--ink-secondary)" }}>Nothing to upload for this answer.</p>;
-    return <div className="grid gap-2.5">{items.map((s) => <Slot key={s.key} {...p} reqKey={s.key} name={s.name} owner={p.ownerLabel(s.owner)} why={p.explain.get(s.doc_type ?? "")?.why_it_matters ?? p.explain.get(s.doc_type ?? "")?.what_it_is ?? null} />)}</div>;
-  }
-  // docs: one block per timeline event
-  const events = p.plan.events.filter((e) => q.rules.includes(e.rule_id));
-  if (events.length === 0) return <p className="text-[12.5px]" style={{ color: "var(--ink-secondary)" }}>Nothing yet. Add the rows above and the documents appear here.</p>;
-  return (
-    <div className="grid gap-4">
-      {events.map((e) => (
-        <div key={e.key}>
-          <p className="mb-1.5 text-[13px] font-bold">{e.title}{e.date ? ` · ${fmtDate(e.date)}` : ""} <span className="font-normal" style={{ color: "var(--ink-secondary)" }}>· {e.docs.filter((d) => !d.sharedWith).length} to upload</span></p>
-          <div className="grid gap-2">
-            {e.docs.map((d) => d.sharedWith
-              ? <div key={d.name} className="px-3 py-2 text-[12.5px]" style={{ border: "1px dashed var(--rule)", borderRadius: 8, color: "var(--ink-secondary)" }}>{d.name} — the same record as in the standard documents. Uploaded once.</div>
-              : <Slot key={`${e.key}:${d.code ?? d.name}`} {...p} reqKey={`${e.key}:${d.code ?? d.name}`} name={d.name} owner={p.ownerLabel("founder")} why={null} allowNa />)}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// "Is registered for GST" answered No clears the GSTINs; "None" clears dependent answers so nothing stale is asked.
-function applyChoice(a: Answers, id: string, value: string | boolean): Answers {
-  const next = JSON.parse(JSON.stringify(a)) as Answers;
-  if (id === "gstReg" && value === false) next.gst = { registered: false, gstins: [] };
-  if (id === "pays" && value === false) next.salaries = { pays: false };
-  if (id === "hasLoans" && value === false) next.loans = [];
-  if (id === "hasDeb" && value === false) next.debentures = [];
-  if (id === "hasRounds" && value === false) next.rounds = [];
-  if (id === "hasInv" && value === false) next.investments = [];
-  if (id === "partners" && value === false) next.revenue = { ...next.revenue, sharing: undefined };
-  return next;
-}
-
-/* ------------------------------------------------------------ forms */
-
-function Input({ f, value, onChange, disabled }: { f: Field; value: unknown; onChange: (v: unknown) => void; disabled: boolean }) {
-  const cls = "input-field";
-  if (f.kind === "select") return <select disabled={disabled} className={cls} value={String(value ?? "")} onChange={(e) => onChange(e.target.value)}><option value="">Choose…</option>{(f.options ?? []).map((o) => <option key={o} value={o}>{pretty(o)}</option>)}</select>;
-  if (f.kind === "yesno") return <select disabled={disabled} className={cls} value={value === undefined ? "" : String(value)} onChange={(e) => onChange(e.target.value === "" ? undefined : e.target.value === "true")}><option value="">Choose…</option><option value="true">Yes</option><option value="false">No</option></select>;
-  return <input disabled={disabled} className={cls} type={f.kind === "number" ? "number" : f.kind === "date" ? "date" : "text"} placeholder={f.placeholder} value={String(value ?? "")}
-    onChange={(e) => onChange(f.kind === "number" ? (e.target.value === "" ? undefined : Number(e.target.value)) : e.target.value)} />;
-}
-
-function FieldsForm({ q, answers, commit, disabled }: { q: Extract<Question, { type: "fields" }>; answers: Answers; commit: CardProps["commit"]; disabled: boolean }) {
-  const base = ((valueAt(answers, q.path) ?? {}) as Record<string, unknown>);
-  const [draft, setDraft] = useState<Record<string, unknown>>(base);
-  const dirty = JSON.stringify(draft) !== JSON.stringify(base);
-  return (
-    <div>
-      <div className="grid gap-3 md:grid-cols-2">
-        {q.fields.map((f) => <label key={f.key} className="text-[12px] font-semibold">{f.label}{f.required ? " *" : ""}<div className="mt-1"><Input f={f} value={draft[f.key]} disabled={disabled} onChange={(v) => setDraft({ ...draft, [f.key]: v })} /></div></label>)}
-      </div>
-      <button className="btn-small mt-3" style={green} disabled={disabled || !dirty} onClick={() => commit(setPath(answers, q.path, { ...base, ...draft }), `Saved ${q.label.toLowerCase()}`)}>Save</button>
-    </div>
-  );
-}
-
-function RowsForm({ q, answers, commit, disabled }: { q: Extract<Question, { type: "rows" }>; answers: Answers; commit: CardProps["commit"]; disabled: boolean }) {
-  const rows = (Array.isArray(valueAt(answers, q.path)) ? valueAt(answers, q.path) : []) as Record<string, unknown>[];
-  const [draft, setDraft] = useState<Record<string, unknown>>({});
-  const missing = q.columns.some((c) => c.required && (draft[c.key] === undefined || draft[c.key] === ""));
-  return (
-    <div>
-      {rows.length > 0 && (
-        <div className="mb-3 overflow-x-auto">
-          <table className="w-full text-[13px]" style={{ borderCollapse: "collapse" }}>
-            <thead><tr>{q.columns.map((c) => <th key={c.key} className="px-2 py-1.5 text-left text-[11px] font-semibold uppercase" style={{ color: "var(--ink-secondary)" }}>{c.label}</th>)}<th /></tr></thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <tr key={String(r.id)} style={{ borderTop: "1px solid var(--rule)" }}>
-                  {q.columns.map((c) => <td key={c.key} className="px-2 py-1.5">{pretty(r[c.key]) || "—"}</td>)}
-                  <td className="px-2 py-1.5 text-right"><button disabled={disabled} className="btn-small" style={quiet} onClick={() => commit(setPath(answers, q.path, rows.filter((_, j) => j !== i)), `Removed ${q.noun} ${pretty(r[q.columns[0].key])}`)}>Remove</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      <div className="grid items-end gap-3 md:grid-cols-3">
-        {q.columns.map((c) => <label key={c.key} className="text-[12px] font-semibold">{c.label}{c.required ? " *" : ""}<div className="mt-1"><Input f={c} value={draft[c.key]} disabled={disabled} onChange={(v) => setDraft({ ...draft, [c.key]: v })} /></div></label>)}
-      </div>
-      <button className="btn-small mt-3" style={green} disabled={disabled || missing}
-        onClick={() => { commit(setPath(answers, q.path, [...rows, { id: uid(), ...draft }]), `Added ${q.noun} ${pretty(draft[q.columns[0].key])}`); setDraft({}); }}>Add {q.noun}</button>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------ one file slot */
-
-function Slot(p: CardProps & { reqKey: string; name: string; owner: string; why: string | null; allowNa?: boolean }) {
-  const { reqKey, answers } = p;
-  const file = p.currentFile(reqKey);
-  const na = answers.na?.[reqKey];
-  const [asking, setAsking] = useState<"replace" | "remove" | null>(null);
-  const [reason, setReason] = useState("");
-  const [busy, setBusy] = useState(false);
-  const input = useRef<HTMLInputElement>(null);
-
-  async function upload(f: File | undefined) {
-    if (!f) return;
-    setBusy(true); p.setErr("");
-    try {
-      const path = `${p.companyId}/master/${safeStorageSegment(reqKey)}/${Date.now()}-${safeStorageSegment(f.name)}`;
-      const { error } = await createClient().storage.from("docs").upload(path, f);
-      if (error) throw error;
-      unwrap(await recordFile({ reqKey, storagePath: path, filename: f.name, reason: asking === "replace" ? reason : undefined }));
-      p.onFile({ id: uid(), req_key: reqKey, version: (p.versions(reqKey)[0]?.version ?? 0) + 1, storage_path: path, filename: f.name, by_name: "You", at: new Date().toISOString(), reason: reason || null, removed: false });
-      setAsking(null); setReason("");
-    } catch (e) { p.setErr(e instanceof Error ? e.message : "Upload failed"); }
-    setBusy(false);
-    if (input.current) input.current.value = "";
-  }
-  async function remove() {
-    setBusy(true); p.setErr("");
-    try { unwrap(await removeFile(reqKey, reason)); p.onRemoved(reqKey); setAsking(null); setReason(""); }
-    catch (e) { p.setErr(e instanceof Error ? e.message : "Could not remove"); }
-    setBusy(false);
-  }
-
-  return (
-    <div className="p-3" style={{ border: "1px solid var(--rule)", borderRadius: 8, background: "var(--paper)" }}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-[13px] font-semibold">{p.name}</p>
-          <p className="text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>Owner: {p.owner}{p.why ? ` · ${p.why}` : ""}</p>
-        </div>
-        <input ref={input} type="file" hidden onChange={(e) => upload(e.target.files?.[0])} />
-        {file ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <button className="btn-small" style={quiet} onClick={async () => window.open(await getSignedDownloadUrl(file.storage_path), "_blank")}>{file.filename}</button>
-            <button className="btn-small" style={quiet} onClick={() => setAsking(asking === "replace" ? null : "replace")}>Replace</button>
-            <button className="btn-small" style={quiet} onClick={() => setAsking(asking === "remove" ? null : "remove")}>Remove</button>
-          </div>
-        ) : na ? (
-          <span className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>Not applicable <button className="ml-2 underline" onClick={() => p.commit(setPath(answers, `na.${reqKey.replace(/\./g, "_")}`, undefined), `${p.name}: applicable again`)}>Undo</button></span>
-        ) : (
-          <div className="flex gap-2">
-            <button className="btn-small" style={green} disabled={busy} onClick={() => input.current?.click()}>{busy ? "Uploading…" : "Upload"}</button>
-            <span className="self-center text-[12px]" style={{ color: "var(--ink-secondary)" }}>or later</span>
-            {p.allowNa && <button className="btn-small" style={quiet} onClick={() => p.commit(setPath(answers, `na.${reqKey.replace(/\./g, "_")}`, "Not applicable"), `${p.name}: not applicable`)}>Not applicable</button>}
-          </div>
-        )}
-      </div>
-      {file && <p className="mt-1 text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>v{file.version} · {file.by_name} · {fmtDate(file.at)}{p.versions(reqKey).length > 1 ? ` · ${p.versions(reqKey).length} versions kept` : ""}</p>}
-      {asking && (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <input className="input-field" style={{ maxWidth: 340 }} placeholder={asking === "replace" ? "Why are you replacing it?" : "Why are you removing it?"} value={reason} onChange={(e) => setReason(e.target.value)} />
-          {asking === "replace"
-            ? <button className="btn-small" style={green} disabled={!reason.trim() || busy} onClick={() => input.current?.click()}>Choose the new file</button>
-            : <button className="btn-small" style={{ background: "#8c1a1a", color: "#fff", border: "1px solid #8c1a1a" }} disabled={!reason.trim() || busy} onClick={remove}>Remove</button>}
-          <span className="text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>The old version is kept.</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------ review */
-
-function Review({ answers, plan, done, jump, ruleStep, finish, finished, pending }: { answers: Answers; plan: Plan; done: number[]; jump: (n: number) => void; ruleStep: Map<string, string>; finish: () => void; finished: boolean; pending: boolean }) {
-  const standard = plan.standard.length, events = plan.events.length;
-  const monthly = plan.recurring.filter((r) => r.schedule === "monthly").length, quarterly = plan.recurring.filter((r) => r.schedule !== "monthly").length;
-  const filings = plan.filings.length;
-  void ruleStep;
-  return (
-    <div className="grid gap-3.5">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {[["One-time documents", standard], ["Timeline events", events], ["Monthly requests", monthly], ["Filings", filings]].map(([l, n]) => (
-          <div key={String(l)} className="p-3.5" style={box}><p className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>{l}</p><p className="tnum text-[24px] font-bold">{n}</p></div>
-        ))}
-      </div>
-      <p className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>Plus {quarterly} more that appear only at a quarter end or in March.</p>
-      {STEPS.slice(0, 11).map((s) => (
-        <div key={s.n} className="p-4" style={box}>
-          <div className="mb-1.5 flex items-center justify-between gap-2"><p className="text-[13.5px] font-bold">{s.n}. {s.title}{done.includes(s.n) ? "" : " · not done yet"}</p><button className="btn-small" style={quiet} onClick={() => jump(s.n)}>Change</button></div>
-          {visibleQuestions(s, answers).filter((q) => q.type !== "upload" && q.type !== "docs").map((q) => <p key={q.id} className="py-0.5 text-[12.5px]"><span style={{ color: "var(--ink-secondary)" }}>{q.label} </span>{answered(q, answers) ? summarise(q, answers) : <i>not answered</i>}</p>)}
-        </div>
-      ))}
-      <div className="flex items-center gap-3">
-        <button className="btn-small" style={green} disabled={pending || finished} onClick={finish}>{finished ? "Master complete" : pending ? "Saving…" : "Finish"}</button>
-        {finished && <span className="text-[12.5px]" style={{ color: "#004d00" }}>The master is complete. Change any answer above whenever something changes.</span>}
-      </div>
+      {modal && <Modal m={modal} onClose={() => setModal(null)} />}
+      {dt && <Drawer t={dt} onClose={() => setDrawer(null)}
+        onUpload={(replace) => (replace ? uploadAct(dt.key, dt.name, dt.period ?? null) : pickFile(dt.key, dt.name, dt.period ?? null, ""))}
+        onRemove={() => removeAct(dt.key, dt.name, dt.period ?? null)}
+        onSaved={(vals: SummaryValue[]) => setSums((rows) => [...rows.filter((r) => !(r.req_key === dt.key && r.period_key === (dt.period ?? ""))), ...vals.map((v) => ({ req_key: dt.key, period_key: dt.period ?? "", field: v.field, value: v.value, entered_by_name: v.entered_by_name, entered_at: v.entered_at }))])} />}
     </div>
   );
 }

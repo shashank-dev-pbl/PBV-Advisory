@@ -58,3 +58,19 @@ create policy "members update file_version" on file_version for update to authen
 
 -- The first month monthly close tracks from (set by the master, changeable in Monthly close).
 alter table company add column if not exists tracking_start text;
+
+-- The 2-4 figures a person types when they upload a document (opening balance, GSTR-3B tax paid...). Shown in the side panel.
+create table if not exists file_summary (
+  company_id uuid not null references company(id) on delete cascade,
+  req_key text not null,
+  period_key text not null default '',          -- '' for once-only documents, 'YYYY-MM' for monthly ones
+  field text not null,
+  value text,
+  entered_by_name text,
+  entered_at timestamptz not null default now(),
+  primary key (company_id, req_key, period_key, field)
+);
+alter table file_summary enable row level security;
+create policy "read my companies" on file_summary for select to authenticated using (company_id in (select my_company_ids()));
+create policy "members write file_summary" on file_summary for insert to authenticated with check (company_id = (select company_id from current_app_user()));
+create policy "members update file_summary" on file_summary for update to authenticated using (company_id = (select company_id from current_app_user()));

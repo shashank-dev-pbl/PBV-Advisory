@@ -21,7 +21,6 @@ async function _saveAnswers(input: { answers: Answers; step: number; what: strin
   if (typeof input.answers !== "object" || input.answers === null || JSON.stringify(input.answers).length > 200_000) throw new Error("Those answers are not valid");
   const { data: cur } = await supabase.from("company_master").select("steps_done").eq("company_id", user.company_id).maybeSingle();
   const done = (cur?.steps_done ?? []) as number[];
-  if (done.includes(input.step) && !input.why?.trim()) throw new Error("Say why you are changing this. It is kept in the history.");
 
   const { error } = await supabase.from("company_master").upsert(
     { company_id: user.company_id, answers: input.answers, steps_done: done, updated_at: new Date().toISOString(), updated_by_name: by },
@@ -87,6 +86,19 @@ async function _removeFile(reqKey: string, reason: string, period?: string | nul
   refresh();
 }
 
+async function _saveSummary(input: { reqKey: string; period?: string | null; values: Record<string, string> }) {
+  const { user, supabase, by } = await ctx();
+  const rows = Object.entries(input.values).filter(([, v]) => String(v).trim()).map(([field, value]) => ({
+    company_id: user.company_id, req_key: input.reqKey, period_key: input.period ?? "", field: field.slice(0, 80), value: String(value).slice(0, 200), entered_by_name: by, entered_at: new Date().toISOString(),
+  }));
+  if (rows.length === 0) return;
+  const { error } = await supabase.from("file_summary").upsert(rows, { onConflict: "company_id,req_key,period_key,field" });
+  if (error) throw new Error(error.message);
+  await supabase.from("master_log").insert({ company_id: user.company_id, who_name: by, kind: "answer", note: `Added the summary for ${input.reqKey}` });
+  revalidatePath("/company-master");
+}
+
+export async function saveSummary(...a: Parameters<typeof _saveSummary>) { return guarded(() => _saveSummary(...a)); }
 export async function saveAnswers(...a: Parameters<typeof _saveAnswers>) { return guarded(() => _saveAnswers(...a)); }
 export async function setStepDone(...a: Parameters<typeof _setStepDone>) { return guarded(() => _setStepDone(...a)); }
 export async function recordFile(...a: Parameters<typeof _recordFile>) { return guarded(() => _recordFile(...a)); }
