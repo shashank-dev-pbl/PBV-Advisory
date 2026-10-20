@@ -53,8 +53,14 @@ export default async function HomePage() {
                       </div>
                     )}
                   </div>
-                  <span className="pill" style={{ background: company.status === "live" ? (waiting > 0 ? "rgba(184,134,11,0.14)" : "var(--bottomline-green)") : "rgba(107,99,87,0.14)", color: company.status === "live" ? (waiting > 0 ? "#7a5a00" : "#fff") : "var(--ink-secondary)" }}>
-                    {company.status === "setting_up" ? "Setting up" : waiting > 0 ? "Needs you" : "Up to date"}
+                  {/* the badge always agrees with the lines on the left: late first, then waiting, then up to date */}
+                  <span className="pill" style={
+                    company.status !== "live" ? { background: "rgba(107,99,87,0.14)", color: "var(--ink-secondary)" }
+                    : late > 0 ? { background: "rgba(140,26,26,0.12)", color: "#8c1a1a" }
+                    : waiting > 0 ? { background: "rgba(184,134,11,0.14)", color: "#7a5a00" }
+                    : { background: "var(--bottomline-green)", color: "#fff" }
+                  }>
+                    {company.status !== "live" ? "Setting up" : late > 0 ? `${late} late` : waiting > 0 ? "Needs you" : "Up to date"}
                   </span>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">

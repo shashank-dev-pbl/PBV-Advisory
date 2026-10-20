@@ -42,6 +42,14 @@ function friendly(error: { code?: string; message: string }): Error {
   return new Error(error.message);
 }
 
+// Hidden accounts (a developer's own test login) sign in like anyone else but are never listed. Until the column
+// exists in the database this finds nobody, so nothing breaks.
+async function hiddenAccounts(supabase: Client): Promise<{ ids: Set<string>; names: Set<string> }> {
+  const { data, error } = await supabase.from("app_user").select("id, name").eq("hidden", true);
+  if (error || !data) return { ids: new Set(), names: new Set() };
+  return { ids: new Set(data.map((u) => u.id as string)), names: new Set(data.map((u) => (u.name as string | null) ?? "").filter(Boolean)) };
+}
+
 const POSITION_FOR: Record<AccountType, string> = { founder: "Founder", external: "External practitioner", pba: "PBA practitioner", admin: "PBA admin" };
 const ROLE_FOR: Record<Exclude<AccountType, "admin">, CompanyRole> = { founder: "founder", external: "external", pba: "pba" };
 const LEGACY_ROLE: Record<AccountType, "founder" | "practitioner" | "pba"> = { founder: "founder", external: "practitioner", pba: "pba", admin: "pba" };
@@ -150,12 +158,13 @@ export async function listCompanies(): Promise<CompanyRow[]> {
   const { supabase } = await requireAdmin();
   const [{ data: companies, error: companiesError }, { data: grants, error: accessError }] = await Promise.all([
     supabase.from("company").select("id, name, plan, status, financial_year_start, books_by").order("created_at"),
-    supabase.from("company_access").select("company_id, role, user:user_id(name, email, firm_name)").is("revoked_at", null),
+    supabase.from("company_access").select("company_id, role, user_id, user:user_id(name, email, firm_name)").is("revoked_at", null),
   ]);
   if (companiesError) throw new Error(`Could not load companies: ${companiesError.message}`);
   if (accessError) throw new Error(`Could not load access: ${accessError.message}`);
+  const hidden = await hiddenAccounts(supabase);
   const byCompany = new Map<string, AccessJoin[]>();
-  for (const g of (grants ?? []) as unknown as AccessJoin[]) {
+  for (const g of ((grants ?? []) as unknown as (AccessJoin & { user_id?: string })[]).filter((x) => !(x.user_id && hidden.ids.has(x.user_id)))) {
     byCompany.set(g.company_id, [...(byCompany.get(g.company_id) ?? []), g]);
   }
   const label = (g: AccessJoin) => (g.role === "external" && g.user?.firm_name ? g.user.firm_name : g.user?.name ?? g.user?.email ?? "—");
@@ -189,8 +198,9 @@ export async function getCompanyDetail(companyId: string): Promise<{ company: Co
     .eq("company_id", companyId)
     .is("revoked_at", null)
     .order("granted_at");
+  const hiddenD = await hiddenAccounts(supabase);
   const people = ((grants ?? []) as unknown as { id: string; role: CompanyRole; user: { id: string; name: string | null; email: string; phone: string | null; firm_name: string | null } | null }[])
-    .filter((g) => g.user)
+    .filter((g) => g.user && !hiddenD.ids.has(g.user.id))
     .map((g) => ({ id: g.id, userId: g.user!.id, name: g.user!.name ?? g.user!.email, mobile: g.user!.phone, role: g.role, firm: g.user!.firm_name }));
 
   const onIt = new Set(people.map((p) => p.userId));
@@ -201,7 +211,7 @@ export async function getCompanyDetail(companyId: string): Promise<{ company: Co
     .neq("account_type", "founder")
     .order("name");
   const addable = (everyone ?? [])
-    .filter((u) => !onIt.has(u.id) && u.account_type)
+    .filter((u) => !onIt.has(u.id) && u.account_type && !hiddenD.ids.has(u.id))
     .map((u) => ({ id: u.id, label: `${u.name ?? u.email}${u.phone ? "" : " (no mobile yet)"}`, accountType: u.account_type as AccountType }));
 
   const { count: monthlyCount } = await supabase
@@ -276,9 +286,10 @@ export async function listPeople(): Promise<PersonRow[]> {
   for (const g of (grants ?? []) as unknown as { user_id: string; company: { name: string } | null }[]) {
     if (g.company) byUser.set(g.user_id, [...(byUser.get(g.user_id) ?? []), g.company.name]);
   }
+  const hiddenP = await hiddenAccounts(supabase);
   // People an admin added have a mobile number; anyone without one or without access is an old test account.
   return (users ?? [])
-    .filter((u) => u.phone || byUser.has(u.id))
+    .filter((u) => (u.phone || byUser.has(u.id)) && !hiddenP.ids.has(u.id))
     .map((u) => ({
       id: u.id,
       name: u.name,
@@ -460,8 +471,12 @@ export type LogRow = { id: string; at: string; who: string; action: string; targ
 
 export async function listAccessLog(limit = 60): Promise<LogRow[]> {
   const { supabase } = await requireAdmin();
-  const { data } = await supabase.from("access_log").select("*").order("at", { ascending: false }).limit(limit);
-  return (data ?? []).map((l) => ({ id: l.id, at: l.at, who: l.who_name, action: l.action, target: l.target_name, company: l.company_name, detail: l.detail }));
+  const { data } = await supabase.from("access_log").select("*").order("at", { ascending: false }).limit(limit * 2);
+  const hidden = await hiddenAccounts(supabase);
+  return (data ?? [])
+    .filter((l) => !(l.target_user_id && hidden.ids.has(l.target_user_id)) && !hidden.names.has(l.who_name ?? ""))
+    .slice(0, limit)
+    .map((l) => ({ id: l.id, at: l.at, who: l.who_name, action: l.action, target: l.target_name, company: l.company_name, detail: l.detail }));
 }
 
 // Exported actions return their reason instead of throwing, so the message survives a production build.

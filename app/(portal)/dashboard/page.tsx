@@ -54,7 +54,8 @@ export default async function DashboardPage() {
   const published = publishedHistory.filter((m) => m.status === "published");
 
   // The monthly cadence: the external practitioner uploads by day 7. "Due" is the month after the last one delivered.
-  const [dueY, dueM] = (latestDeliverable ? latestDeliverable.period : period).split("-").map(Number);
+  // The next MIS is the month after the last one delivered; with nothing delivered yet, the month in progress.
+  const [dueY, dueM] = (latestDeliverable ? latestDeliverable.period : closePeriod()).split("-").map(Number);
   const duePeriodDate = new Date(dueY, dueM, 1);
   const duePeriodLabel = formatPeriodLabel(`${duePeriodDate.getFullYear()}-${String(duePeriodDate.getMonth() + 1).padStart(2, "0")}`);
   const nextMisDue = new Date(dueY, dueM + 1, 7);
