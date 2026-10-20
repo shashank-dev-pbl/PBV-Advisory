@@ -56,6 +56,11 @@ async function _recordFile(input: { reqKey: string; storagePath: string; filenam
   const { user, supabase, by } = await ctx();
   if (!input.storagePath.startsWith(`${user.company_id}/master/`)) throw new Error("That file is not in this company's folder");
   const period = input.period ?? null;
+  if (period && user.role === "founder") {     // books, the MIS workbook and filing proof are not the founder's to upload (spec 06)
+    const ruleId = input.reqKey.split(":")[0];
+    const { data: rule } = await supabase.from("master_rule").select("section").eq("rule_id", ruleId).maybeSingle();
+    if (input.reqKey === "MIS" || input.reqKey.startsWith("F:") || rule?.section === "books") throw new Error("Books, the MIS workbook and filing proof are uploaded by the person who closes the books.");
+  }
   let q = supabase.from("file_version").select("version").eq("company_id", user.company_id).eq("req_key", input.reqKey).order("version", { ascending: false }).limit(1);
   q = period ? q.eq("period", period) : q.is("period", null);
   const { data: last } = await q.maybeSingle();

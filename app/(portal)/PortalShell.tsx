@@ -105,6 +105,7 @@ export default function PortalShell({ who, companies, companyId, closeWaiting, m
           <span className="rounded-full px-1.5 text-[10.5px] font-bold" style={{ background: "var(--status-uploaded)", color: "#fff" }}>{closeWaiting}</span>
         ) : null}
       />
+      <NavItem page="monthly" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="filings" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="files" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="dataroom" who={who} pathname={pathname} onNavigate={close} />
