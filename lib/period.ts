@@ -19,7 +19,7 @@ export function formatPeriodLabel(period: string): string {
   if (period === "ONCE") return "One-time";
   const [y, m] = period.split("-");
   const date = new Date(Number(y), Number(m) - 1, 1);
-  return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  return date.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
 }
 
 // The "work" financial year a given month falls in — computed from the

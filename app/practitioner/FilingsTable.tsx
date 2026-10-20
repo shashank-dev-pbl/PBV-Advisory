@@ -1,5 +1,7 @@
 "use client";
 
+
+import { fmtDate } from "@/lib/dates";
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { safeStorageSegment } from "@/lib/storagePath";
@@ -87,10 +89,10 @@ function FilingRow({
     <tr style={{ borderBottom: "1px solid var(--rule2, var(--rule))" }}>
       <td className="px-3 py-2 text-[13.5px]" style={{ color: "var(--ink)" }}>{filing.name}</td>
       <td className="px-3 py-2 text-[13px]" style={{ color: isLate ? "#8c1a1a" : "var(--ink)", fontWeight: isLate ? 600 : 400 }}>
-        {new Date(filing.statutory_due_date).toLocaleDateString()}
+        {fmtDate(filing.statutory_due_date)}
       </td>
       <td className="px-3 py-2 text-[13px]" style={{ color: "var(--ink)" }}>
-        {filing.filed_on ? new Date(filing.filed_on).toLocaleDateString() : "—"}
+        {filing.filed_on ? fmtDate(filing.filed_on) : "—"}
       </td>
       <td className="px-3 py-2 text-[13px]" style={{ color: "var(--ink)" }}>{filing.evidence_filename ?? "—"}</td>
       <td className="px-3 py-2">

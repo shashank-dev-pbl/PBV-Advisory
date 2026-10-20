@@ -227,6 +227,19 @@ async function _goLive(companyId: string) {
   revalidatePath("/", "layout");
 }
 
+// The plan is the engagement letter the company signed (Starter, Builder or Operator). Recorded in the history.
+async function _setPlan(companyId: string, plan: "starter" | "builder" | "operator") {
+  const { supabase, adminName } = await requireAdmin();
+  if (!["starter", "builder", "operator"].includes(plan)) throw new Error("Choose a plan");
+  const { data: before } = await supabase.from("company").select("name, plan").eq("id", companyId).single();
+  if (!before) throw new Error("Company not found");
+  if (before.plan === plan) return;
+  const { error } = await supabase.from("company").update({ plan }).eq("id", companyId);
+  if (error) throw friendly(error);
+  await writeLog(supabase, adminName, { action: "company_plan_changed", companyId, companyName: before.name, detail: `${before.plan}>${plan}` });
+  revalidatePath("/", "layout");
+}
+
 // Rolls the monthly checklist forward: creates the monthly items for the month that has just ended.
 async function _generateMonth(companyId: string) {
   const { supabase, adminName } = await requireAdmin();
@@ -327,18 +340,60 @@ async function _addPerson(params: {
   return person.id as string;
 }
 
-async function _editPerson(userId: string, params: { name: string; email: string; firmName?: string }) {
+async function _editPerson(userId: string, params: { name: string; email: string; firmName?: string; accountType?: AccountType }) {
   const { supabase, adminName } = await requireAdmin();
   const email = params.email.trim().toLowerCase();
   if (email && !/^\S+@\S+\.\S+$/.test(email)) throw new Error("That email address doesn't look right. It is optional: leave it empty if they have none.");
-  const { data: person, error } = await supabase
-    .from("app_user")
-    .update({ name: params.name.trim(), email: email || null, ...(params.firmName !== undefined ? { firm_name: params.firmName.trim() || null } : {}) })
-    .eq("id", userId)
-    .select("id, name")
-    .single();
+
+  const { data: before } = await supabase.from("app_user").select("id, name, phone, account_type, firm_name").eq("id", userId).single();
+  if (!before) throw new Error("Person not found");
+  const from = before.account_type as AccountType;
+  const to = (params.accountType ?? from) as AccountType;
+  const patch: Record<string, unknown> = { name: params.name.trim(), email: email || null };
+
+  if (to !== from) {
+    if (to === "admin" && DEV_BYPASS_AUTH) throw new Error("PBA admin accounts can only be set once real sign-in is on");
+    if (to === "admin" && !before.phone) throw new Error("An admin needs a mobile number to sign in");
+    if (from === "admin" && to !== "admin") {
+      // The last admin cannot be demoted: the portal would have no one to run it.
+      const { count } = await supabase.from("platform_admin").select("*", { count: "exact", head: true });
+      if ((count ?? 0) <= 1) throw new Error("This is the last PBA admin. Make someone else an admin first.");
+    }
+    Object.assign(patch, {
+      account_type: to,
+      role: LEGACY_ROLE[to],
+      position: POSITION_FOR[to],
+      can_verify: to === "pba" || to === "admin",
+      can_publish: to === "pba" || to === "admin",
+    });
+  }
+  const firm = params.firmName !== undefined ? params.firmName.trim() : (before.firm_name ?? "");
+  if (to === "external") {
+    if (!firm) throw new Error("External practitioners need a firm name — it is shown on everything they upload");
+    patch.firm_name = firm;
+  } else if (to !== from || params.firmName !== undefined) {
+    patch.firm_name = null;
+  }
+
+  const { data: person, error } = await supabase.from("app_user").update(patch).eq("id", userId).select("id, name").single();
   if (error) throw friendly(error);
-  await writeLog(supabase, adminName, { action: "person_edited", targetUserId: person.id, targetName: person.name });
+
+  if (to !== from) {
+    if (to === "admin") {
+      const { error: pErr } = await supabase.from("platform_admin").upsert({ phone: before.phone, name: person.name ?? "Admin" }, { onConflict: "phone" });
+      if (pErr) throw friendly(pErr);
+    } else if (from === "admin" && before.phone) {
+      await supabase.from("platform_admin").delete().eq("phone", before.phone);
+    }
+    // Their role on every company they are on follows the new type.
+    if (to !== "admin") {
+      await supabase.from("company_access").update({ role: ROLE_FOR[to as Exclude<AccountType, "admin">] }).eq("user_id", userId).is("revoked_at", null);
+    }
+  }
+  await writeLog(supabase, adminName, {
+    action: "person_edited", targetUserId: person.id, targetName: person.name,
+    detail: to !== from ? `${from}>${to}` : undefined,
+  });
   revalidatePath("/", "layout");
 }
 
@@ -418,3 +473,4 @@ export async function editPerson(...args: Parameters<typeof _editPerson>) { retu
 export async function addFounder(...args: Parameters<typeof _addFounder>) { return guarded(() => _addFounder(...args)); }
 export async function grantAccess(...args: Parameters<typeof _grantAccess>) { return guarded(() => _grantAccess(...args)); }
 export async function removeAccess(...args: Parameters<typeof _removeAccess>) { return guarded(() => _removeAccess(...args)); }
+export async function setPlan(...args: Parameters<typeof _setPlan>) { return guarded(() => _setPlan(...args)); }

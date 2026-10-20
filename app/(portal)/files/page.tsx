@@ -1,3 +1,4 @@
+import { fmtDate } from "@/lib/dates";
 import { pageGate } from "@/lib/gate";
 import { createClient } from "@/lib/supabase/server";
 import { formatPeriodLabel } from "@/lib/period";
@@ -50,7 +51,7 @@ export default async function FilesPage() {
                     <p className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>{r.pdf_filename ?? "Signed MIS, PDF"}</p>
                   </td>
                   <td className="px-3 py-3 text-[13px]" style={{ color: "var(--ink)" }}>{formatPeriodLabel(r.period)}</td>
-                  <td className="px-3 py-3 text-[13px]" style={{ color: "var(--ink)" }}>{r.published_at ? new Date(r.published_at).toLocaleDateString() : "—"}</td>
+                  <td className="px-3 py-3 text-[13px]" style={{ color: "var(--ink)" }}>{r.published_at ? fmtDate(r.published_at) : "—"}</td>
                   <td className="px-3 py-3">
                     <div className="flex flex-wrap items-center gap-3">
                       {r.pdf_storage_path ? <DownloadLink storagePath={r.pdf_storage_path} /> : <span className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>Not yet available</span>}

@@ -1,5 +1,7 @@
 "use client";
 
+
+import { fmtDate } from "@/lib/dates";
 import { useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { safeStorageSegment } from "@/lib/storagePath";
@@ -147,7 +149,7 @@ function ObligationRow({
         <div>
           <p className="text-[13.5px] font-bold" style={{ color: "var(--ink)" }}>{obligation.name}</p>
           <p className="mt-0.5 text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>
-            {obligation.category} · due {new Date(obligation.statutory_due_date).toLocaleDateString()} · {OWNER_LABEL[obligation.owner]}
+            {obligation.category} · due {fmtDate(obligation.statutory_due_date)} · {OWNER_LABEL[obligation.owner]}
             {overdue && <span style={{ color: "#8c1a1a", fontWeight: 600 }}> · overdue</span>}
           </p>
           {obligation.evidence_filename && (

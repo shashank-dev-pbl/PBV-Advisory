@@ -1,5 +1,7 @@
 "use client";
 
+
+import { fmtDateTime } from "@/lib/dates";
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { safeStorageSegment } from "@/lib/storagePath";
@@ -111,7 +113,7 @@ export default function MisUploadCard({
             >
               <p className="text-[15px] font-bold" style={{ color: "var(--ink)" }}>{state.mis_upload.filename}</p>
               <p className="mt-1 text-[12.5px]" style={{ color: "var(--ink-secondary)" }}>
-                Uploaded {new Date(state.mis_upload.uploaded_at).toLocaleString()} · template version {state.mis_upload.template_version} · 24 figures found
+                Uploaded {fmtDateTime(state.mis_upload.uploaded_at)} · template version {state.mis_upload.template_version} · 24 figures found
               </p>
             </div>
 

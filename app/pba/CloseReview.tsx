@@ -1,5 +1,7 @@
 "use client";
 
+
+import { fmtDate, fmtDateTime } from "@/lib/dates";
 import { useState } from "react";
 import Link from "next/link";
 import { verifyAndPublish, sendBackWithQuery, requestCorrection, type MonthRow, type PBAReviewData } from "./actions";
@@ -163,7 +165,7 @@ function ReviewPanel({ review, currentUserId }: { review: NonNullable<PBAReviewD
         <div>
           <p className="text-[14px] font-bold" style={{ color: "var(--ink)" }}>{current.mis_upload?.filename ?? "MIS workbook"}</p>
           <p className="mt-0.5 text-[12.5px]" style={{ color: "var(--ink-secondary)" }}>
-            {formatPeriodLabel(period)} · uploaded {current.mis_upload ? new Date(current.mis_upload.uploaded_at).toLocaleString() : "—"}
+            {formatPeriodLabel(period)} · uploaded {current.mis_upload ? fmtDateTime(current.mis_upload.uploaded_at) : "—"}
           </p>
         </div>
       </div>
@@ -206,7 +208,7 @@ function ReviewPanel({ review, currentUserId }: { review: NonNullable<PBAReviewD
         {isPublished ? (
           <>
             <p className="text-[15px] font-bold" style={{ color: "var(--ink)" }}>
-              Published to the founder{current.published_at ? ` on ${new Date(current.published_at).toLocaleDateString()}` : ""}
+              Published to the founder{current.published_at ? ` on ${fmtDate(current.published_at)}` : ""}
             </p>
             {current.query_text ? (
               <p className="mt-2 text-[13px]" style={{ color: "var(--ink-secondary)" }}>

@@ -1,5 +1,7 @@
 "use client";
 
+
+import { fmtDateTime } from "@/lib/dates";
 import { useState } from "react";
 import { Download, Trash2 } from "lucide-react";
 import type { DocItem, DocItemMessage } from "@/lib/types";
@@ -64,7 +66,7 @@ export function VersionHistory({ files }: { files: NonNullable<DocItem["doc_file
             <div key={f.id} style={{ opacity: 0.65 }}>
               <FileRow filename={f.filename} storagePath={f.storage_path} />
               <p className="-mt-1 text-[10px]" style={{ color: "var(--ink-secondary)" }}>
-                replaced {new Date(f.uploaded_at).toLocaleDateString()} · {new Date(f.uploaded_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                replaced {fmtDateTime(f.uploaded_at)}
               </p>
             </div>
           ))}

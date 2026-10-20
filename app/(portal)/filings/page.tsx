@@ -33,7 +33,7 @@ export default async function FilingsPage() {
     <>
       <PageHeader title={company.name} accent="Filings" sub="A filing cannot be closed without its evidence attached. PBA verifies each one." />
       <div className="mx-auto w-full max-w-[1280px] px-5 py-8 md:px-8">
-        <MonthlyLine firm={firm} periodLabel={formatPeriodLabel(period)} dueLabel={dueLabel} line={line} canPost={session.who === "external"} />
+        <MonthlyLine firm={firm ?? "The practitioner"} periodLabel={formatPeriodLabel(period)} dueLabel={dueLabel} line={line} canPost={session.who === "external"} />
         <YearView
           company={{ id: company.id, name: company.name }}
           currentUser={{ id: user.id, name: user.name, position: user.position, role: user.role }}

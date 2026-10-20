@@ -1,5 +1,7 @@
 "use client";
 
+
+import { fmtDate } from "@/lib/dates";
 import { formatMobileInput } from "@/lib/phone";
 import { unwrap } from "@/lib/actionResult";
 import { adminError } from "@/lib/adminError";
@@ -28,6 +30,14 @@ function maskMobile(m: string | null) {
 function describe(l: LogRow) {
   const verb = ACTION_TEXT[l.action] ?? l.action;
   if (l.action === "company_created" || l.action === "company_live" || l.action === "month_generated") return `${l.who} ${verb} ${l.company}${l.action === "month_generated" && l.detail ? ` (${l.detail})` : ""}`;
+  if (l.action === "company_plan_changed" && l.detail?.includes(">")) {
+    const [a, b] = l.detail.split(">");
+    return `${l.who} changed the plan of ${l.company} from ${a} to ${b}`;
+  }
+  if (l.action === "person_edited" && l.detail?.includes(">")) {
+    const [a, b] = l.detail.split(">");
+    return `${l.who} changed ${l.target} from ${TYPE_LABEL[a as AccountType] ?? a} to ${TYPE_LABEL[b as AccountType] ?? b}`;
+  }
   if (l.action === "person_added" || l.action === "person_edited") return `${l.who} ${verb} ${l.target}${l.detail ? ` (${TYPE_LABEL[l.detail as AccountType] ?? l.detail})` : ""}`;
   return `${l.who} ${verb} ${l.target ?? "someone"}${l.company ? ` on ${l.company}` : ""}${l.detail ? ` as ${l.detail}` : ""}`;
 }
@@ -46,7 +56,7 @@ export default function PeopleAdmin({
   const [error, setError] = useState("");
   const [f, setF] = useState({ name: "", mobile: "", email: "", accountType: "external" as AccountType, firmName: "", companyId: "" });
   const [editing, setEditing] = useState<string | null>(null);
-  const [draft, setDraft] = useState({ name: "", email: "", firm: "" });
+  const [draft, setDraft] = useState({ name: "", email: "", firm: "", type: "external" as AccountType });
 
   async function add() {
     setBusy(true);
@@ -66,7 +76,7 @@ export default function PeopleAdmin({
     setBusy(true);
     setError("");
     try {
-      unwrap(await editPerson(p.id, { name: draft.name, email: draft.email, firmName: p.accountType === "external" ? draft.firm : undefined }));
+      unwrap(await editPerson(p.id, { name: draft.name, email: draft.email, firmName: draft.type === "external" ? draft.firm : undefined, accountType: draft.type }));
       setEditing(null);
       router.refresh();
     } catch (e) {
@@ -145,8 +155,13 @@ export default function PeopleAdmin({
                   <td className="px-3 py-2 text-[13px]">{maskMobile(p.mobile)}</td>
                   <td className="px-3 py-2"><input className="input-field" style={{ minHeight: 34, padding: "6px 8px", fontSize: 13 }} value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} /></td>
                   <td className="px-3 py-2 text-[13px]">
-                    {TYPE_LABEL[p.accountType]}
-                    {p.accountType === "external" && <input className="input-field mt-1" placeholder="Firm name" style={{ minHeight: 34, padding: "6px 8px", fontSize: 13 }} value={draft.firm} onChange={(e) => setDraft({ ...draft, firm: e.target.value })} />}
+                    <select className="input-field" style={{ minHeight: 34, padding: "6px 36px 6px 8px", fontSize: 13 }} value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value as AccountType })}>
+                      <option value="founder">Founder</option>
+                      <option value="external">External practitioner</option>
+                      <option value="pba">PBA practitioner</option>
+                      {adminTypeAllowed && <option value="admin">PBA admin</option>}
+                    </select>
+                    {draft.type === "external" && <input className="input-field mt-1" placeholder="Firm name" style={{ minHeight: 34, padding: "6px 8px", fontSize: 13 }} value={draft.firm} onChange={(e) => setDraft({ ...draft, firm: e.target.value })} />}
                   </td>
                   <td className="px-3 py-2 text-[13px]" colSpan={2}></td>
                   <td className="px-3 py-2 text-right">
@@ -160,9 +175,9 @@ export default function PeopleAdmin({
                   <td className="px-3 py-2.5 text-[13px]">{p.email || "—"}</td>
                   <td className="px-3 py-2.5 text-[13px]">{TYPE_LABEL[p.accountType]}{p.firm ? ` (${p.firm})` : ""}</td>
                   <td className="px-3 py-2.5 text-[13px]">{p.companies.join(", ") || <span style={{ color: "var(--ink-secondary)" }}>None yet</span>}</td>
-                  <td className="px-3 py-2.5 text-[13px]" style={{ color: "var(--ink-secondary)" }}>{p.lastSignIn ? new Date(p.lastSignIn).toLocaleDateString() : "Never"}</td>
+                  <td className="px-3 py-2.5 text-[13px]" style={{ color: "var(--ink-secondary)" }}>{p.lastSignIn ? fmtDate(p.lastSignIn) : "Never"}</td>
                   <td className="px-3 py-2.5 text-right">
-                    <button onClick={() => { setEditing(p.id); setDraft({ name: p.name ?? "", email: p.email ?? "", firm: p.firm ?? "" }); }} className="btn-small" style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)" }}>Edit</button>
+                    <button onClick={() => { setEditing(p.id); setDraft({ name: p.name ?? "", email: p.email ?? "", firm: p.firm ?? "", type: p.accountType }); }} className="btn-small" style={{ background: "transparent", border: "1px solid var(--rule)", color: "var(--ink-secondary)" }}>Edit</button>
                   </td>
                 </>
               )}
@@ -205,7 +220,7 @@ export default function PeopleAdmin({
           <div className="flex flex-col gap-1.5">
             {log.map((l) => (
               <p key={l.id} className="text-[12.5px]" style={{ color: "var(--ink)" }}>
-                <span style={{ color: "var(--ink-secondary)" }}>{new Date(l.at).toLocaleDateString()} · </span>{describe(l)}
+                <span style={{ color: "var(--ink-secondary)" }}>{fmtDate(l.at)} · </span>{describe(l)}
               </p>
             ))}
           </div>

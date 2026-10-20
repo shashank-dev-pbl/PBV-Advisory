@@ -1,3 +1,4 @@
+import { fmtDate } from "@/lib/dates";
 import Link from "next/link";
 import { pageGate } from "@/lib/gate";
 import { createClient } from "@/lib/supabase/server";
@@ -64,7 +65,7 @@ export default async function DashboardPage() {
         title={company.name}
         accent="Dashboard"
         sub={latestDeliverable
-          ? `Figures for ${formatPeriodLabel(latestDeliverable.period)} · published ${latestDeliverable.published_at ? new Date(latestDeliverable.published_at).toLocaleDateString() : ""}`
+          ? `Figures for ${formatPeriodLabel(latestDeliverable.period)} · published ${latestDeliverable.published_at ? fmtDate(latestDeliverable.published_at) : ""}`
           : formatPeriodLabel(closePeriod())}
       />
       <div className="mx-auto w-full max-w-[1280px] px-5 py-8 md:px-8">
@@ -78,7 +79,7 @@ export default async function DashboardPage() {
               </p>
               {oldestOutstanding && (
                 <p className="mt-0.5 text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>
-                  {oldestOutstanding.title}{oldestOutstanding.due_date ? ` · due ${new Date(oldestOutstanding.due_date).toLocaleDateString()}` : ""}
+                  {oldestOutstanding.title}{oldestOutstanding.due_date ? ` · due ${fmtDate(oldestOutstanding.due_date)}` : ""}
                 </p>
               )}
             </div>
@@ -88,8 +89,8 @@ export default async function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-4 p-4" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 }}>
-            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full" style={{ background: "var(--bottomline-green)" }}>
-              <span style={{ color: "var(--paper)", fontSize: 20 }}>✓</span>
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full" style={{ background: latestDeliverable ? "var(--bottomline-green)" : "var(--rule)" }}>
+              {latestDeliverable ? <span style={{ color: "var(--paper)", fontSize: 20 }}>✓</span> : <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--ink-secondary)", opacity: 0.5 }} />}
             </div>
             <div className="flex-1">
               <p className="text-[10.5px] font-bold uppercase tracking-[0.06em]" style={{ color: "var(--ink-secondary)" }}>What you get from us</p>
@@ -97,7 +98,7 @@ export default async function DashboardPage() {
                 {latestDeliverable ? `${formatPeriodLabel(latestDeliverable.period)} MIS delivered` : "Nothing delivered yet"}
               </p>
               <p className="mt-0.5 text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>
-                {duePeriodLabel} MIS due {nextMisDue.toLocaleDateString()}
+                {duePeriodLabel} MIS due {fmtDate(nextMisDue)}
               </p>
             </div>
             {deliverables.length > 0 && (
@@ -121,12 +122,12 @@ export default async function DashboardPage() {
             <div className="p-4" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 }}>
               {lineRow ? (
                 <>
-                  <p className="text-[11px] font-semibold uppercase tracking-[.1em]" style={{ color: "var(--ink-secondary)" }}>{firm}&apos;s confirmation for {formatPeriodLabel(lineRow.period)}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[.1em]" style={{ color: "var(--ink-secondary)" }}>{firm ?? "The practitioner"}&apos;s confirmation for {formatPeriodLabel(lineRow.period)}</p>
                   <p className="mt-1 text-[15px] font-semibold">{lineRow.body}</p>
                   <p className="mt-1 text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>Posted {new Date(lineRow.posted_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · <Link href="/filings" className="underline">see the filings</Link></p>
                 </>
               ) : (
-                <p className="text-[13px]" style={{ color: "var(--ink-secondary)" }}>{firm} has not posted this month&apos;s filings confirmation yet. It is due by the 5th.</p>
+                <p className="text-[13px]" style={{ color: "var(--ink-secondary)" }}>{firm ?? "Your practitioner"} has not posted this month&apos;s filings confirmation yet. It is due by the 5th.</p>
               )}
             </div>
           </>
@@ -152,7 +153,7 @@ export default async function DashboardPage() {
                       <p className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>P&amp;L, cash flow, working capital, and customer figures</p>
                     </td>
                     <td className="px-4 py-3 text-[13px]" style={{ color: "var(--ink)" }}>{formatPeriodLabel(d.period)}</td>
-                    <td className="px-4 py-3 text-[13px]" style={{ color: "var(--ink)" }}>{d.published_at ? new Date(d.published_at).toLocaleDateString() : "—"}</td>
+                    <td className="px-4 py-3 text-[13px]" style={{ color: "var(--ink)" }}>{d.published_at ? fmtDate(d.published_at) : "—"}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
                         <span
@@ -188,7 +189,7 @@ export default async function DashboardPage() {
           </p>
         )}
         <p className="mt-10 text-center text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>
-          Figures prepared by {firm} and presented by Prime Bottomline Advisory.
+          {firm ? `Figures prepared by ${firm} and presented by Prime Bottomline Advisory.` : "Figures presented by Prime Bottomline Advisory."}
         </p>
       </div>
     </>

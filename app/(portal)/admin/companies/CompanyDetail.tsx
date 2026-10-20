@@ -6,7 +6,7 @@ import { adminError } from "@/lib/adminError";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { grantAccess, addFounder, removeAccess, goLive, generateMonth, type AccessRow, type CompanyRow } from "../actions";
+import { setPlan, grantAccess, addFounder, removeAccess, goLive, generateMonth, type AccessRow, type CompanyRow } from "../actions";
 import { formatPeriodLabel } from "@/lib/period";
 
 const ROLE_LABEL = { founder: "Founder", external: "External practitioner", pba: "PBA practitioner" } as const;
@@ -54,8 +54,14 @@ export default function CompanyDetail({
         <div>
           <p className="text-[17px] font-extrabold">{company.name}</p>
           <p className="mt-0.5 text-[12.5px]" style={{ color: "var(--ink-secondary)" }}>
-            {company.plan[0].toUpperCase() + company.plan.slice(1)} plan · year starts {company.fyStart} · books kept by {company.booksBy === "pba" ? "Prime Bottomline" : "their own auditor"}
+            Year starts {company.fyStart} · books kept by {company.booksBy === "pba" ? "Prime Bottomline" : "their own auditor"}
           </p>
+          <label className="mt-2 flex items-center gap-2 text-[12px] font-semibold">Plan
+            <select className="input-field" style={{ minHeight: 32, padding: "4px 36px 4px 8px", fontSize: 13, width: "auto" }} value={company.plan} disabled={busy}
+              onChange={(e) => run(async () => unwrap(await setPlan(company.id, e.target.value as "starter" | "builder" | "operator")))}>
+              <option value="starter">Starter</option><option value="builder">Builder</option><option value="operator">Operator</option>
+            </select>
+          </label>
         </div>
         {company.status === "live" ? (
           <span className="pill" style={{ background: "var(--bottomline-green)", color: "#fff" }}>Live</span>
