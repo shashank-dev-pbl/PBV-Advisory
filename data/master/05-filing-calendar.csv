@@ -1,0 +1,15 @@
+filing_id,filing,switched_on_by,frequency,belongs_to,due_rule,ticks_needed,proof_for_each_tick,notes
+F01,GSTR-1,GSTIN on Regular,monthly,the month,11th of next month,Filed,ARN,One per GSTIN
+F02,GSTR-3B,GSTIN on Regular,monthly,the month,20th of next month,Tax paid + Filed,Challan (CPIN) + ARN,One per GSTIN
+F03,GST payment (PMT-06),GSTIN on QRMP,monthly (first two months of the quarter),the month,25th of next month,Tax paid,Challan (CPIN),
+F04,GSTR-1 (quarterly),GSTIN on QRMP,quarterly,the quarter,13th after quarter end,Filed,ARN,
+F05,GSTR-3B (quarterly),GSTIN on QRMP,quarterly,the quarter,"22nd after quarter end (Tamil Nadu, Karnataka, Kerala, Maharashtra, Telangana, Andhra Pradesh, Gujarat and other category-1 states); 24th for the rest",Tax paid + Filed,Challan (CPIN) + ARN,State list kept as data
+F06,CMP-08,GSTIN on Composition,quarterly,the quarter,18th after quarter end,Tax paid + Filed,Challan + acknowledgement,
+F07,TDS payment,TDS answer not None,monthly,the month,7th of next month; for March 30 April,Paid,Challan (with challan number / CIN),
+F08,Salary TDS return (Form 138),TDS on salaries,quarterly,the quarter,"31 Jul, 31 Oct, 31 Jan, 31 May",Filed,Acknowledgement,Was 24Q until March 2026 — new Income-tax Act
+F09,Non-salary TDS return,TDS on vendors or rent,quarterly,the quarter,"31 Jul, 31 Oct, 31 Jan, 31 May",Filed,Acknowledgement,Was 26Q — confirm the new form name with SPARC
+F10,Non-resident TDS return,TDS on non-residents,quarterly,the quarter,"31 Jul, 31 Oct, 31 Jan, 31 May",Filed,Acknowledgement,Was 27Q — confirm the new form name with SPARC
+F11,PF payment and ECR,PF = yes,monthly,the month,15th of next month,Paid + ECR filed,TRRN challan + ECR receipt,
+F12,ESI payment,ESI = yes,monthly,the month,15th of next month,Paid,Challan,
+F13,Professional tax — monthly states,"PT state in Karnataka, Maharashtra, West Bengal, Telangana, Gujarat, Andhra Pradesh",monthly,the month,20th of next month (varies by state — confirm),Paid,Challan,Due day kept per state as data
+F14,Professional tax — half-yearly states,PT state in Tamil Nadu or Kerala,half-yearly,Apr–Sep and Oct–Mar,30 Sep and 31 Mar,Paid,Challan,

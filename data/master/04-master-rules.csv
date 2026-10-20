@@ -1,0 +1,56 @@
+rule_id,step,when,request,frequency,tier,default_owner,lands_in,repeats_per,notes
+R01,1 Incorporation,entity is a company,Certificate of incorporation,once,mandatory,founder,data room: standard documents,,One record shown in master and data room
+R02,1 Incorporation,entity is a company,MOA and AOA — current,once,mandatory,founder,data room: standard documents,,Older versions kept via timeline events
+R03,1 Incorporation,entity = LLP,Certificate of incorporation (LLP),once,mandatory,founder,data room: standard documents,,
+R04,1 Incorporation,entity = LLP,LLP agreement,once,mandatory,founder,data room: standard documents,,
+R05,1 Incorporation,entity = Partnership firm,Partnership deed,once,mandatory,founder,data room: standard documents,,
+R06,1 Incorporation,always,Company PAN,once,mandatory,founder,data room: standard documents,,
+R07,1 Incorporation,TAN given,TAN allotment letter,once,mandatory,founder,data room: standard documents,,
+R08,1 Incorporation,incorporated before current FY,Last audited financial statements,once,mandatory,books closer,data room: standard documents,,Opening numbers start from these
+R09,1 Incorporation,tracking start earlier than current month,Catch-up months,catch-up,mandatory,per item,monthly close,,Each catch-up month gets the full monthly list
+R10,1 Incorporation,entity is a company,Incorporation event with its 11 documents,event,mandatory,founder,data room: timeline,,"B4 list ""incorp"": COI, SPICe+, e-MOA, e-AOA, PAN, TAN, INC-9, DIR-2, office proof, INC-20A, SH-1. COI, PAN and TAN are the same records as R01, R06, R07. Asked of every company, however old"
+R11,2 Books,always,Opening trial balance (1 April),once,mandatory,books closer,data room: standard documents,,
+R12,2 Books,always,Trial balance,monthly,mandatory,books closer,monthly close: books,,Due 7th
+R13,2 Books,always,Profit and loss,monthly,mandatory,books closer,monthly close: books,,Due 7th
+R14,2 Books,always,Balance sheet,monthly,mandatory,books closer,monthly close: books,,Due 7th
+R15,2 Books,books closed by a firm or own team,MIS workbook,monthly,mandatory,books closer,monthly close: books,,Due 7th; portal reads its figures
+R16,3 Bank accounts,each account,Bank statement — [bank] ••[last4],monthly,mandatory,founder,monthly close: from the company,account,Due 3rd
+R17,4 GST,each GSTIN,GST registration certificate — [GSTIN],once,mandatory,founder,data room: standard documents,GSTIN,
+R18,4 GST,each GSTIN,Sales invoice register — [GSTIN],monthly,mandatory,founder,monthly close: from the company,GSTIN,Due 3rd
+R19,4 GST,each GSTIN not on Composition,Purchase register and 2B match — [GSTIN],monthly,good to have,books closer,monthly close: books,GSTIN,
+R20,4 GST,each GSTIN on Regular,GST working — [GSTIN],monthly,mandatory,books closer,monthly close: books,GSTIN,
+R21,4 GST,each GSTIN on QRMP or Composition,GST working — [GSTIN],quarterly,mandatory,books closer,monthly close: books (quarter-end month),GSTIN,
+R22,4 GST,each GSTIN,GST returns per scheme,per Filing Calendar,mandatory,books closer,monthly close: filings,GSTIN,See 05 — Filing Calendar.csv
+R23,5 Salaries,pays salaries,Headcount list,once,mandatory,founder,data room: standard documents,,
+R24,5 Salaries,pays salaries,Payroll register,monthly,mandatory,founder,monthly close: from the company,,Due 3rd
+R25,5 Salaries,PF = yes,PF payment and ECR,monthly,mandatory,books closer,monthly close: filings (the challan is the proof on the tick),,Not a separate document — attach the challan and ECR receipt to the PF filing ticks
+R26,5 Salaries,ESI = yes,ESI payment,monthly,mandatory,books closer,monthly close: filings (the challan is the proof on the tick),,Not a separate document — attach the challan to the ESI filing tick
+R27,5 Salaries,each PT state,Professional tax — [state],monthly or half-yearly,mandatory,books closer,monthly close: filings (the challan is the proof on the tick),state,Not a separate document — attach the challan to the PT filing tick. Tamil Nadu and Kerala are half-yearly
+R28,5 Salaries,founders draw salary,Founder remuneration,quarterly,good to have,founder,monthly close: from the company (quarter-end month),,
+R29,5 Salaries,contractors > 0,Contractor payments,monthly,good to have,founder,monthly close: from the company,,
+R30,6 TDS,deducts on anything,TDS payment,monthly,mandatory,books closer,monthly close: filings,,Due 7th; March due 30 April. The challan is the proof on the tick — no separate TDS challan document
+R31,6 TDS,deducts on anything,TDS working,quarterly,mandatory,books closer,monthly close: books (quarter-end month),,
+R32,6 TDS,salaries ticked,Salary TDS return (Form 138),quarterly,mandatory,books closer,monthly close: filings (quarter-end month),,Was 24Q until March 2026
+R33,6 TDS,vendors or rent ticked,Non-salary TDS return (was 26Q),quarterly,mandatory,books closer,monthly close: filings (quarter-end month),,Confirm new form name with SPARC
+R34,6 TDS,non-residents ticked,Non-resident TDS return (was 27Q),quarterly,mandatory,books closer,monthly close: filings (quarter-end month),,Confirm new form name with SPARC
+R35,7 Revenue,always,Client list with billing terms,once,mandatory,founder,data room: standard documents,,
+R36,7 Revenue,always,Collections received,monthly,mandatory,founder,monthly close: from the company,,Due 3rd
+R37,7 Revenue,always,Debtors ageing,monthly,mandatory,books closer,monthly close: books,,Due 7th
+R38,7 Revenue,partners = yes,Revenue-share agreements,once,mandatory,founder,data room: standard documents,,
+R39,7 Revenue,partners = yes,Amounts paid to partners,monthly,mandatory,founder,monthly close: from the company,,
+R40,7 Revenue,each gateway,Settlement report — [gateway],monthly,good to have,founder,monthly close: from the company,gateway,
+R41,7 Revenue,advances = yes,Advances received,monthly,good to have,founder,monthly close: from the company,,
+R42,7 Revenue,exports = yes,FIRC / e-BRC,monthly,good to have,founder,monthly close: from the company,,
+R43,8 Existing loans,each loan,Loan taken event,event,mandatory,founder,data room: timeline,loan,
+R44,8 Existing loans,each loan,"Loan documents — B4 ""loan taken"" list (6)",once,mandatory,per document,data room: loan event,loan,"Board resolution, sanction letter, loan agreement, security documents, CHG-1, charge certificate. Unsecured: last three can be marked Not applicable"
+R47,8 Existing loans,each loan,Loan statement — [lender],monthly,mandatory,founder,monthly close: from the company,loan,
+R48,9 Debentures,each issue,Debenture issue event with its documents,event,mandatory,per document,data room: timeline,issue,Document list from B4 Event Document List (deb or ccd)
+R49,9 Debentures,each redeemed issue,Redemption documents,event,mandatory,per document,data room: same event,issue,From B4 Event Document List (debred)
+R50,9 Debentures,each outstanding issue,Debenture interest proof,quarterly,good to have,founder,monthly close: from the company (quarter-end month),issue,
+R51,10 Funding rounds,each round,Round event with its documents,event,mandatory,per document,data room: timeline,round,Instrument decides the list (B4 Event Document List)
+R52,10 Funding rounds,each round with a foreign investor,"Valuation (FEMA), FC-GPR, FIRC",event,mandatory,per document,data room: same event,round,
+R53,10 Funding rounds,instrument = Grant,Grant letter and utilisation terms,event,mandatory,founder,data room: timeline,round,
+R54,10 Funding rounds,any round,Cap table,once,mandatory,founder,data room: standard documents,,
+R55,10 Funding rounds,any round,Investor update — financial pages,quarterly,good to have,PBA practitioner,files delivered,,
+R56,11 Investments held,each FD or mutual fund,Statement — [type] [held with],monthly,good to have,founder,monthly close: from the company,holding,
+R57,11 Investments held,each other holding,Statement — [type] [held with],annual,good to have,founder,monthly close: March,holding,

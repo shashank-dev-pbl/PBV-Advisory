@@ -1,0 +1,929 @@
+[
+ {
+  "doc_type": "bank",
+  "name": "Bank statement",
+  "what_it_is": "The bank's own record of every rupee that went in and out of one account during the month.",
+  "why_it_matters": "It's the only outside proof of your cash. We match your books to it line by line, so the cash and runway on your dashboard are real.",
+  "summary_fields": [
+   {
+    "label": "Opening balance",
+    "type": "amount"
+   },
+   {
+    "label": "Closing balance",
+    "type": "amount"
+   },
+   {
+    "label": "Money in",
+    "type": "amount"
+   },
+   {
+    "label": "Money out",
+    "type": "amount"
+   }
+  ],
+  "where_from": "Your bank's net banking → Accounts → Statement → pick the month → download as PDF. One per account.",
+  "what_pba_checks": "Opening balance matches last month's closing. Every large payment has a bill behind it. Closing balance matches the books to the rupee.",
+  "if_late": "Nothing can be checked without it — the whole month waits."
+ },
+ {
+  "doc_type": "sales",
+  "name": "Sales invoice register",
+  "what_it_is": "A list of every invoice the company raised in the month — who it went to, how much, and the GST on it.",
+  "why_it_matters": "Your revenue and your GST bill both start here. If an invoice is missing, revenue is understated and GST can be short-paid.",
+  "summary_fields": [
+   {
+    "label": "Invoices raised",
+    "type": "number"
+   },
+   {
+    "label": "Total billed (with GST)",
+    "type": "amount"
+   },
+   {
+    "label": "GST charged",
+    "type": "amount"
+   }
+  ],
+  "where_from": "Export from Tally (Display → Account books → Sales register) or your billing tool, for the month.",
+  "what_pba_checks": "Every invoice is in the GSTR-1. Totals match the revenue in the books. No invoice numbers are skipped.",
+  "if_late": "Revenue and GST can't be worked out, so GSTR-1 (due the 11th) is at risk."
+ },
+ {
+  "doc_type": "coll",
+  "name": "Collections received",
+  "what_it_is": "Money that actually arrived from customers this month — not what was invoiced, what was received.",
+  "why_it_matters": "Billing isn't cash. This shows how much of what you billed turned into money in the bank.",
+  "summary_fields": [
+   {
+    "label": "Amount collected",
+    "type": "amount"
+   },
+   {
+    "label": "Clients who paid",
+    "type": "number"
+   },
+   {
+    "label": "Largest receipt",
+    "type": "amount"
+   }
+  ],
+  "where_from": "From the bank statement, or your billing tool's payments report. One line per receipt, with the client name.",
+  "what_pba_checks": "Each receipt is matched to an invoice, so we know who still owes you.",
+  "if_late": "Money-owed figures and collection days stay out of date."
+ },
+ {
+  "doc_type": "debt",
+  "name": "Debtors ageing",
+  "what_it_is": "Who owes the company money at month end, split by how long it has been due: 0–30, 31–60, 61–90 and over 90 days.",
+  "why_it_matters": "Money owed for over 90 days is the money least likely to come in. Catching it early protects your cash.",
+  "summary_fields": [
+   {
+    "label": "Total owed to you",
+    "type": "amount"
+   },
+   {
+    "label": "Of which over 90 days",
+    "type": "amount"
+   },
+   {
+    "label": "Largest debtor",
+    "type": "text"
+   }
+  ],
+  "where_from": "Tally → Display → Statements of accounts → Outstandings → Receivables, with ageing.",
+  "what_pba_checks": "Totals match the books; anything over 90 days is followed up.",
+  "if_late": "Money-owed on the dashboard can't be updated."
+ },
+ {
+  "doc_type": "pay",
+  "name": "Payroll register",
+  "what_it_is": "The month's salary sheet — each person's gross pay, deductions and what was actually paid.",
+  "why_it_matters": "Salaries are usually your largest cost. It also drives PF, ESI, professional tax and salary TDS — all of which carry penalties if wrong.",
+  "summary_fields": [
+   {
+    "label": "People paid",
+    "type": "number"
+   },
+   {
+    "label": "Gross salary",
+    "type": "amount"
+   },
+   {
+    "label": "Net paid",
+    "type": "amount"
+   },
+   {
+    "label": "TDS deducted",
+    "type": "amount"
+   }
+  ],
+  "where_from": "Your payroll sheet for the month — gross, deductions and net paid for each person.",
+  "what_pba_checks": "Net pay matches what left the bank. Salary TDS, PF, ESI and professional tax are worked out from it.",
+  "if_late": "Salary TDS (due the 7th) and PF (due the 15th) can't be confirmed."
+ },
+ {
+  "doc_type": "contr",
+  "name": "Contractor payments",
+  "what_it_is": "Payments to consultants and contractors who are not on payroll.",
+  "why_it_matters": "They need TDS deducted and are a common audit question. Keeping them separate from salaries keeps both clean.",
+  "summary_fields": [
+   {
+    "label": "Contractors paid",
+    "type": "number"
+   },
+   {
+    "label": "Total paid",
+    "type": "amount"
+   },
+   {
+    "label": "TDS deducted",
+    "type": "amount"
+   }
+  ],
+  "where_from": "A list of consultants paid this month, with invoice amounts and TDS cut.",
+  "what_pba_checks": "TDS was cut at the right rate (usually 10%) and deposited.",
+  "if_late": "TDS on vendors can't be confirmed for the month."
+ },
+ {
+  "doc_type": "pt",
+  "name": "Professional tax challan",
+  "what_it_is": "Proof that professional tax — a small state tax on salaries — was paid.",
+  "why_it_matters": "It's a state requirement. Late payment brings interest and penalties, and it's checked at audit.",
+  "summary_fields": [
+   {
+    "label": "Amount paid",
+    "type": "amount"
+   },
+   {
+    "label": "Paid on",
+    "type": "date"
+   }
+  ],
+  "where_from": "The receipt from the state's professional tax payment site, or from your bank.",
+  "what_pba_checks": "Amount matches the number of people and the state's slabs.",
+  "if_late": "Interest and a penalty from the state."
+ },
+ {
+  "doc_type": "fr",
+  "name": "Founder remuneration",
+  "what_it_is": "What each founder is approved to draw as salary, against what they actually drew.",
+  "why_it_matters": "Investors and auditors look at this closely. Drawing above what's approved needs board or shareholder approval.",
+  "summary_fields": [
+   {
+    "label": "Approved for the quarter",
+    "type": "amount"
+   },
+   {
+    "label": "Actually drawn",
+    "type": "amount"
+   }
+  ],
+  "where_from": "Board resolution and payroll for the founders.",
+  "what_pba_checks": "What was drawn is within what was approved.",
+  "if_late": "Investors and auditors will ask."
+ },
+ {
+  "doc_type": "partner",
+  "name": "Amounts paid to partners",
+  "what_it_is": "What the company paid or owes to revenue-share partners this month.",
+  "why_it_matters": "If you bill clients the full amount and pay partners a share, this is the gap between your gross and your real revenue.",
+  "summary_fields": [
+   {
+    "label": "Total paid to partners",
+    "type": "amount"
+   },
+   {
+    "label": "Partners paid",
+    "type": "number"
+   }
+  ],
+  "where_from": "Partner statements or your own working of what's owed under each revenue-share agreement.",
+  "what_pba_checks": "Matches the agreements on file. Shown separately so both gross and net revenue are on the dashboard.",
+  "if_late": "Revenue on the dashboard can't be shown net of partner share."
+ },
+ {
+  "doc_type": "gw",
+  "name": "Payment gateway settlement report",
+  "what_it_is": "The payment gateway's report of what it collected for you, what it kept as fees, and what it sent to your bank.",
+  "why_it_matters": "Gateway fees quietly eat into revenue, and settlements arrive days later. This makes both visible.",
+  "summary_fields": [
+   {
+    "label": "Collected through the gateway",
+    "type": "amount"
+   },
+   {
+    "label": "Gateway fees",
+    "type": "amount"
+   },
+   {
+    "label": "Settled to bank",
+    "type": "amount"
+   }
+  ],
+  "where_from": "Razorpay dashboard → Reports → Settlements → the month → download.",
+  "what_pba_checks": "What the gateway collected, minus fees, equals what reached the bank.",
+  "if_late": "Gateway fees and receipts stay unchecked."
+ },
+ {
+  "doc_type": "adv",
+  "name": "Advances received",
+  "what_it_is": "Money customers paid before the work was delivered.",
+  "why_it_matters": "An advance is not revenue yet — it's owed back as work. Counting it as revenue overstates the month.",
+  "summary_fields": [
+   {
+    "label": "Advances received",
+    "type": "amount"
+   },
+   {
+    "label": "Adjusted against invoices",
+    "type": "amount"
+   }
+  ],
+  "where_from": "From the bank statement and your billing tool.",
+  "what_pba_checks": "Advances are not counted as revenue until the work is done.",
+  "if_late": "Revenue may be overstated."
+ },
+ {
+  "doc_type": "hold",
+  "name": "Investment statement",
+  "what_it_is": "The statement for an investment the company holds — a fixed deposit, a fund, or shares.",
+  "why_it_matters": "It's part of your cash cushion. Interest and gains are income and need to be in the books.",
+  "summary_fields": [
+   {
+    "label": "Value at month end",
+    "type": "amount"
+   },
+   {
+    "label": "Interest or gain this month",
+    "type": "amount"
+   }
+  ],
+  "where_from": "Bank or fund house statement for the month.",
+  "what_pba_checks": "Value and interest are in the books.",
+  "if_late": "Interest income may be missed."
+ },
+ {
+  "doc_type": "tb",
+  "name": "Trial balance",
+  "what_it_is": "A list of every account in the books with its balance at month end. It's the raw list every other report is built from.",
+  "why_it_matters": "If debits and credits don't match, something is mis-posted — and nothing built on it can be trusted. It's the first thing we check.",
+  "summary_fields": [
+   {
+    "label": "Total debits",
+    "type": "amount"
+   },
+   {
+    "label": "Total credits",
+    "type": "amount"
+   },
+   {
+    "label": "Accounts in the books",
+    "type": "number"
+   }
+  ],
+  "where_from": "Tally → Display → Trial balance → month end → export.",
+  "what_pba_checks": "Debits equal credits. Every account looks sensible against last month.",
+  "if_late": "The books can't be closed for the month."
+ },
+ {
+  "doc_type": "pl",
+  "name": "Profit and loss",
+  "what_it_is": "The month's income minus its expenses — whether the company made or lost money on paper.",
+  "why_it_matters": "It's the headline of the month. It differs from cash (bills raised but not collected count here), which is why we show both.",
+  "summary_fields": [
+   {
+    "label": "Revenue",
+    "type": "amount"
+   },
+   {
+    "label": "Expenses",
+    "type": "amount"
+   },
+   {
+    "label": "Profit / (loss)",
+    "type": "amount"
+   }
+  ],
+  "where_from": "Tally → Display → Profit and loss → the month.",
+  "what_pba_checks": "Revenue matches the sales register; expenses match the bills and payroll.",
+  "if_late": "Profit and loss on the dashboard can't be updated."
+ },
+ {
+  "doc_type": "bs",
+  "name": "Balance sheet",
+  "what_it_is": "What the company owns and owes on the last day of the month.",
+  "why_it_matters": "It shows whether the company can pay what it owes — cash, receivables and payables, side by side.",
+  "summary_fields": [
+   {
+    "label": "Total assets",
+    "type": "amount"
+   },
+   {
+    "label": "Total liabilities",
+    "type": "amount"
+   },
+   {
+    "label": "Cash and bank",
+    "type": "amount"
+   }
+  ],
+  "where_from": "Tally → Display → Balance sheet → month end.",
+  "what_pba_checks": "Cash matches the bank statements; what's owed matches the ageing reports.",
+  "if_late": "Cash and dues can't be confirmed."
+ },
+ {
+  "doc_type": "pur",
+  "name": "Purchase register and 2B match",
+  "what_it_is": "Every bill the company received this month, matched against what suppliers reported to GST (GSTR-2B).",
+  "why_it_matters": "You can only claim GST credit on bills your suppliers have reported. A mismatch is credit you may lose.",
+  "summary_fields": [
+   {
+    "label": "Purchases",
+    "type": "amount"
+   },
+   {
+    "label": "Input credit claimed",
+    "type": "amount"
+   },
+   {
+    "label": "Not yet in GSTR-2B",
+    "type": "amount"
+   }
+  ],
+  "where_from": "Tally purchase register, matched against GSTR-2B downloaded from the GST portal.",
+  "what_pba_checks": "Every bill you claim credit on appears in GSTR-2B.",
+  "if_late": "GST credit may be claimed wrongly or missed."
+ },
+ {
+  "doc_type": "gstw",
+  "name": "GST working",
+  "what_it_is": "The calculation of how much GST is owed for the month: GST charged on sales, less GST credit on purchases.",
+  "why_it_matters": "It's what the GSTR-3B is filed from. Getting it right avoids interest, notices and lost credit.",
+  "summary_fields": [
+   {
+    "label": "GST on sales",
+    "type": "amount"
+   },
+   {
+    "label": "Input credit",
+    "type": "amount"
+   },
+   {
+    "label": "Net GST payable",
+    "type": "amount"
+   }
+  ],
+  "where_from": "Prepared by the accountant from the sales register and GSTR-2B.",
+  "what_pba_checks": "GST on sales ties to GSTR-1; credit ties to GSTR-2B; the net is what the GSTR-3B pays.",
+  "if_late": "GSTR-3B (due the 20th) can't be filed on time."
+ },
+ {
+  "doc_type": "mis",
+  "name": "MIS workbook",
+  "what_it_is": "The month's management report — P&L, balance sheet, cash, customers — in our fixed format.",
+  "why_it_matters": "This is where your dashboard numbers come from. The portal reads 24 figures straight out of it, so no one retypes anything.",
+  "summary_fields": [
+   {
+    "label": "(read from the workbook — none typed)",
+    "type": "text"
+   }
+  ],
+  "where_from": "Prepared by the accountant in Prime Bottomline's fixed template, from the closed books.",
+  "what_pba_checks": "The portal reads 24 figures and runs 5 checks. Prime Bottomline then compares the month with the last one before publishing.",
+  "if_late": "The month can't be published, so the dashboard keeps showing last month."
+ },
+ {
+  "doc_type": "g1",
+  "name": "GSTR-1",
+  "what_it_is": "The GST return that lists every sale invoice you raised in the period.",
+  "why_it_matters": "Your customers can only claim GST credit once you file it — late filing delays their credit and hurts the relationship. Late fees apply too.",
+  "summary_fields": [
+   {
+    "label": "ARN",
+    "type": "text"
+   },
+   {
+    "label": "Filed on",
+    "type": "date"
+   },
+   {
+    "label": "Invoice value reported",
+    "type": "amount"
+   }
+  ],
+  "where_from": "GST portal (gst.gov.in) → Services → Returns → Returns dashboard → pick the period → GSTR-1 → view and download the filed return. The ARN is on the acknowledgement.",
+  "what_pba_checks": "Invoice values match the sales register. Filed by the 11th.",
+  "if_late": "₹50 a day late fee (₹20 if nil), and your clients can't claim their GST credit until you file."
+ },
+ {
+  "doc_type": "g3",
+  "name": "GSTR-3B",
+  "what_it_is": "The monthly GST summary return where the tax is actually paid.",
+  "why_it_matters": "It's the return that moves money. Late payment costs 18% a year in interest, and missed returns block your e-way bills and refunds.",
+  "summary_fields": [
+   {
+    "label": "Tax paid",
+    "type": "amount"
+   },
+   {
+    "label": "Challan (CPIN)",
+    "type": "text"
+   },
+   {
+    "label": "ARN",
+    "type": "text"
+   },
+   {
+    "label": "Filed on",
+    "type": "date"
+   }
+  ],
+  "where_from": "GST portal (gst.gov.in) → Services → Returns → Returns dashboard → pick the period → GSTR-3B → download the filed return. The challan (CPIN) comes from Services → Payments.",
+  "what_pba_checks": "Tax on sales matches GSTR-1, credit matches GSTR-2B, and cash paid matches the challan and the bank statement.",
+  "if_late": "18% a year interest on the cash part, plus ₹50 a day late fee. Credit and e-way bills can get blocked."
+ },
+ {
+  "doc_type": "gpay",
+  "name": "GST payment (PMT-06 / CMP-08)",
+  "what_it_is": "GST paid for the month (or quarter) under the QRMP or composition scheme.",
+  "why_it_matters": "Even when the return is quarterly, the tax is due monthly. Missing it brings interest.",
+  "summary_fields": [
+   {
+    "label": "Tax paid",
+    "type": "amount"
+   },
+   {
+    "label": "Challan (CPIN)",
+    "type": "text"
+   },
+   {
+    "label": "Paid on",
+    "type": "date"
+   }
+  ],
+  "where_from": "GST portal → Services → Payments → Create challan (PMT-06) → download the paid challan.",
+  "what_pba_checks": "Amount matches the month's GST working.",
+  "if_late": "18% a year interest."
+ },
+ {
+  "doc_type": "tdsp",
+  "name": "TDS payment",
+  "what_it_is": "Tax the company deducted from salaries and vendor payments, paid to the government.",
+  "why_it_matters": "The money isn't yours — it's held for the government. Late deposit costs 1.5% a month and is a red flag in due diligence.",
+  "summary_fields": [
+   {
+    "label": "Amount paid",
+    "type": "amount"
+   },
+   {
+    "label": "Challan number",
+    "type": "text"
+   },
+   {
+    "label": "Paid on",
+    "type": "date"
+   }
+  ],
+  "where_from": "Income tax portal (incometax.gov.in) → e-Pay Tax → Challan 281 → download the paid challan with its CIN.",
+  "what_pba_checks": "Amount matches the TDS cut on salaries, vendors and rent in the books, by section.",
+  "if_late": "1.5% a month interest from the date the tax was cut. A red flag in due diligence."
+ },
+ {
+  "doc_type": "tdsr",
+  "name": "TDS return",
+  "what_it_is": "The quarterly statement telling the tax department whose tax you deducted and how much.",
+  "why_it_matters": "Employees and vendors can only see their tax credit after you file it. Late filing costs ₹200 a day.",
+  "summary_fields": [
+   {
+    "label": "Acknowledgement number",
+    "type": "text"
+   },
+   {
+    "label": "Filed on",
+    "type": "date"
+   }
+  ],
+  "where_from": "Filed on the TRACES / income tax portal using the quarter's TDS data. The acknowledgement has a token number.",
+  "what_pba_checks": "Every challan for the quarter is included, against the right people.",
+  "if_late": "₹200 a day late fee, and staff and vendors can't see their tax credit."
+ },
+ {
+  "doc_type": "pf",
+  "name": "PF / ESI payment",
+  "what_it_is": "Provident fund or ESI contributions for employees, paid with the monthly return.",
+  "why_it_matters": "It's employee money held in trust. Delays bring damages and interest and are taken seriously.",
+  "summary_fields": [
+   {
+    "label": "Amount paid",
+    "type": "amount"
+   },
+   {
+    "label": "Challan / TRRN",
+    "type": "text"
+   },
+   {
+    "label": "Paid on",
+    "type": "date"
+   }
+  ],
+  "where_from": "EPFO employer portal → ECR → pay → download the ECR receipt and the TRRN challan.",
+  "what_pba_checks": "Matches the payroll register for the month.",
+  "if_late": "Interest and damages; taken seriously by EPFO."
+ },
+ {
+  "doc_type": "coi",
+  "name": "Certificate of incorporation",
+  "what_it_is": "The government's certificate that the company exists, with its name, number (CIN) and date.",
+  "why_it_matters": "Every bank, investor and government form asks for it. It's the first page of any data room.",
+  "summary_fields": [
+   {
+    "label": "CIN",
+    "type": "text"
+   },
+   {
+    "label": "Date of incorporation",
+    "type": "date"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "moa",
+  "name": "MOA and AOA",
+  "what_it_is": "The company's founding rules: what it can do (MOA), and how it's run and who decides what (AOA).",
+  "why_it_matters": "Investor rights, share classes and board powers live in the AOA. Every round usually changes it.",
+  "summary_fields": [
+   {
+    "label": "Version date",
+    "type": "date"
+   },
+   {
+    "label": "What changed",
+    "type": "text"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "pan",
+  "name": "Company PAN",
+  "what_it_is": "The company's income tax identity number.",
+  "why_it_matters": "Needed for every bank account, tax filing and investor KYC.",
+  "summary_fields": [
+   {
+    "label": "PAN",
+    "type": "text"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "tan",
+  "name": "TAN",
+  "what_it_is": "The number the company uses when it deducts tax from salaries and vendor payments.",
+  "why_it_matters": "Without it, TDS can't be paid or filed.",
+  "summary_fields": [
+   {
+    "label": "TAN",
+    "type": "text"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "gstc",
+  "name": "GST registration certificate",
+  "what_it_is": "The certificate showing a GST number and the address it's registered at.",
+  "why_it_matters": "Customers ask for it before paying invoices, and it proves where you are registered to sell.",
+  "summary_fields": [
+   {
+    "label": "GSTIN",
+    "type": "text"
+   },
+   {
+    "label": "Registered on",
+    "type": "date"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "cap",
+  "name": "Cap table",
+  "what_it_is": "Who owns what share of the company, including options and anything that converts into shares later.",
+  "why_it_matters": "It's the first thing an investor asks for. Errors here are expensive to fix after a round.",
+  "summary_fields": [
+   {
+    "label": "Founders hold",
+    "type": "percent"
+   },
+   {
+    "label": "Investors hold",
+    "type": "percent"
+   },
+   {
+    "label": "Option pool",
+    "type": "percent"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "afs",
+  "name": "Audited financial statements",
+  "what_it_is": "The year's accounts, checked and signed by the statutory auditor.",
+  "why_it_matters": "Banks, investors and the tax department all start from these. Our opening numbers do too.",
+  "summary_fields": [
+   {
+    "label": "Revenue for the year",
+    "type": "amount"
+   },
+   {
+    "label": "Profit / (loss)",
+    "type": "amount"
+   },
+   {
+    "label": "Signed on",
+    "type": "date"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "otb",
+  "name": "Opening trial balance",
+  "what_it_is": "Every account's balance on 1 April — the starting point for this year's books.",
+  "why_it_matters": "If the starting point is wrong, every month after it is wrong too.",
+  "summary_fields": [
+   {
+    "label": "Total debits",
+    "type": "amount"
+   },
+   {
+    "label": "Total credits",
+    "type": "amount"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "cl",
+  "name": "Client list",
+  "what_it_is": "Every client, what they're billed, how often, and since when.",
+  "why_it_matters": "It's how we know what revenue to expect each month, and spot when a client goes quiet.",
+  "summary_fields": [
+   {
+    "label": "Active clients",
+    "type": "number"
+   },
+   {
+    "label": "Expected monthly billing",
+    "type": "amount"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "rsa",
+  "name": "Revenue-share agreements",
+  "what_it_is": "Agreements where the company shares revenue with a partner or pays commission.",
+  "why_it_matters": "They decide whether your real revenue is the full invoice or only your share.",
+  "summary_fields": [
+   {
+    "label": "Agreements",
+    "type": "number"
+   },
+   {
+    "label": "Typical share paid",
+    "type": "percent"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "head",
+  "name": "Headcount list",
+  "what_it_is": "Everyone working in the company — role, start date, employee or contractor.",
+  "why_it_matters": "It decides PF, ESI and professional tax, and is the base for any hiring plan.",
+  "summary_fields": [
+   {
+    "label": "Employees",
+    "type": "number"
+   },
+   {
+    "label": "Contractors",
+    "type": "number"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "dcert",
+  "name": "Debenture certificates",
+  "what_it_is": "Certificates issued to each debenture holder showing what they hold.",
+  "why_it_matters": "Proof of the debt. Lenders and auditors ask for them, and they must be issued within six months of allotment.",
+  "summary_fields": [
+   {
+    "label": "Certificates issued",
+    "type": "number"
+   },
+   {
+    "label": "Issued on",
+    "type": "date"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "ts",
+  "name": "Term sheet",
+  "what_it_is": "The short, mostly non-binding summary of a deal's key terms before the full agreements.",
+  "why_it_matters": "Valuation, board seats and investor rights are agreed here. Everything later follows it.",
+  "summary_fields": [
+   {
+    "label": "Pre-money valuation",
+    "type": "amount"
+   },
+   {
+    "label": "Amount",
+    "type": "amount"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "sha",
+  "name": "SSA / SHA",
+  "what_it_is": "The binding agreements under which investors bought shares, and how shareholders deal with each other.",
+  "why_it_matters": "They set what investors can block, what you must report to them, and what happens in a sale.",
+  "summary_fields": [
+   {
+    "label": "Signed on",
+    "type": "date"
+   },
+   {
+    "label": "Parties",
+    "type": "text"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "pas3",
+  "name": "PAS-3 return of allotment",
+  "what_it_is": "The filing that tells the Registrar of Companies new shares or debentures were issued.",
+  "why_it_matters": "Until it's filed, the allotment isn't on record. It's due within 15 days and is checked in every due diligence.",
+  "summary_fields": [
+   {
+    "label": "SRN",
+    "type": "text"
+   },
+   {
+    "label": "Filed on",
+    "type": "date"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "mgt14",
+  "name": "MGT-14",
+  "what_it_is": "The filing of important shareholder or board decisions with the Registrar of Companies.",
+  "why_it_matters": "Some decisions — like issuing shares or borrowing beyond limits — are only valid once filed. Due within 30 days.",
+  "summary_fields": [
+   {
+    "label": "SRN",
+    "type": "text"
+   },
+   {
+    "label": "Filed on",
+    "type": "date"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "chg4",
+  "name": "CHG-4 satisfaction of charge",
+  "what_it_is": "The filing that records a loan has been repaid and the security released.",
+  "why_it_matters": "Until it's filed, the company's assets still show as pledged — which can block new loans.",
+  "summary_fields": [
+   {
+    "label": "SRN",
+    "type": "text"
+   },
+   {
+    "label": "Filed on",
+    "type": "date"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "chg",
+  "name": "Charge registration (CHG-1 / CHG-9)",
+  "what_it_is": "The filing that records the security given for a loan or debentures.",
+  "why_it_matters": "Lenders need it registered to be protected. Due within 30 days of creating the charge.",
+  "summary_fields": [
+   {
+    "label": "SRN",
+    "type": "text"
+   },
+   {
+    "label": "Amount secured",
+    "type": "amount"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "red",
+  "name": "Debenture redemption proof",
+  "what_it_is": "Proof that debenture holders were repaid.",
+  "why_it_matters": "Closes the debt on record and is needed before the charge can be released.",
+  "summary_fields": [
+   {
+    "label": "Amount repaid",
+    "type": "amount"
+   },
+   {
+    "label": "Repaid on",
+    "type": "date"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "br",
+  "name": "Board resolution",
+  "what_it_is": "A decision formally taken by the company's board, signed and certified.",
+  "why_it_matters": "Banks, the Registrar and investors ask for it to prove the decision was properly made.",
+  "summary_fields": [
+   {
+    "label": "Passed on",
+    "type": "date"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ },
+ {
+  "doc_type": "generic",
+  "name": "Anything else",
+  "what_it_is": "A record kept as proof of this event.",
+  "why_it_matters": "It's what a lawyer, auditor or investor will ask to see in due diligence.",
+  "summary_fields": [
+   {
+    "label": "Date",
+    "type": "date"
+   },
+   {
+    "label": "Reference number",
+    "type": "text"
+   }
+  ],
+  "where_from": "",
+  "what_pba_checks": "",
+  "if_late": ""
+ }
+]

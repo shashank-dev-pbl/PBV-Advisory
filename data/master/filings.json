@@ -1,0 +1,378 @@
+[
+ {
+  "filing_id": "F01",
+  "filing": "GSTR-1",
+  "switched_on_by": "GSTIN on Regular",
+  "frequency": "monthly",
+  "belongs_to": "the month",
+  "due_text": "11th of next month",
+  "ticks_needed": "Filed",
+  "proof_for_each_tick": "ARN",
+  "notes": "One per GSTIN",
+  "cond": "gstin.regular",
+  "repeat_by": "gstin",
+  "schedule": "monthly",
+  "due_rule": {
+   "kind": "day_next_month",
+   "day": 11
+  },
+  "ticks": [
+   "filed"
+  ],
+  "doc_type": "g1",
+  "sort": 0,
+  "active": true
+ },
+ {
+  "filing_id": "F02",
+  "filing": "GSTR-3B",
+  "switched_on_by": "GSTIN on Regular",
+  "frequency": "monthly",
+  "belongs_to": "the month",
+  "due_text": "20th of next month",
+  "ticks_needed": "Tax paid + Filed",
+  "proof_for_each_tick": "Challan (CPIN) + ARN",
+  "notes": "One per GSTIN",
+  "cond": "gstin.regular",
+  "repeat_by": "gstin",
+  "schedule": "monthly",
+  "due_rule": {
+   "kind": "day_next_month",
+   "day": 20
+  },
+  "ticks": [
+   "paid",
+   "filed"
+  ],
+  "doc_type": "g3",
+  "sort": 1,
+  "active": true
+ },
+ {
+  "filing_id": "F03",
+  "filing": "GST payment (PMT-06)",
+  "switched_on_by": "GSTIN on QRMP",
+  "frequency": "monthly (first two months of the quarter)",
+  "belongs_to": "the month",
+  "due_text": "25th of next month",
+  "ticks_needed": "Tax paid",
+  "proof_for_each_tick": "Challan (CPIN)",
+  "notes": "",
+  "cond": "gstin.qrmp",
+  "repeat_by": "gstin",
+  "schedule": "quarter_months_1_2",
+  "due_rule": {
+   "kind": "day_next_month",
+   "day": 25
+  },
+  "ticks": [
+   "paid"
+  ],
+  "doc_type": "gpay",
+  "sort": 2,
+  "active": true
+ },
+ {
+  "filing_id": "F04",
+  "filing": "GSTR-1 (quarterly)",
+  "switched_on_by": "GSTIN on QRMP",
+  "frequency": "quarterly",
+  "belongs_to": "the quarter",
+  "due_text": "13th after quarter end",
+  "ticks_needed": "Filed",
+  "proof_for_each_tick": "ARN",
+  "notes": "",
+  "cond": "gstin.qrmp",
+  "repeat_by": "gstin",
+  "schedule": "quarter_end",
+  "due_rule": {
+   "kind": "day_after_quarter",
+   "day": 13
+  },
+  "ticks": [
+   "filed"
+  ],
+  "doc_type": "g1",
+  "sort": 3,
+  "active": true
+ },
+ {
+  "filing_id": "F05",
+  "filing": "GSTR-3B (quarterly)",
+  "switched_on_by": "GSTIN on QRMP",
+  "frequency": "quarterly",
+  "belongs_to": "the quarter",
+  "due_text": "22nd after quarter end (Tamil Nadu, Karnataka, Kerala, Maharashtra, Telangana, Andhra Pradesh, Gujarat and other category-1 states); 24th for the rest",
+  "ticks_needed": "Tax paid + Filed",
+  "proof_for_each_tick": "Challan (CPIN) + ARN",
+  "notes": "State list kept as data",
+  "cond": "gstin.qrmp",
+  "repeat_by": "gstin",
+  "schedule": "quarter_end",
+  "due_rule": {
+   "kind": "day_after_quarter",
+   "day": 22,
+   "alt_day": 24,
+   "early_states": [
+    "Andaman and Nicobar Islands",
+    "Chhattisgarh",
+    "Dadra and Nagar Haveli and Daman and Diu",
+    "Goa",
+    "Gujarat",
+    "Karnataka",
+    "Kerala",
+    "Lakshadweep",
+    "Madhya Pradesh",
+    "Maharashtra",
+    "Puducherry",
+    "Tamil Nadu",
+    "Telangana",
+    "Andhra Pradesh"
+   ]
+  },
+  "ticks": [
+   "paid",
+   "filed"
+  ],
+  "doc_type": "g3",
+  "sort": 4,
+  "active": true
+ },
+ {
+  "filing_id": "F06",
+  "filing": "CMP-08",
+  "switched_on_by": "GSTIN on Composition",
+  "frequency": "quarterly",
+  "belongs_to": "the quarter",
+  "due_text": "18th after quarter end",
+  "ticks_needed": "Tax paid + Filed",
+  "proof_for_each_tick": "Challan + acknowledgement",
+  "notes": "",
+  "cond": "gstin.composition",
+  "repeat_by": "gstin",
+  "schedule": "quarter_end",
+  "due_rule": {
+   "kind": "day_after_quarter",
+   "day": 18
+  },
+  "ticks": [
+   "paid",
+   "filed"
+  ],
+  "doc_type": "gpay",
+  "sort": 5,
+  "active": true
+ },
+ {
+  "filing_id": "F07",
+  "filing": "TDS payment",
+  "switched_on_by": "TDS answer not None",
+  "frequency": "monthly",
+  "belongs_to": "the month",
+  "due_text": "7th of next month; for March 30 April",
+  "ticks_needed": "Paid",
+  "proof_for_each_tick": "Challan (with challan number / CIN)",
+  "notes": "",
+  "cond": "tds.any",
+  "repeat_by": null,
+  "schedule": "monthly",
+  "due_rule": {
+   "kind": "day_next_month",
+   "day": 7,
+   "overrides": {
+    "03": "04-30"
+   }
+  },
+  "ticks": [
+   "paid"
+  ],
+  "doc_type": "tdsp",
+  "sort": 6,
+  "active": true
+ },
+ {
+  "filing_id": "F08",
+  "filing": "Salary TDS return (Form 138)",
+  "switched_on_by": "TDS on salaries",
+  "frequency": "quarterly",
+  "belongs_to": "the quarter",
+  "due_text": "31 Jul, 31 Oct, 31 Jan, 31 May",
+  "ticks_needed": "Filed",
+  "proof_for_each_tick": "Acknowledgement",
+  "notes": "Was 24Q until March 2026 — new Income-tax Act",
+  "cond": "tds.salaries",
+  "repeat_by": null,
+  "schedule": "quarter_end",
+  "due_rule": {
+   "kind": "quarter_fixed",
+   "by_quarter": {
+    "1": "07-31",
+    "2": "10-31",
+    "3": "01-31",
+    "4": "05-31"
+   }
+  },
+  "ticks": [
+   "filed"
+  ],
+  "doc_type": "tdsr",
+  "sort": 7,
+  "active": true
+ },
+ {
+  "filing_id": "F09",
+  "filing": "Non-salary TDS return",
+  "switched_on_by": "TDS on vendors or rent",
+  "frequency": "quarterly",
+  "belongs_to": "the quarter",
+  "due_text": "31 Jul, 31 Oct, 31 Jan, 31 May",
+  "ticks_needed": "Filed",
+  "proof_for_each_tick": "Acknowledgement",
+  "notes": "Was 26Q — confirm the new form name with SPARC",
+  "cond": "tds.vendorsOrRent",
+  "repeat_by": null,
+  "schedule": "quarter_end",
+  "due_rule": {
+   "kind": "quarter_fixed",
+   "by_quarter": {
+    "1": "07-31",
+    "2": "10-31",
+    "3": "01-31",
+    "4": "05-31"
+   }
+  },
+  "ticks": [
+   "filed"
+  ],
+  "doc_type": "tdsr",
+  "sort": 8,
+  "active": true
+ },
+ {
+  "filing_id": "F10",
+  "filing": "Non-resident TDS return",
+  "switched_on_by": "TDS on non-residents",
+  "frequency": "quarterly",
+  "belongs_to": "the quarter",
+  "due_text": "31 Jul, 31 Oct, 31 Jan, 31 May",
+  "ticks_needed": "Filed",
+  "proof_for_each_tick": "Acknowledgement",
+  "notes": "Was 27Q — confirm the new form name with SPARC",
+  "cond": "tds.nonresident",
+  "repeat_by": null,
+  "schedule": "quarter_end",
+  "due_rule": {
+   "kind": "quarter_fixed",
+   "by_quarter": {
+    "1": "07-31",
+    "2": "10-31",
+    "3": "01-31",
+    "4": "05-31"
+   }
+  },
+  "ticks": [
+   "filed"
+  ],
+  "doc_type": "tdsr",
+  "sort": 9,
+  "active": true
+ },
+ {
+  "filing_id": "F11",
+  "filing": "PF payment and ECR",
+  "switched_on_by": "PF = yes",
+  "frequency": "monthly",
+  "belongs_to": "the month",
+  "due_text": "15th of next month",
+  "ticks_needed": "Paid + ECR filed",
+  "proof_for_each_tick": "TRRN challan + ECR receipt",
+  "notes": "",
+  "cond": "pf.yes",
+  "repeat_by": null,
+  "schedule": "monthly",
+  "due_rule": {
+   "kind": "day_next_month",
+   "day": 15
+  },
+  "ticks": [
+   "paid",
+   "filed"
+  ],
+  "doc_type": "pf",
+  "sort": 10,
+  "active": true
+ },
+ {
+  "filing_id": "F12",
+  "filing": "ESI payment",
+  "switched_on_by": "ESI = yes",
+  "frequency": "monthly",
+  "belongs_to": "the month",
+  "due_text": "15th of next month",
+  "ticks_needed": "Paid",
+  "proof_for_each_tick": "Challan",
+  "notes": "",
+  "cond": "esi.yes",
+  "repeat_by": null,
+  "schedule": "monthly",
+  "due_rule": {
+   "kind": "day_next_month",
+   "day": 15
+  },
+  "ticks": [
+   "paid"
+  ],
+  "doc_type": "pf",
+  "sort": 11,
+  "active": true
+ },
+ {
+  "filing_id": "F13",
+  "filing": "Professional tax — monthly states",
+  "switched_on_by": "PT state in Karnataka, Maharashtra, West Bengal, Telangana, Gujarat, Andhra Pradesh",
+  "frequency": "monthly",
+  "belongs_to": "the month",
+  "due_text": "20th of next month (varies by state — confirm)",
+  "ticks_needed": "Paid",
+  "proof_for_each_tick": "Challan",
+  "notes": "Due day kept per state as data",
+  "cond": "pt.monthlyState",
+  "repeat_by": "state",
+  "schedule": "monthly",
+  "due_rule": {
+   "kind": "day_next_month",
+   "day": 20
+  },
+  "ticks": [
+   "paid"
+  ],
+  "doc_type": "pt",
+  "sort": 12,
+  "active": true
+ },
+ {
+  "filing_id": "F14",
+  "filing": "Professional tax — half-yearly states",
+  "switched_on_by": "PT state in Tamil Nadu or Kerala",
+  "frequency": "half-yearly",
+  "belongs_to": "Apr–Sep and Oct–Mar",
+  "due_text": "30 Sep and 31 Mar",
+  "ticks_needed": "Paid",
+  "proof_for_each_tick": "Challan",
+  "notes": "",
+  "cond": "pt.halfYearlyState",
+  "repeat_by": "state",
+  "schedule": "half_yearly",
+  "due_rule": {
+   "kind": "half_year",
+   "h1": "09-30",
+   "h2": "03-31"
+  },
+  "ticks": [
+   "paid"
+  ],
+  "doc_type": "pt",
+  "sort": 13,
+  "active": true
+ }
+]

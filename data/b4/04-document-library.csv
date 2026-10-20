@@ -1,0 +1,83 @@
+doc_code,document,form
+COI,Certificate of incorporation,
+SPICE,SPICe+ incorporation filing,INC-32
+INC33,e-Memorandum of Association,INC-33
+INC34,e-Articles of Association,INC-34
+PAN,Company PAN,
+TAN,Company TAN,
+INC9,Declaration by subscribers and first directors,INC-9
+RO_PROOF,"Registered office proof — rent agreement, utility bill, owner NOC",
+INC20A,Declaration of commencement of business,INC-20A
+SH1,Share certificates,SH-1
+ADT1,Notice of auditor appointment,ADT-1
+AUD_CONSENT,Auditor's consent and eligibility certificate,
+BR,Board resolution — certified copy,
+EGM,EGM notice with explanatory statement,
+SR,Special resolution — certified copy,
+OR,Ordinary resolution — certified copy,
+MIN,Minutes of the meeting,
+MGT14,Filing of resolutions with ROC,MGT-14
+SH7,Notice of alteration of share capital,SH-7
+AMOA,Altered Memorandum of Association,
+AAOA,Altered Articles of Association,
+PAS1,Advertisement for variation of terms of contract or objects,PAS-1
+PAS2,Information memorandum,PAS-2
+PAS4,Private placement offer letter,PAS-4
+PAS5,Record of private placement,PAS-5
+PAS3,Return of allotment,PAS-3
+PAS6,Reconciliation of share capital audit report (half-yearly),PAS-6
+VAL_RV,Valuation report — registered valuer,
+VAL_FEMA,Valuation report — FEMA pricing (CA / merchant banker),
+BANK_SEP,Separate bank account statement for application money,
+TERM,Term sheet,
+SSA,Share subscription agreement,
+SHA,Shareholders' agreement,
+CCPS_T,"CCPS terms — dividend, conversion ratio, conversion triggers",
+CCD_A,CCD subscription agreement and terms,
+FCGPR,Foreign investment reporting acknowledgement,FC-GPR
+FIRC,FIRC and KYC of the foreign investor from the bank,
+FCTRS,Transfer involving a non-resident — reporting acknowledgement,FC-TRS
+FORMCN,Convertible notes from non-residents — reporting,Form CN
+ISIN,ISIN letter and demat credit confirmation,
+MGT1,Register of members — updated extract,MGT-1
+MGT2,Register of debenture holders,MGT-2
+SH6,Register of employee stock options,SH-6
+DTD,Debenture trust deed,SH-12
+DTC,Consent letter of the debenture trustee,
+DCERT,Debenture certificates,
+CHG9,Creation or modification of charge for debentures,CHG-9
+CHG1,Creation or modification of charge,CHG-1
+CHG4,Satisfaction of charge,CHG-4
+CHGC,Certificate of registration of charge (issued by ROC),
+SEC,Security documents — hypothecation or mortgage deed,
+DRR,Debenture redemption reserve working,
+REDEEM,Redemption payment proof,
+NODUE,Lender's no-dues letter,
+SANC,Sanction letter,
+LOAN,Loan agreement,
+DPT3,Return of deposits / exempted receipts,DPT-3
+DPIIT,DPIIT startup recognition certificate,
+CNA,Convertible note agreement,
+CONV,Conversion notice and conversion working,
+DIR2,Consent to act as director,DIR-2
+DIR8,Declaration of non-disqualification,DIR-8
+MBP1,Disclosure of interest by director,MBP-1
+DIR12,Appointment / cessation of director,DIR-12
+DIR11,Notice of resignation by director,DIR-11
+RESIG,Resignation letter,
+ESOPS,ESOP scheme document,
+GRANT,Grant letters to employees,
+SH4,Share transfer deed,SH-4
+STAMP,Stamp duty payment proof,
+BEN1,Declaration of beneficial interest,BEN-1
+BEN2,Return of significant beneficial owners,BEN-2
+INC22,Notice of situation / change of registered office,INC-22
+INC24,Application for change of name,INC-24
+RUN,Name reservation approval,RUN / SPICe+ Part A
+NCOI,Fresh certificate of incorporation after name change,
+LOF,Letter of offer (rights issue),
+RENUN,Renunciation forms,
+MGT13,Report on annual general meeting (listed companies only),MGT-13
+AOC4,Financial statements filing,AOC-4
+MGT7,Annual return,MGT-7 / MGT-7A
+DIR3,Director KYC,DIR-3 KYC

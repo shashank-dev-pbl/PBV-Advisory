@@ -1,0 +1,203 @@
+event_type,event_name,category,need,doc_code,document,form,when_it_applies
+incorp,Incorporation,Founding,expected,COI,Certificate of incorporation,,
+incorp,Incorporation,Founding,expected,SPICE,SPICe+ incorporation filing,INC-32,
+incorp,Incorporation,Founding,expected,INC33,e-Memorandum of Association,INC-33,
+incorp,Incorporation,Founding,expected,INC34,e-Articles of Association,INC-34,
+incorp,Incorporation,Founding,expected,PAN,Company PAN,,
+incorp,Incorporation,Founding,expected,TAN,Company TAN,,
+incorp,Incorporation,Founding,expected,INC9,Declaration by subscribers and first directors,INC-9,
+incorp,Incorporation,Founding,expected,DIR2,Consent to act as director,DIR-2,
+incorp,Incorporation,Founding,expected,RO_PROOF,"Registered office proof — rent agreement, utility bill, owner NOC",,
+incorp,Incorporation,Founding,expected,INC20A,Declaration of commencement of business,INC-20A,
+incorp,Incorporation,Founding,expected,SH1,Share certificates,SH-1,
+auditor,Auditor appointed,Structure & governance,expected,BR,Board resolution — certified copy,,
+auditor,Auditor appointed,Structure & governance,expected,ADT1,Notice of auditor appointment,ADT-1,
+auditor,Auditor appointed,Structure & governance,expected,AUD_CONSENT,Auditor's consent and eligibility certificate,,
+auditor,Auditor appointed,Structure & governance,if it applies,OR,Ordinary resolution — certified copy,,only if members had to approve
+equity,Equity round,Fundraise,expected,TERM,Term sheet,,
+equity,Equity round,Fundraise,expected,BR,Board resolution — certified copy,,
+equity,Equity round,Fundraise,expected,EGM,EGM notice with explanatory statement,,
+equity,Equity round,Fundraise,expected,SR,Special resolution — certified copy,,
+equity,Equity round,Fundraise,expected,MGT14,Filing of resolutions with ROC,MGT-14,
+equity,Equity round,Fundraise,expected,VAL_RV,Valuation report — registered valuer,,
+equity,Equity round,Fundraise,expected,PAS4,Private placement offer letter,PAS-4,
+equity,Equity round,Fundraise,expected,PAS5,Record of private placement,PAS-5,
+equity,Equity round,Fundraise,expected,BANK_SEP,Separate bank account statement for application money,,
+equity,Equity round,Fundraise,expected,SSA,Share subscription agreement,,
+equity,Equity round,Fundraise,expected,SHA,Shareholders' agreement,,
+equity,Equity round,Fundraise,expected,PAS3,Return of allotment,PAS-3,
+equity,Equity round,Fundraise,expected,SH1,Share certificates,SH-1,
+equity,Equity round,Fundraise,expected,MGT1,Register of members — updated extract,MGT-1,
+equity,Equity round,Fundraise,if it applies,SH7,Notice of alteration of share capital,SH-7,only if authorised capital had to be raised
+equity,Equity round,Fundraise,if it applies,AMOA,Altered Memorandum of Association,,only if the capital clause changed
+equity,Equity round,Fundraise,if it applies,AAOA,Altered Articles of Association,,only if the articles were changed
+equity,Equity round,Fundraise,if it applies,VAL_FEMA,Valuation report — FEMA pricing (CA / merchant banker),,only for non-resident investors
+equity,Equity round,Fundraise,if it applies,FCGPR,Foreign investment reporting acknowledgement,FC-GPR,only for non-resident investors
+equity,Equity round,Fundraise,if it applies,FIRC,FIRC and KYC of the foreign investor from the bank,,only for non-resident investors
+equity,Equity round,Fundraise,if it applies,ISIN,ISIN letter and demat credit confirmation,,only if securities are in demat
+equity,Equity round,Fundraise,if it applies,PAS6,Reconciliation of share capital audit report (half-yearly),PAS-6,only if the company is under the demat rules
+equity,Equity round,Fundraise,if it applies,BEN2,Return of significant beneficial owners,BEN-2,only if a significant beneficial owner changed
+ccps,CCPS round,Fundraise,expected,TERM,Term sheet,,
+ccps,CCPS round,Fundraise,expected,BR,Board resolution — certified copy,,
+ccps,CCPS round,Fundraise,expected,EGM,EGM notice with explanatory statement,,
+ccps,CCPS round,Fundraise,expected,SR,Special resolution — certified copy,,
+ccps,CCPS round,Fundraise,expected,MGT14,Filing of resolutions with ROC,MGT-14,
+ccps,CCPS round,Fundraise,expected,CCPS_T,"CCPS terms — dividend, conversion ratio, conversion triggers",,
+ccps,CCPS round,Fundraise,expected,VAL_RV,Valuation report — registered valuer,,
+ccps,CCPS round,Fundraise,expected,PAS4,Private placement offer letter,PAS-4,
+ccps,CCPS round,Fundraise,expected,PAS5,Record of private placement,PAS-5,
+ccps,CCPS round,Fundraise,expected,BANK_SEP,Separate bank account statement for application money,,
+ccps,CCPS round,Fundraise,expected,SSA,Share subscription agreement,,
+ccps,CCPS round,Fundraise,expected,SHA,Shareholders' agreement,,
+ccps,CCPS round,Fundraise,expected,PAS3,Return of allotment,PAS-3,
+ccps,CCPS round,Fundraise,expected,SH1,Share certificates,SH-1,
+ccps,CCPS round,Fundraise,expected,MGT1,Register of members — updated extract,MGT-1,
+ccps,CCPS round,Fundraise,if it applies,SH7,Notice of alteration of share capital,SH-7,only if authorised capital had to be raised
+ccps,CCPS round,Fundraise,if it applies,AMOA,Altered Memorandum of Association,,only if the capital clause changed
+ccps,CCPS round,Fundraise,if it applies,AAOA,Altered Articles of Association,,only if the articles were changed
+ccps,CCPS round,Fundraise,if it applies,VAL_FEMA,Valuation report — FEMA pricing (CA / merchant banker),,only for non-resident investors
+ccps,CCPS round,Fundraise,if it applies,FCGPR,Foreign investment reporting acknowledgement,FC-GPR,only for non-resident investors
+ccps,CCPS round,Fundraise,if it applies,FIRC,FIRC and KYC of the foreign investor from the bank,,only for non-resident investors
+ccps,CCPS round,Fundraise,if it applies,ISIN,ISIN letter and demat credit confirmation,,only if securities are in demat
+ccps,CCPS round,Fundraise,if it applies,PAS6,Reconciliation of share capital audit report (half-yearly),PAS-6,only if the company is under the demat rules
+ccps,CCPS round,Fundraise,if it applies,BEN2,Return of significant beneficial owners,BEN-2,only if a significant beneficial owner changed
+ccd,CCD round,Fundraise,expected,TERM,Term sheet,,
+ccd,CCD round,Fundraise,expected,BR,Board resolution — certified copy,,
+ccd,CCD round,Fundraise,expected,EGM,EGM notice with explanatory statement,,
+ccd,CCD round,Fundraise,expected,SR,Special resolution — certified copy,,
+ccd,CCD round,Fundraise,expected,MGT14,Filing of resolutions with ROC,MGT-14,
+ccd,CCD round,Fundraise,expected,CCD_A,CCD subscription agreement and terms,,
+ccd,CCD round,Fundraise,expected,VAL_RV,Valuation report — registered valuer,,
+ccd,CCD round,Fundraise,expected,PAS4,Private placement offer letter,PAS-4,
+ccd,CCD round,Fundraise,expected,PAS5,Record of private placement,PAS-5,
+ccd,CCD round,Fundraise,expected,BANK_SEP,Separate bank account statement for application money,,
+ccd,CCD round,Fundraise,expected,SHA,Shareholders' agreement,,
+ccd,CCD round,Fundraise,expected,PAS3,Return of allotment,PAS-3,
+ccd,CCD round,Fundraise,expected,DCERT,Debenture certificates,,
+ccd,CCD round,Fundraise,expected,MGT2,Register of debenture holders,MGT-2,
+ccd,CCD round,Fundraise,if it applies,VAL_FEMA,Valuation report — FEMA pricing (CA / merchant banker),,only for non-resident investors
+ccd,CCD round,Fundraise,if it applies,FCGPR,Foreign investment reporting acknowledgement,FC-GPR,only for non-resident investors
+ccd,CCD round,Fundraise,if it applies,FIRC,FIRC and KYC of the foreign investor from the bank,,only for non-resident investors
+ccd,CCD round,Fundraise,if it applies,DPT3,Return of deposits / exempted receipts,DPT-3,reported as an exempted receipt
+ccd,CCD round,Fundraise,if it applies,SH7,Notice of alteration of share capital,SH-7,only if authorised capital had to be raised
+cnote,Convertible note,Fundraise,expected,BR,Board resolution — certified copy,,
+cnote,Convertible note,Fundraise,expected,CNA,Convertible note agreement,,
+cnote,Convertible note,Fundraise,expected,DPIIT,DPIIT startup recognition certificate,,
+cnote,Convertible note,Fundraise,expected,DPT3,Return of deposits / exempted receipts,DPT-3,
+cnote,Convertible note,Fundraise,if it applies,FORMCN,Convertible notes from non-residents — reporting,Form CN,only for non-resident note holders
+cnote,Convertible note,Fundraise,if it applies,FIRC,FIRC and KYC of the foreign investor from the bank,,only for non-resident investors
+cnote,Convertible note,Fundraise,if it applies,VAL_FEMA,Valuation report — FEMA pricing (CA / merchant banker),,only for non-resident investors
+conv,Conversion of CCPS / CCD into equity,Fundraise,expected,CONV,Conversion notice and conversion working,,
+conv,Conversion of CCPS / CCD into equity,Fundraise,expected,BR,Board resolution — certified copy,,
+conv,Conversion of CCPS / CCD into equity,Fundraise,expected,PAS3,Return of allotment,PAS-3,
+conv,Conversion of CCPS / CCD into equity,Fundraise,expected,SH1,Share certificates,SH-1,
+conv,Conversion of CCPS / CCD into equity,Fundraise,expected,MGT1,Register of members — updated extract,MGT-1,
+conv,Conversion of CCPS / CCD into equity,Fundraise,if it applies,SH7,Notice of alteration of share capital,SH-7,only if authorised capital had to be raised
+conv,Conversion of CCPS / CCD into equity,Fundraise,if it applies,FCGPR,Foreign investment reporting acknowledgement,FC-GPR,only for non-resident investors
+conv,Conversion of CCPS / CCD into equity,Fundraise,if it applies,VAL_FEMA,Valuation report — FEMA pricing (CA / merchant banker),,only for non-resident investors
+conv,Conversion of CCPS / CCD into equity,Fundraise,if it applies,PAS6,Reconciliation of share capital audit report (half-yearly),PAS-6,only if the company is under the demat rules
+rights,Rights issue,Fundraise,expected,BR,Board resolution — certified copy,,
+rights,Rights issue,Fundraise,expected,LOF,Letter of offer (rights issue),,
+rights,Rights issue,Fundraise,expected,RENUN,Renunciation forms,,
+rights,Rights issue,Fundraise,expected,PAS3,Return of allotment,PAS-3,
+rights,Rights issue,Fundraise,expected,SH1,Share certificates,SH-1,
+rights,Rights issue,Fundraise,expected,MGT1,Register of members — updated extract,MGT-1,
+rights,Rights issue,Fundraise,if it applies,SH7,Notice of alteration of share capital,SH-7,only if authorised capital had to be raised
+rights,Rights issue,Fundraise,if it applies,EGM,EGM notice with explanatory statement,,only if member approval is needed
+rights,Rights issue,Fundraise,if it applies,SR,Special resolution — certified copy,,only if the articles or law require it
+rights,Rights issue,Fundraise,if it applies,MGT14,Filing of resolutions with ROC,MGT-14,only if a special resolution was passed
+bonus,Bonus issue,Fundraise,expected,BR,Board resolution — certified copy,,
+bonus,Bonus issue,Fundraise,expected,EGM,EGM notice with explanatory statement,,
+bonus,Bonus issue,Fundraise,expected,OR,Ordinary resolution — certified copy,,
+bonus,Bonus issue,Fundraise,expected,PAS3,Return of allotment,PAS-3,
+bonus,Bonus issue,Fundraise,expected,SH1,Share certificates,SH-1,
+bonus,Bonus issue,Fundraise,expected,MGT1,Register of members — updated extract,MGT-1,
+bonus,Bonus issue,Fundraise,if it applies,SH7,Notice of alteration of share capital,SH-7,only if authorised capital had to be raised
+bonus,Bonus issue,Fundraise,if it applies,AMOA,Altered Memorandum of Association,,only if the capital clause changed
+transfer,Share transfer,Fundraise,expected,SH4,Share transfer deed,SH-4,
+transfer,Share transfer,Fundraise,expected,STAMP,Stamp duty payment proof,,
+transfer,Share transfer,Fundraise,expected,BR,Board resolution — certified copy,,
+transfer,Share transfer,Fundraise,expected,MGT1,Register of members — updated extract,MGT-1,
+transfer,Share transfer,Fundraise,if it applies,VAL_FEMA,Valuation report — FEMA pricing (CA / merchant banker),,only for non-resident investors
+transfer,Share transfer,Fundraise,if it applies,FCTRS,Transfer involving a non-resident — reporting acknowledgement,FC-TRS,only if a non-resident is party
+transfer,Share transfer,Fundraise,if it applies,BEN1,Declaration of beneficial interest,BEN-1,only if someone holds on behalf of another
+transfer,Share transfer,Fundraise,if it applies,BEN2,Return of significant beneficial owners,BEN-2,only if a significant beneficial owner changed
+deb,Debenture issue (NCD),Debt & charges,expected,BR,Board resolution — certified copy,,
+deb,Debenture issue (NCD),Debt & charges,expected,EGM,EGM notice with explanatory statement,,
+deb,Debenture issue (NCD),Debt & charges,expected,SR,Special resolution — certified copy,,
+deb,Debenture issue (NCD),Debt & charges,expected,MGT14,Filing of resolutions with ROC,MGT-14,
+deb,Debenture issue (NCD),Debt & charges,expected,PAS4,Private placement offer letter,PAS-4,
+deb,Debenture issue (NCD),Debt & charges,expected,PAS5,Record of private placement,PAS-5,
+deb,Debenture issue (NCD),Debt & charges,expected,BANK_SEP,Separate bank account statement for application money,,
+deb,Debenture issue (NCD),Debt & charges,expected,DTC,Consent letter of the debenture trustee,,
+deb,Debenture issue (NCD),Debt & charges,expected,DTD,Debenture trust deed,SH-12,
+deb,Debenture issue (NCD),Debt & charges,expected,SEC,Security documents — hypothecation or mortgage deed,,
+deb,Debenture issue (NCD),Debt & charges,expected,CHG9,Creation or modification of charge for debentures,CHG-9,
+deb,Debenture issue (NCD),Debt & charges,expected,CHGC,Certificate of registration of charge (issued by ROC),,
+deb,Debenture issue (NCD),Debt & charges,expected,PAS3,Return of allotment,PAS-3,
+deb,Debenture issue (NCD),Debt & charges,expected,DCERT,Debenture certificates,,
+deb,Debenture issue (NCD),Debt & charges,expected,MGT2,Register of debenture holders,MGT-2,
+deb,Debenture issue (NCD),Debt & charges,if it applies,DRR,Debenture redemption reserve working,,only if a reserve is required for this issue
+deb,Debenture issue (NCD),Debt & charges,if it applies,ISIN,ISIN letter and demat credit confirmation,,only if securities are in demat
+debred,Debenture redemption,Debt & charges,expected,BR,Board resolution — certified copy,,
+debred,Debenture redemption,Debt & charges,expected,REDEEM,Redemption payment proof,,
+debred,Debenture redemption,Debt & charges,expected,CHG4,Satisfaction of charge,CHG-4,
+debred,Debenture redemption,Debt & charges,expected,MGT2,Register of debenture holders,MGT-2,
+debred,Debenture redemption,Debt & charges,if it applies,DRR,Debenture redemption reserve working,,only if a reserve is required for this issue
+loan,Loan taken / charge created,Debt & charges,expected,BR,Board resolution — certified copy,,
+loan,Loan taken / charge created,Debt & charges,expected,SANC,Sanction letter,,
+loan,Loan taken / charge created,Debt & charges,expected,LOAN,Loan agreement,,
+loan,Loan taken / charge created,Debt & charges,expected,SEC,Security documents — hypothecation or mortgage deed,,
+loan,Loan taken / charge created,Debt & charges,expected,CHG1,Creation or modification of charge,CHG-1,
+loan,Loan taken / charge created,Debt & charges,expected,CHGC,Certificate of registration of charge (issued by ROC),,
+loan,Loan taken / charge created,Debt & charges,if it applies,EGM,EGM notice with explanatory statement,,only if member approval is needed
+loan,Loan taken / charge created,Debt & charges,if it applies,SR,Special resolution — certified copy,,only if the articles or law require it
+loan,Loan taken / charge created,Debt & charges,if it applies,MGT14,Filing of resolutions with ROC,MGT-14,only if a special resolution was passed
+loanx,Loan closed / charge satisfied,Debt & charges,expected,NODUE,Lender's no-dues letter,,
+loanx,Loan closed / charge satisfied,Debt & charges,expected,CHG4,Satisfaction of charge,CHG-4,
+loanx,Loan closed / charge satisfied,Debt & charges,if it applies,BR,Board resolution — certified copy,,
+esop,ESOP scheme approved,People & ESOP,expected,ESOPS,ESOP scheme document,,
+esop,ESOP scheme approved,People & ESOP,expected,BR,Board resolution — certified copy,,
+esop,ESOP scheme approved,People & ESOP,expected,EGM,EGM notice with explanatory statement,,
+esop,ESOP scheme approved,People & ESOP,expected,SR,Special resolution — certified copy,,
+esop,ESOP scheme approved,People & ESOP,expected,MGT14,Filing of resolutions with ROC,MGT-14,
+esop,ESOP scheme approved,People & ESOP,expected,SH6,Register of employee stock options,SH-6,
+esop,ESOP scheme approved,People & ESOP,if it applies,VAL_RV,Valuation report — registered valuer,,for pricing the options
+esop,ESOP scheme approved,People & ESOP,if it applies,GRANT,Grant letters to employees,,once options are granted
+esopx,ESOP exercise and allotment,People & ESOP,expected,BR,Board resolution — certified copy,,
+esopx,ESOP exercise and allotment,People & ESOP,expected,PAS3,Return of allotment,PAS-3,
+esopx,ESOP exercise and allotment,People & ESOP,expected,SH1,Share certificates,SH-1,
+esopx,ESOP exercise and allotment,People & ESOP,expected,SH6,Register of employee stock options,SH-6,
+esopx,ESOP exercise and allotment,People & ESOP,expected,MGT1,Register of members — updated extract,MGT-1,
+esopx,ESOP exercise and allotment,People & ESOP,if it applies,SH7,Notice of alteration of share capital,SH-7,only if authorised capital had to be raised
+dirin,Director appointed,People & ESOP,expected,DIR2,Consent to act as director,DIR-2,
+dirin,Director appointed,People & ESOP,expected,DIR8,Declaration of non-disqualification,DIR-8,
+dirin,Director appointed,People & ESOP,expected,MBP1,Disclosure of interest by director,MBP-1,
+dirin,Director appointed,People & ESOP,expected,BR,Board resolution — certified copy,,
+dirin,Director appointed,People & ESOP,expected,DIR12,Appointment / cessation of director,DIR-12,
+dirin,Director appointed,People & ESOP,if it applies,OR,Ordinary resolution — certified copy,,only if members had to approve
+dirout,Director resigned,People & ESOP,expected,RESIG,Resignation letter,,
+dirout,Director resigned,People & ESOP,expected,BR,Board resolution — certified copy,,
+dirout,Director resigned,People & ESOP,expected,DIR12,Appointment / cessation of director,DIR-12,
+dirout,Director resigned,People & ESOP,if it applies,DIR11,Notice of resignation by director,DIR-11,optional — filed by the director
+capital,Increase in authorised capital,Structure & governance,expected,BR,Board resolution — certified copy,,
+capital,Increase in authorised capital,Structure & governance,expected,EGM,EGM notice with explanatory statement,,
+capital,Increase in authorised capital,Structure & governance,expected,OR,Ordinary resolution — certified copy,,
+capital,Increase in authorised capital,Structure & governance,expected,AMOA,Altered Memorandum of Association,,
+capital,Increase in authorised capital,Structure & governance,expected,SH7,Notice of alteration of share capital,SH-7,
+capital,Increase in authorised capital,Structure & governance,if it applies,AAOA,Altered Articles of Association,,only if the articles were changed
+capital,Increase in authorised capital,Structure & governance,if it applies,MGT14,Filing of resolutions with ROC,MGT-14,only if a special resolution was passed
+office,Registered office changed,Structure & governance,expected,BR,Board resolution — certified copy,,
+office,Registered office changed,Structure & governance,expected,RO_PROOF,"Registered office proof — rent agreement, utility bill, owner NOC",,
+office,Registered office changed,Structure & governance,expected,INC22,Notice of situation / change of registered office,INC-22,
+office,Registered office changed,Structure & governance,if it applies,SR,Special resolution — certified copy,,only if the articles or law require it
+office,Registered office changed,Structure & governance,if it applies,MGT14,Filing of resolutions with ROC,MGT-14,only if a special resolution was passed
+rename,Change of name,Structure & governance,expected,RUN,Name reservation approval,RUN / SPICe+ Part A,
+rename,Change of name,Structure & governance,expected,BR,Board resolution — certified copy,,
+rename,Change of name,Structure & governance,expected,SR,Special resolution — certified copy,,
+rename,Change of name,Structure & governance,expected,MGT14,Filing of resolutions with ROC,MGT-14,
+rename,Change of name,Structure & governance,expected,INC24,Application for change of name,INC-24,
+rename,Change of name,Structure & governance,expected,NCOI,Fresh certificate of incorporation after name change,,
+rename,Change of name,Structure & governance,expected,AMOA,Altered Memorandum of Association,,
+rename,Change of name,Structure & governance,expected,AAOA,Altered Articles of Association,,
+other,Other event,Structure & governance,,,"Choose from the full list, or Other",,
