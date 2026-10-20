@@ -21,6 +21,14 @@ export default async function PortalLayout({ children }: { children: React.React
     closeWaiting = count ?? 0;
   }
 
+  // Steps of the company master done, shown as a badge until it is finished.
+  let masterDone: number | null = null;
+  if (session.company) {
+    const supabase = await createClient();
+    const { data } = await supabase.from("company_master").select("steps_done, completed").eq("company_id", session.company.id).maybeSingle();
+    masterDone = data?.completed ? null : ((data?.steps_done as number[] | undefined)?.length ?? 0);
+  }
+
   return (
     <>
       {DEV_BYPASS_AUTH && <DevStrip note={session.devNote} />}
@@ -29,6 +37,7 @@ export default async function PortalLayout({ children }: { children: React.React
         companies={session.companies.map((c) => ({ id: c.id, name: c.name, status: c.status }))}
         companyId={session.company?.id ?? null}
         closeWaiting={closeWaiting}
+        masterDone={masterDone}
       >
         {children}
       </PortalShell>

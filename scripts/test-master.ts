@@ -113,4 +113,8 @@ const deb = buildPlan({ ...xploro, debentures: [{ id: "d1", type: "secured_ncd",
 assert.equal(deb.events.find((e) => e.kind === "deb")!.docs.length, 15);
 assert.equal(deb.events.find((e) => e.kind === "debred")!.docs.length, 2, "2 new documents on redemption");
 assert.equal(deb.events.find((e) => e.kind === "ccps")!.docs.length, 15 + 3, "CCPS 15 plus FEMA valuation, FC-GPR, FIRC");
+// "None" answers ask for nothing
+const nones = buildPlan({ ...xploro, tds: { types: ["none" as never] }, salaries: { ...xploro.salaries, ptStates: ["None"] }, revenue: { ...xploro.revenue, gateways: ["None"] } }, data, today);
+assert.equal(filingsForPeriod(nones, "2026-08").some((f) => f.filing_id === "F07" || f.filing_id === "F13" || f.filing_id === "F14"), false, "no TDS or PT filings for None");
+assert.equal(requestsForPeriod(nones, "2026-08").some((r) => r.rule_id === "R40"), false, "no gateway reports for None");
 console.log("ok - master engine: all assertions passed");

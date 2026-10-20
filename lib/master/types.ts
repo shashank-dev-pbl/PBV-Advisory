@@ -5,6 +5,8 @@ export type Scheme = "regular" | "qrmp" | "composition";
 export type Owner = "founder" | "external" | "pba";
 
 export type Answers = {
+  na?: Record<string, string>;            // documents marked Not applicable: request key -> reason
+  has?: { loans?: boolean; debentures?: boolean; rounds?: boolean; investments?: boolean };   // "does the company have any?" answered, including No
   entity?: Entity;
   incorporatedOn?: string;                 // YYYY-MM-DD
   trackingStart?: string;                  // YYYY-MM

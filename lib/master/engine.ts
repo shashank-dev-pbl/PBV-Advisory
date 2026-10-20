@@ -10,6 +10,8 @@ type Instance = Record<string, unknown> | string | undefined;
 const COMPANY = new Set(["private", "opc", "public", "section8"]);
 const HALF_YEARLY_PT = new Set(["Tamil Nadu", "Kerala"]);
 const QUARTER_END = new Set(["06", "09", "12", "03"]);
+// "None" is an answer in the screen; to the engine it is simply nothing selected.
+const real = (xs: readonly string[] | undefined) => (xs ?? []).filter((x) => x.toLowerCase() !== "none");
 const pad = (n: number) => String(n).padStart(2, "0");
 
 export function currentFyStart(today: Date): string {
@@ -36,17 +38,17 @@ const CONDITIONS: Record<string, (a: Answers, i: Instance, today: Date) => boole
   "salaries.pays": (a) => !!a.salaries?.pays,
   "pf.yes": (a) => !!a.salaries?.pays && !!a.salaries?.pf,
   "esi.yes": (a) => !!a.salaries?.pays && !!a.salaries?.esi,
-  "pt.any": (a) => !!a.salaries?.pays && (a.salaries?.ptStates?.length ?? 0) > 0,
+  "pt.any": (a) => !!a.salaries?.pays && real(a.salaries?.ptStates).length > 0,
   "pt.monthlyState": (_a, i) => typeof i === "string" && !HALF_YEARLY_PT.has(i),
   "pt.halfYearlyState": (_a, i) => typeof i === "string" && HALF_YEARLY_PT.has(i),
   "founders.paid": (a) => !!a.salaries?.pays && !!a.salaries?.foundersPaid,
   "contractors.some": (a) => (a.salaries?.contractors ?? 0) > 0,
-  "tds.any": (a) => (a.tds?.types?.length ?? 0) > 0,
+  "tds.any": (a) => real(a.tds?.types).length > 0,
   "tds.salaries": (a) => !!a.tds?.types?.includes("salaries"),
   "tds.vendorsOrRent": (a) => !!a.tds?.types?.some((t) => t === "vendors" || t === "rent"),
   "tds.nonresident": (a) => !!a.tds?.types?.includes("nonresident"),
   "partners.yes": (a) => !!a.revenue?.partners,
-  "gateway.some": (a) => (a.revenue?.gateways?.length ?? 0) > 0,
+  "gateway.some": (a) => real(a.revenue?.gateways).length > 0,
   "advances.yes": (a) => !!a.revenue?.advances,
   "exports.yes": (a) => !!a.revenue?.exports,
   "loan.some": (a) => (a.loans?.length ?? 0) > 0,
@@ -65,8 +67,8 @@ function instancesOf(by: string | null, a: Answers): Instance[] {
   switch (by) {
     case "bank": return a.banks ?? [];
     case "gstin": return a.gst?.registered === false ? [] : a.gst?.gstins ?? [];
-    case "state": return a.salaries?.pays ? a.salaries?.ptStates ?? [] : [];
-    case "gateway": return a.revenue?.gateways ?? [];
+    case "state": return a.salaries?.pays ? real(a.salaries?.ptStates) : [];
+    case "gateway": return real(a.revenue?.gateways);
     case "loan": return a.loans ?? [];
     case "issue": return a.debentures ?? [];
     case "round": return a.rounds ?? [];

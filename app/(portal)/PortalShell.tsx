@@ -12,6 +12,7 @@ type Props = {
   companies: { id: string; name: string; status: string }[];
   companyId: string | null;
   closeWaiting: number;
+  masterDone: number | null;
   children: React.ReactNode;
 };
 
@@ -41,7 +42,7 @@ function NavItem({ page, who, pathname, extra, label, href, matchPrefix, sub, on
   );
 }
 
-export default function PortalShell({ who, companies, companyId, closeWaiting, children }: Props) {
+export default function PortalShell({ who, companies, companyId, closeWaiting, masterDone, children }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -79,6 +80,10 @@ export default function PortalShell({ who, companies, companyId, closeWaiting, c
 
       <NavItem page="home" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="dashboard" who={who} pathname={pathname} onNavigate={close} />
+      <NavItem
+        page="cmaster" who={who} pathname={pathname} onNavigate={close}
+        extra={masterDone !== null ? <span className="text-[11px] font-bold" style={{ color: pathname.startsWith("/company-master") ? "var(--paper)" : "var(--ink-secondary)" }}>{masterDone}/12</span> : null}
+      />
       <button
         onClick={() => setMasterOpen((v) => !v)}
         aria-expanded={masterOpen}
