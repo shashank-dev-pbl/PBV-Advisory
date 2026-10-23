@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
 import { pageGate } from "@/lib/gate";
-import { fmtDate } from "@/lib/dates";
 import { FUNNEL, SIDE_EXITS, STAGE_LABEL, lastMove, loadOutreach } from "@/lib/outreach";
 import PageHeader from "../PageHeader";
 import Locked from "../Locked";
+import Rows from "./Rows";
 
 const box = { background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 } as const;
 // "Active" is everything the bot has actually touched; Queued and Skipped are the long tail.
@@ -61,31 +60,7 @@ export default async function OutreachPage({ searchParams }: { searchParams: Pro
                   </tr>
                 </thead>
                 <tbody>
-                  {[...data.items].sort((a, b) => +new Date(lastMove(b)) - +new Date(lastMove(a))).map((i) => (
-                    <tr key={i.id} style={{ borderTop: "1px solid var(--rule)", background: i.stage === "replied" ? "rgba(0,0,0,0.03)" : undefined }}>
-                      <td className="p-3 font-bold">
-                        {i.linkedin_company_url ? <a href={i.linkedin_company_url} target="_blank" rel="noreferrer">{i.company_name}</a> : i.company_name}
-                        {i.website && <a href={i.website} target="_blank" rel="noreferrer" aria-label="Website" className="ml-1.5 inline-block align-middle"><ExternalLink size={12} /></a>}
-                      </td>
-                      <td className="p-3">
-                        {i.founder_name ? (
-                          <>
-                            {i.founder_url ? <a href={i.founder_url} target="_blank" rel="noreferrer">{i.founder_name}</a> : i.founder_name}
-                            {i.founder_title && <span className="block text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>{i.founder_title}</span>}
-                          </>
-                        ) : "—"}
-                      </td>
-                      <td className="p-3 font-bold" style={i.stage === "replied" ? { color: "var(--bottomline-green)" } : undefined}>
-                        {STAGE_LABEL[i.stage] ?? i.stage}
-                        {i.stage === "replied" && <span className="block text-[11.5px] font-normal" style={{ color: "var(--ink-secondary)" }}>Needs human follow-up</span>}
-                      </td>
-                      <td className="p-3">{fmtDate(lastMove(i))}</td>
-                      <td className="p-3">{[i.sector, i.hq].filter(Boolean).join(" · ") || "—"}</td>
-                      <td className="p-3">{i.total_raised_text ?? "—"}</td>
-                      <td className="p-3 text-[12px]" style={{ color: "var(--ink-secondary)" }}>{i.last_error ?? ""}</td>
-                    </tr>
-                  ))}
-                  {data.items.length === 0 && <tr><td colSpan={7} className="p-6 text-center" style={{ color: "var(--ink-secondary)" }}>Nothing here yet.</td></tr>}
+                  <Rows items={[...data.items].sort((a, b) => +new Date(lastMove(b)) - +new Date(lastMove(a)))} />
                 </tbody>
               </table>
             </div>

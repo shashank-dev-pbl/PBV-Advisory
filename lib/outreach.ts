@@ -14,6 +14,7 @@ export type OutreachItem = {
   founder_name: string | null;
   founder_title: string | null;
   founder_url: string | null;
+  founder_candidates: { name: string; url: string; title: string | null; degree: string | null }[] | null;
   connect_sent_at: string | null;
   accepted_at: string | null;
   dm_sent_at: string | null;
