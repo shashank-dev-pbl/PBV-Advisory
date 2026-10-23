@@ -109,6 +109,7 @@ export default function PortalShell({ who, companies, companyId, closeWaiting, m
       <NavItem page="filings" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="files" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="dataroom" who={who} pathname={pathname} onNavigate={close} />
+      <NavItem page="outreach" who={who} pathname={pathname} onNavigate={close} />
       {(canOpen(who, "companies") || canOpen(who, "people")) && (
         <>
           <div className="my-2" style={{ borderTop: "1px solid var(--rule)" }} />
