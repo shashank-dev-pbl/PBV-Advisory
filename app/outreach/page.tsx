@@ -74,7 +74,7 @@ export default async function OutreachPage({ searchParams }: { searchParams: Pro
                   </tr>
                 </thead>
                 <tbody>
-                  <Rows items={[...data.items].sort((a, b) => +new Date(lastMove(b)) - +new Date(lastMove(a)))} />
+                  <Rows demo={demo} items={[...data.items].sort((a, b) => +new Date(lastMove(b)) - +new Date(lastMove(a)))} />
                 </tbody>
               </table>
             </div>

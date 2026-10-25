@@ -2,6 +2,7 @@
 
 import { Fragment, useState } from "react";
 import { ChevronRight, ExternalLink } from "lucide-react";
+import GiveFounder from "./GiveFounder";
 import { STAGE_LABEL, lastMove, type OutreachItem } from "@/lib/outreach";
 
 // Always India time, whatever the viewer's computer is set to.
@@ -15,7 +16,7 @@ function Link({ href, children }: { href: string | null; children: React.ReactNo
   return href ? <a href={href} target="_blank" rel="noreferrer" style={{ textDecoration: "underline" }}>{children}</a> : <>{children}</>;
 }
 
-function Detail({ i }: { i: OutreachItem }) {
+function Detail({ i, demo }: { i: OutreachItem; demo: boolean }) {
   // Oldest at the top, flowing down to the latest. Only steps the bot has reached.
   const steps = ([
     ["Scanning", i.created_at],
@@ -84,12 +85,15 @@ function Detail({ i }: { i: OutreachItem }) {
           <p style={muted}>Raised: {i.total_raised_text ?? "not recorded"}</p>
         </div>
         {i.last_error && <p className="mt-1" style={{ color: "#8c1a1a" }}>Bot note: {i.last_error}</p>}
+        {(i.stage === "needs_review" || i.stage === "no_founder") && (
+          <GiveFounder key={i.id} id={i.id} needsCompany={i.stage === "needs_review"} demo={demo} />
+        )}
       </div>
     </div>
   );
 }
 
-export default function Rows({ items }: { items: OutreachItem[] }) {
+export default function Rows({ items, demo }: { items: OutreachItem[]; demo: boolean }) {
   const [open, setOpen] = useState<number | null>(null);
   if (items.length === 0) return <tr><td colSpan={7} className="p-6 text-center" style={muted}>Nothing here yet.</td></tr>;
   return (
@@ -123,7 +127,7 @@ export default function Rows({ items }: { items: OutreachItem[] }) {
               <td className="p-3">{i.total_raised_text ?? "—"}</td>
               <td className="p-3 text-[12px]" style={muted}>{i.last_error ?? ""}</td>
             </tr>
-            {on && <tr style={{ background: "var(--paper)" }}><td colSpan={7}><Detail i={i} /></td></tr>}
+            {on && <tr style={{ background: "var(--paper)" }}><td colSpan={7}><Detail i={i} demo={demo} /></td></tr>}
           </Fragment>
         );
       })}
