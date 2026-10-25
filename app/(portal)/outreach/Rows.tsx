@@ -2,8 +2,12 @@
 
 import { Fragment, useState } from "react";
 import { ChevronRight, ExternalLink } from "lucide-react";
-import { fmtDate, fmtDateTime } from "@/lib/dates";
 import { STAGE_LABEL, lastMove, type OutreachItem } from "@/lib/outreach";
+
+// Always India time, whatever the viewer's computer is set to.
+const IST = "Asia/Kolkata";
+const dateIST = (d: string) => new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: IST });
+const timeIST = (d: string) => new Date(d).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: IST });
 
 const muted = { color: "var(--ink-secondary)" } as const;
 
@@ -12,44 +16,51 @@ function Link({ href, children }: { href: string | null; children: React.ReactNo
 }
 
 function Detail({ i }: { i: OutreachItem }) {
-  // Newest first, only steps the bot has reached.
+  // Oldest at the top, flowing down to the latest. Only steps the bot has reached.
   const steps = ([
-    ["Added to queue", i.created_at],
-    ["1. Connection Sent", i.connect_sent_at],
-    ["Connection Accepted", i.accepted_at],
-    ["2. DM Sent", i.dm_sent_at],
-    ["3. Reply Received", i.replied_at],
+    ["Scanning", i.created_at],
+    ["Requested", i.connect_sent_at],
+    ["Accepted - Awaiting Message", i.accepted_at],
+    ["Message Sent", i.dm_sent_at],
+    ["Replied - Handed to Team", i.replied_at],
   ] as [string, string | null][])
     .filter((s): s is [string, string] => !!s[1])
-    .sort((x, y) => +new Date(y[1]) - +new Date(x[1]));
+    .sort((x, y) => +new Date(x[1]) - +new Date(y[1]));
   const others = (i.founder_candidates ?? []).filter((c) => c.url !== i.founder_url);
   return (
     <div className="grid gap-5 p-4 text-[12.5px] md:grid-cols-3">
       <div>
-        <p className="eyebrow mb-2">History</p>
-        <div className="relative">
-          <span className="absolute bottom-2 left-[4px] top-2 w-px" style={{ background: "var(--rule)" }} />
-          {steps.map(([label, at], n) => (
-            <div key={label} className="relative mb-3 pl-6">
-              <span
-                className="absolute left-0 top-[9px] h-[9px] w-[9px] rounded-full"
-                style={{ background: n === 0 ? "var(--bottomline-green)" : "var(--ink-secondary)", border: "2px solid var(--paper)" }}
-              />
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <span className="inline-block rounded-full px-2.5 py-1 text-[12.5px] font-bold" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>{label}</span>
-                  <p className="mt-0.5 pl-1 text-[12px]" style={muted}>LinkedIn Extension</p>
+        <p className="eyebrow mb-2">History <span style={muted}>· oldest first, top to bottom</span></p>
+        <div>
+          {steps.map(([label, at], n) => {
+            const last = n === steps.length - 1;
+            return (
+              <div key={label} className="relative pl-6" style={{ paddingBottom: last ? 0 : 14 }}>
+                {/* The line runs from this dot down to the next one, so it never sticks out above the first or below the last. */}
+                {!last && <span className="absolute left-[4px] top-[14px] w-px" style={{ bottom: -4, background: "var(--rule)" }} />}
+                <span
+                  className="absolute left-0 top-[9px] h-[9px] w-[9px] rounded-full"
+                  style={{ background: last ? "var(--bottomline-green)" : "var(--ink-secondary)" }}
+                />
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <span className="inline-block rounded-full px-2.5 py-1 text-[12.5px] font-bold" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>{label}</span>
+                    <p className="mt-0.5 pl-1 text-[12px]" style={muted}>LinkedIn Extension</p>
+                  </div>
+                  <span className="pt-1 text-right text-[12px]" style={muted}>
+                    {dateIST(at)}
+                    <span className="block">{timeIST(at)} IST</span>
+                  </span>
                 </div>
-                <span className="pt-1 text-[12px]" style={muted}>{fmtDate(at)}</span>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
-        <p className="mt-1.5" style={muted}>Last updated {fmtDateTime(i.updated_at)}</p>
+        <p className="mt-1.5" style={muted}>Last updated {dateIST(i.updated_at)}, {timeIST(i.updated_at)} IST</p>
       </div>
       <div>
         <p className="eyebrow mb-1.5">Company</p>
-        <p><Link href={i.linkedin_company_url}>LinkedIn page</Link>{i.linkedin_company_url ? "" : <span style={muted}>No LinkedIn page matched</span>}</p>
+        <p>{i.linkedin_company_url ? <Link href={i.linkedin_company_url}>LinkedIn page</Link> : <span style={muted}>No LinkedIn page matched</span>}</p>
         {i.website && <p><Link href={i.website}>{i.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}</Link></p>}
         <p style={muted}>{[i.sector, i.hq].filter(Boolean).join(" · ") || "No sector or HQ"}</p>
         <p style={muted}>Raised: {i.total_raised_text ?? "not recorded"}</p>
@@ -103,7 +114,7 @@ export default function Rows({ items }: { items: OutreachItem[] }) {
                 {STAGE_LABEL[i.stage] ?? i.stage}
                 {i.stage === "replied" && <span className="block text-[11.5px] font-normal" style={muted}>Needs human follow-up</span>}
               </td>
-              <td className="p-3">{fmtDate(lastMove(i))}</td>
+              <td className="p-3">{dateIST(lastMove(i))}</td>
               <td className="p-3">{[i.sector, i.hq].filter(Boolean).join(" · ") || "—"}</td>
               <td className="p-3">{i.total_raised_text ?? "—"}</td>
               <td className="p-3 text-[12px]" style={muted}>{i.last_error ?? ""}</td>

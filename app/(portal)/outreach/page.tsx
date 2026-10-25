@@ -1,12 +1,20 @@
 import Link from "next/link";
 import { pageGate } from "@/lib/gate";
-import { FUNNEL, SIDE_EXITS, STAGE_LABEL, lastMove, loadOutreach } from "@/lib/outreach";
+import { SIDE_EXITS, STAGE_LABEL, lastMove, loadOutreach } from "@/lib/outreach";
 import PageHeader from "../PageHeader";
 import Locked from "../Locked";
 import Rows from "./Rows";
 
 const box = { background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 } as const;
 // "Active" is everything the bot has actually touched; Queued and Skipped are the long tail.
+// One card per status in the brief; Scanning covers both "queued" and "founder found".
+const CARDS = [
+  { stages: ["new", "founder_found"], label: "Scanning" },
+  { stages: ["connect_sent"], label: "Requested" },
+  { stages: ["accepted"], label: "Accepted - Awaiting Message" },
+  { stages: ["dm_sent"], label: "Message Sent" },
+  { stages: ["replied"], label: "Replied - Handed to Team" },
+];
 const ACTIVE = ["founder_found", "connect_sent", "accepted", "dm_sent", "replied", "needs_review", "no_founder", "cannot_connect", "stale"];
 
 export default async function OutreachPage({ searchParams }: { searchParams: Promise<{ s?: string }> }) {
@@ -14,9 +22,10 @@ export default async function OutreachPage({ searchParams }: { searchParams: Pro
   if (locked) return <Locked page="outreach" who={session.who!} />;
 
   const sp = await searchParams;
-  const all = [...FUNNEL, ...SIDE_EXITS] as string[];
-  const stage = sp.s && all.includes(sp.s) ? sp.s : "active";
-  const data = await loadOutreach(stage === "active" ? ACTIVE : [stage]);
+  const all = [...CARDS.flatMap((c) => c.stages), ...SIDE_EXITS] as string[];
+  const picked = (sp.s ?? "").split(",").filter((x) => all.includes(x));
+  const stage = picked.length ? picked.join(",") : "active";
+  const data = await loadOutreach(picked.length ? picked : ACTIVE);
 
   return (
     <>
@@ -30,13 +39,14 @@ export default async function OutreachPage({ searchParams }: { searchParams: Pro
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-6">
-              {FUNNEL.map((k) => {
-                const on = stage === k;
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+              {CARDS.map((c) => {
+                const key = c.stages.join(",");
+                const on = stage === key;
                 return (
-                  <Link key={k} href={`/outreach?s=${k}`} className="p-3" style={{ ...box, borderColor: on ? "var(--bottomline-green)" : "var(--rule)" }}>
-                    <p className="text-[22px] font-extrabold">{data.counts[k] ?? 0}</p>
-                    <p className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>{STAGE_LABEL[k]}</p>
+                  <Link key={key} href={`/outreach?s=${key}`} className="p-3" style={{ ...box, borderColor: on ? "var(--bottomline-green)" : "var(--rule)" }}>
+                    <p className="text-[22px] font-extrabold">{c.stages.reduce((n, k) => n + (data.counts[k] ?? 0), 0)}</p>
+                    <p className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>{c.label}</p>
                   </Link>
                 );
               })}

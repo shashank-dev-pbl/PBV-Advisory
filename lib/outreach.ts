@@ -29,17 +29,19 @@ export type OutreachItem = {
 export const FUNNEL = ["new", "founder_found", "connect_sent", "accepted", "dm_sent", "replied"] as const;
 export const SIDE_EXITS = ["needs_review", "no_founder", "cannot_connect", "stale", "skipped"] as const;
 
+// Status wording from the brief (BOT_OUTREACH_LOG): Scanning, Requested, Accepted - Awaiting Message,
+// Message Sent, Replied - Handed to Team, No Response. The bot's own stages map onto them.
 export const STAGE_LABEL: Record<string, string> = {
-  new: "Queued",
-  founder_found: "Founder found",
-  connect_sent: "Request sent",
-  accepted: "Accepted",
-  dm_sent: "Message sent",
-  replied: "Replied",
+  new: "Scanning",
+  founder_found: "Scanning",
+  connect_sent: "Requested",
+  accepted: "Accepted - Awaiting Message",
+  dm_sent: "Message Sent",
+  replied: "Replied - Handed to Team",
   needs_review: "Needs review",
   no_founder: "No founder found",
   cannot_connect: "Can't connect",
-  stale: "No response",
+  stale: "No Response",
   skipped: "Skipped",
 };
 
