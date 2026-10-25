@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { pageGate } from "@/lib/gate";
-import { SIDE_EXITS, STAGE_LABEL, lastMove, loadOutreach } from "@/lib/outreach";
+import { SIDE_EXITS, STAGE_LABEL, demoOutreach, lastMove, loadOutreach } from "@/lib/outreach";
 import PageHeader from "../(portal)/PageHeader";
 import Locked from "../(portal)/Locked";
 import Rows from "./Rows";
@@ -17,7 +17,7 @@ const CARDS = [
 ];
 const ACTIVE = ["founder_found", "connect_sent", "accepted", "dm_sent", "replied", "needs_review", "no_founder", "cannot_connect", "stale"];
 
-export default async function OutreachPage({ searchParams }: { searchParams: Promise<{ s?: string }> }) {
+export default async function OutreachPage({ searchParams }: { searchParams: Promise<{ s?: string; demo?: string }> }) {
   const { session, locked } = await pageGate("outreach");
   if (locked) return <Locked page="outreach" who={session.who!} />;
 
@@ -25,7 +25,10 @@ export default async function OutreachPage({ searchParams }: { searchParams: Pro
   const all = [...CARDS.flatMap((c) => c.stages), ...SIDE_EXITS] as string[];
   const picked = (sp.s ?? "").split(",").filter((x) => all.includes(x));
   const stage = picked.length ? picked.join(",") : "active";
-  const data = await loadOutreach(picked.length ? picked : ACTIVE);
+  const demo = sp.demo === "1";
+  const wanted = picked.length ? picked : ACTIVE;
+  const data = demo ? demoOutreach(wanted) : await loadOutreach(wanted);
+  const q = (s?: string) => `/outreach?${[s ? `s=${s}` : "", demo ? "demo=1" : ""].filter(Boolean).join("&")}`;
 
   return (
     <>
@@ -39,12 +42,13 @@ export default async function OutreachPage({ searchParams }: { searchParams: Pro
           </div>
         ) : (
           <>
+            {demo && <p className="mb-3 p-2.5 text-[12.5px]" style={{ ...box, fontWeight: 700 }}>Sample data, not real leads. Nothing here comes from the bot.</p>}
             <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
               {CARDS.map((c) => {
                 const key = c.stages.join(",");
                 const on = stage === key;
                 return (
-                  <Link key={key} href={`/outreach?s=${key}`} className="p-3" style={{ ...box, borderColor: on ? "var(--bottomline-green)" : "var(--rule)" }}>
+                  <Link key={key} href={q(key)} className="p-3" style={{ ...box, borderColor: on ? "var(--bottomline-green)" : "var(--rule)" }}>
                     <p className="text-[22px] font-extrabold">{c.stages.reduce((n, k) => n + (data.counts[k] ?? 0), 0)}</p>
                     <p className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>{c.label}</p>
                   </Link>
@@ -53,9 +57,9 @@ export default async function OutreachPage({ searchParams }: { searchParams: Pro
             </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-2 text-[12.5px]">
-              <Link href="/outreach" className="btn-small" style={stage === "active" ? { background: "var(--bottomline-green)", color: "var(--paper)" } : undefined}>All active</Link>
+              <Link href={q()} className="btn-small" style={stage === "active" ? { background: "var(--bottomline-green)", color: "var(--paper)" } : undefined}>All active</Link>
               {SIDE_EXITS.map((k) => (
-                <Link key={k} href={`/outreach?s=${k}`} className="btn-small" style={stage === k ? { background: "var(--bottomline-green)", color: "var(--paper)" } : undefined}>
+                <Link key={k} href={q(k)} className="btn-small" style={stage === k ? { background: "var(--bottomline-green)", color: "var(--paper)" } : undefined}>
                   {STAGE_LABEL[k]} · {data.counts[k] ?? 0}
                 </Link>
               ))}
