@@ -62,10 +62,12 @@ function Detail({ i }: { i: OutreachItem }) {
       </div>
       <div>
         <p className="eyebrow mb-2">Company</p>
-        <p className="text-[13px]">
+        <p className="text-[14px] font-extrabold">{i.company_name}</p>
+        <p className="mt-1.5 text-[13px]">
+          <span style={muted}>Founder: </span>
           {i.founder_name ? (
             <><b><Link href={i.founder_url}>{i.founder_name}</Link></b>{i.founder_title && <span style={muted}> · {i.founder_title}</span>}</>
-          ) : <span style={muted}>Founder not found yet</span>}
+          ) : <span style={muted}>not found yet</span>}
         </p>
         {others.length > 0 && (
           <div className="mt-1.5">
