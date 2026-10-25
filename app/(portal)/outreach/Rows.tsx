@@ -38,6 +38,8 @@ function Detail({ i }: { i: OutreachItem }) {
               <div key={label} className="relative pl-6" style={{ paddingBottom: last ? 0 : 14 }}>
                 {/* The line runs from this dot down to the next one, so it never sticks out above the first or below the last. */}
                 {!last && <span className="absolute left-[4px] top-[14px] w-px" style={{ bottom: -4, background: "var(--rule)" }} />}
+                {/* The current step pulses, to read as "this is where the lead is now". */}
+                {last && <span className="absolute left-0 top-[9px] h-[9px] w-[9px] rounded-full motion-safe:animate-ping" style={{ background: "var(--bottomline-green)", opacity: 0.55 }} />}
                 <span
                   className="absolute left-0 top-[9px] h-[9px] w-[9px] rounded-full"
                   style={{ background: last ? "var(--bottomline-green)" : "var(--ink-secondary)" }}
@@ -64,7 +66,7 @@ function Detail({ i }: { i: OutreachItem }) {
         {i.website && <p><Link href={i.website}>{i.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}</Link></p>}
         <p style={muted}>{[i.sector, i.hq].filter(Boolean).join(" · ") || "No sector or HQ"}</p>
         <p style={muted}>Raised: {i.total_raised_text ?? "not recorded"}</p>
-        <p className="mt-1.5" style={muted}>Bot attempts: {i.attempts}</p>
+        {i.attempts > 0 && <p className="mt-1.5" style={muted}>Failed tries: {i.attempts} of 3</p>}
         {i.last_error && <p className="mt-1" style={{ color: "#8c1a1a" }}>Bot note: {i.last_error}</p>}
       </div>
       <div>
