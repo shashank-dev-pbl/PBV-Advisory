@@ -29,7 +29,7 @@ export default async function OutreachPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <PageHeader title="Outreach" accent="LinkedIn leads" sub="Read-only. The LinkedIn bot finds, connects and messages; replies are for the team to follow up." />
+      <PageHeader title="Outreach" accent="LinkedIn leads" />
       <div className="mx-auto w-full max-w-[1280px] px-5 py-6 md:px-8">
         {!data.ok ? (
           <div className="p-4 text-[13px]" style={{ background: "#fbe9e7", border: "1px solid #e3b8b2", color: "#8c1a1a" }}>
