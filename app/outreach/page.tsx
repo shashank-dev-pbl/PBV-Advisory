@@ -15,7 +15,7 @@ const CARDS = [
   { stages: ["dm_sent"], label: "Message Sent" },
   { stages: ["replied"], label: "Replied - Handed to Team" },
 ];
-const ACTIVE = ["founder_found", "connect_sent", "accepted", "dm_sent", "replied", "needs_review", "no_founder", "cannot_connect", "stale"];
+const ACTIVE = ["founder_found", "connect_sent", "accepted", "dm_sent", "replied", "needs_review", "no_founder", "stale"];
 
 export default async function OutreachPage({ searchParams }: { searchParams: Promise<{ s?: string; demo?: string }> }) {
   const { session, locked } = await pageGate("outreach");

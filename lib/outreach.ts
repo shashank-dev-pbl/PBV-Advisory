@@ -27,7 +27,8 @@ export type OutreachItem = {
 
 // Funnel order, with the plain word shown for each stage the bot writes.
 export const FUNNEL = ["new", "founder_found", "connect_sent", "accepted", "dm_sent", "replied"] as const;
-export const SIDE_EXITS = ["needs_review", "no_founder", "cannot_connect", "stale", "skipped"] as const;
+// Can't connect and Skipped are left out on purpose: not wanted on this page.
+export const SIDE_EXITS = ["needs_review", "no_founder", "stale"] as const;
 
 // Status wording from the brief (BOT_OUTREACH_LOG): Scanning, Requested, Accepted - Awaiting Message,
 // Message Sent, Replied - Handed to Team, No Response. The bot's own stages map onto them.
