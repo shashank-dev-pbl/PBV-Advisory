@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { pageGate } from "@/lib/gate";
 import { SIDE_EXITS, STAGE_LABEL, lastMove, loadOutreach } from "@/lib/outreach";
-import PageHeader from "../PageHeader";
-import Locked from "../Locked";
+import PageHeader from "../(portal)/PageHeader";
+import Locked from "../(portal)/Locked";
 import Rows from "./Rows";
 
 const box = { background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 } as const;

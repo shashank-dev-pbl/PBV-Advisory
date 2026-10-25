@@ -83,7 +83,6 @@ function Detail({ i }: { i: OutreachItem }) {
           <p style={muted}>{[i.sector, i.hq].filter(Boolean).join(" · ") || "No sector or HQ"}</p>
           <p style={muted}>Raised: {i.total_raised_text ?? "not recorded"}</p>
         </div>
-        {i.attempts > 0 && <p className="mt-3" style={muted}>Failed tries: {i.attempts} of 3</p>}
         {i.last_error && <p className="mt-1" style={{ color: "#8c1a1a" }}>Bot note: {i.last_error}</p>}
       </div>
     </div>
