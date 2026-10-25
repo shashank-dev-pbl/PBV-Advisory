@@ -28,9 +28,9 @@ function Detail({ i }: { i: OutreachItem }) {
     .sort((x, y) => +new Date(x[1]) - +new Date(y[1]));
   const others = (i.founder_candidates ?? []).filter((c) => c.url !== i.founder_url);
   return (
-    <div className="grid gap-5 p-4 text-[12.5px] md:grid-cols-3">
+    <div className="grid gap-8 p-5 text-[12.5px] md:grid-cols-2 md:gap-12">
       <div>
-        <p className="eyebrow mb-2">History <span style={muted}>· oldest first, top to bottom</span></p>
+        <p className="eyebrow mb-2">History</p>
         <div>
           {steps.map(([label, at], n) => {
             const last = n === steps.length - 1;
@@ -61,27 +61,28 @@ function Detail({ i }: { i: OutreachItem }) {
         <p className="mt-1.5" style={muted}>Last updated {dateIST(i.updated_at)}, {timeIST(i.updated_at)} IST</p>
       </div>
       <div>
-        <p className="eyebrow mb-1.5">Company</p>
-        <p>{i.linkedin_company_url ? <Link href={i.linkedin_company_url}>LinkedIn page</Link> : <span style={muted}>No LinkedIn page matched</span>}</p>
-        {i.website && <p><Link href={i.website}>{i.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}</Link></p>}
-        <p style={muted}>{[i.sector, i.hq].filter(Boolean).join(" · ") || "No sector or HQ"}</p>
-        <p style={muted}>Raised: {i.total_raised_text ?? "not recorded"}</p>
-        {i.attempts > 0 && <p className="mt-1.5" style={muted}>Failed tries: {i.attempts} of 3</p>}
-        {i.last_error && <p className="mt-1" style={{ color: "#8c1a1a" }}>Bot note: {i.last_error}</p>}
-      </div>
-      <div>
-        <p className="eyebrow mb-1.5">Founder</p>
-        {i.founder_name ? (
-          <p><b><Link href={i.founder_url}>{i.founder_name}</Link></b>{i.founder_title && <span style={muted}> · {i.founder_title}</span>}</p>
-        ) : <p style={muted}>Not found yet</p>}
+        <p className="eyebrow mb-2">Company</p>
+        <p className="text-[13px]">
+          {i.founder_name ? (
+            <><b><Link href={i.founder_url}>{i.founder_name}</Link></b>{i.founder_title && <span style={muted}> · {i.founder_title}</span>}</>
+          ) : <span style={muted}>Founder not found yet</span>}
+        </p>
         {others.length > 0 && (
-          <>
-            <p className="mt-2" style={muted}>Other people the bot considered</p>
+          <div className="mt-1.5">
+            <p style={muted}>Other people the bot considered</p>
             {others.map((c) => (
               <p key={c.url}><Link href={c.url}>{c.name}</Link>{c.title && <span style={muted}> · {c.title}</span>}</p>
             ))}
-          </>
+          </div>
         )}
+        <div className="mt-3">
+          <p>{i.linkedin_company_url ? <Link href={i.linkedin_company_url}>LinkedIn page</Link> : <span style={muted}>No LinkedIn page matched</span>}</p>
+          {i.website && <p><Link href={i.website}>{i.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}</Link></p>}
+          <p style={muted}>{[i.sector, i.hq].filter(Boolean).join(" · ") || "No sector or HQ"}</p>
+          <p style={muted}>Raised: {i.total_raised_text ?? "not recorded"}</p>
+        </div>
+        {i.attempts > 0 && <p className="mt-3" style={muted}>Failed tries: {i.attempts} of 3</p>}
+        {i.last_error && <p className="mt-1" style={{ color: "#8c1a1a" }}>Bot note: {i.last_error}</p>}
       </div>
     </div>
   );
