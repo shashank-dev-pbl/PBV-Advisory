@@ -44,16 +44,12 @@ export default async function OutreachPage({ searchParams }: { searchParams: Pro
           <>
             {demo && <p className="mb-3 p-2.5 text-[12.5px]" style={{ ...box, fontWeight: 700 }}>Sample data, not real leads. Nothing here comes from the bot.</p>}
             <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
-              {CARDS.map((c) => {
-                const key = c.stages.join(",");
-                const on = stage === key;
-                return (
-                  <Link key={key} href={q(key)} className="p-3" style={{ ...box, borderColor: on ? "var(--bottomline-green)" : "var(--rule)" }}>
-                    <p className="text-[22px] font-extrabold">{c.stages.reduce((n, k) => n + (data.counts[k] ?? 0), 0)}</p>
-                    <p className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>{c.label}</p>
-                  </Link>
-                );
-              })}
+              {CARDS.map((c) => (
+                <div key={c.label} className="p-3" style={box}>
+                  <p className="text-[22px] font-extrabold">{c.stages.reduce((n, k) => n + (data.counts[k] ?? 0), 0)}</p>
+                  <p className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>{c.label}</p>
+                </div>
+              ))}
             </div>
 
             <div className="mt-3 flex flex-wrap items-center gap-2 text-[12.5px]">
