@@ -12,23 +12,39 @@ function Link({ href, children }: { href: string | null; children: React.ReactNo
 }
 
 function Detail({ i }: { i: OutreachItem }) {
-  const steps: [string, string | null][] = [
-    ["Added to the queue", i.created_at],
-    ["Connection request sent", i.connect_sent_at],
-    ["Accepted", i.accepted_at],
-    ["First message sent", i.dm_sent_at],
-    ["Replied", i.replied_at],
-  ];
+  // Newest first, only steps the bot has reached.
+  const steps = ([
+    ["Added to queue", i.created_at],
+    ["1. Connection Sent", i.connect_sent_at],
+    ["Connection Accepted", i.accepted_at],
+    ["2. DM Sent", i.dm_sent_at],
+    ["3. Reply Received", i.replied_at],
+  ] as [string, string | null][])
+    .filter((s): s is [string, string] => !!s[1])
+    .sort((x, y) => +new Date(y[1]) - +new Date(x[1]));
   const others = (i.founder_candidates ?? []).filter((c) => c.url !== i.founder_url);
   return (
     <div className="grid gap-5 p-4 text-[12.5px] md:grid-cols-3">
       <div>
-        <p className="eyebrow mb-1.5">Timeline</p>
-        {steps.map(([label, at]) => (
-          <p key={label} className="flex justify-between gap-3 py-0.5" style={at ? undefined : muted}>
-            <span>{label}</span><span>{at ? fmtDateTime(at) : "—"}</span>
-          </p>
-        ))}
+        <p className="eyebrow mb-2">History</p>
+        <div className="relative">
+          <span className="absolute bottom-2 left-[4px] top-2 w-px" style={{ background: "var(--rule)" }} />
+          {steps.map(([label, at], n) => (
+            <div key={label} className="relative mb-3 pl-6">
+              <span
+                className="absolute left-0 top-[9px] h-[9px] w-[9px] rounded-full"
+                style={{ background: n === 0 ? "var(--bottomline-green)" : "var(--ink-secondary)", border: "2px solid var(--paper)" }}
+              />
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <span className="inline-block rounded-full px-2.5 py-1 text-[12.5px] font-bold" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)" }}>{label}</span>
+                  <p className="mt-0.5 pl-1 text-[12px]" style={muted}>LinkedIn Extension</p>
+                </div>
+                <span className="pt-1 text-[12px]" style={muted}>{fmtDate(at)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
         <p className="mt-1.5" style={muted}>Last updated {fmtDateTime(i.updated_at)}</p>
       </div>
       <div>
