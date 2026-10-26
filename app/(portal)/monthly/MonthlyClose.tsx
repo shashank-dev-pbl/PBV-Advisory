@@ -291,7 +291,7 @@ export default function MonthlyClose({ companyId, meName, initialMonth, devTools
                   {close.map(([a, b, ok]) => <div className="ckrow" key={a}><span className={`ck ${ok ? "ok" : ""}`}>{ok ? "✓" : ""}</span><span style={{ flex: 1 }}>{a}</span><span className="dm">{b}</span></div>)}
                   <div className="next" style={{ marginTop: 12, flexWrap: "wrap" }}>{action}</div>
                   <div className="dm" style={{ marginTop: 8 }}>When published, this month&apos;s figures flow to the dashboard.</div>
-                  {devTools && isPBA && v.state !== "published" && <div style={{ marginTop: 10 }}><button className="b quiet xs" disabled={saving} onClick={() => run(() => fillWithTestFiles(ym), () => {})}>Dev only: fill with test files</button><span className="dm"> placeholders for everything except the MIS workbook</span></div>}
+                  {devTools && isPBA && v.state !== "published" && <div style={{ marginTop: 10 }}><button className="b quiet xs" disabled={saving} onClick={() => run(() => fillWithTestFiles(ym), () => window.location.reload())}>Dev only: fill with test files</button><span className="dm"> placeholders for everything except the MIS workbook</span></div>}
                 </div>
               </div>
             </div>
