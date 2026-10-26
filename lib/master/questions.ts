@@ -1,4 +1,4 @@
-import { INDIAN_STATES } from "@/lib/compliance";
+import { INDIAN_STATES } from "./states";
 import { currentFyStart } from "./engine";
 import { checkId, type IdFormat } from "@/lib/idformats";
 import type { Answers, Owner, Plan } from "./types";

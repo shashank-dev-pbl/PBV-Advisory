@@ -9,13 +9,14 @@ import MonthlyClose, { type MonthRow, type VerifyRow } from "./MonthlyClose";
 import type { FileRow, Explainer, SummaryRow } from "../company-master/MasterWizard";
 import type { Answers, EventTypeDoc, LibDoc, MasterFiling, MasterRule } from "@/lib/master/types";
 
-export default async function MonthlyPage() {
+export default async function MonthlyPage({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
   const { session, locked } = await pageGate("close");
   if (locked) return <Locked page="close" who={session.who!} />;
   const company = session.company;
   if (!company) return <NoCompany page="close" admin={session.who === "admin"} />;
   if (company.status === "setting_up") return <SettingUp page="close" name={company.name} />;
 
+  const { m } = await searchParams;
   const supabase = await createClient();
   const [master, rules, filings, eventDocs, library, explainers, files, months, verifies, firm, summaries, co] = await Promise.all([
     supabase.from("company_master").select("answers").eq("company_id", company.id).maybeSingle(),
@@ -50,6 +51,7 @@ export default async function MonthlyPage() {
       <PageHeader title={company.name} accent="Monthly close" />
       <MonthlyClose
         companyId={company.id}
+        initialMonth={m && /^\d{4}-\d{2}$/.test(m) ? m : undefined}
         meName={session.user!.name ?? "You"}
         who={session.who as "founder" | "external" | "pba" | "admin"}
         meId={session.user!.id}

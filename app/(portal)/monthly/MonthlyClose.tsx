@@ -27,8 +27,8 @@ const CODE_EXPLAINER: Record<string, string> = {};
 
 type Who = "founder" | "external" | "pba" | "admin";
 
-export default function MonthlyClose({ companyId, meName, who, meId, firmName, answers, trackingStart, data, explainers, files, summaries, months, verifies }: {
-  companyId: string; meName: string; who: Who; meId: string; firmName: string | null; answers: Answers; trackingStart: string | null; data: EngineData;
+export default function MonthlyClose({ companyId, meName, initialMonth, who, meId, firmName, answers, trackingStart, data, explainers, files, summaries, months, verifies }: {
+  companyId: string; meName: string; initialMonth?: string; who: Who; meId: string; firmName: string | null; answers: Answers; trackingStart: string | null; data: EngineData;
   explainers: ExplainerFull[]; files: FileRow[]; summaries: SummaryRow[]; months: MonthRow[]; verifies: VerifyRow[];
 }) {
   const role = who === "admin" ? "pba" : who;
@@ -76,7 +76,7 @@ export default function MonthlyClose({ companyId, meName, who, meId, firmName, a
   }, [trackFrom, fileRows, cur, answers.incorporatedOn]);
   const viewOf = (ym: string) => { const m = monthOf(ym); return monthView({ ym, today, trackFrom, plan, has, submitted: !!m?.submitted_at && !m.published_at, published: !!m?.published_at }); };
   const lastEnded = list.filter((m) => m < cur).slice(-1)[0] ?? list[0];
-  const [sel, setSel] = useState<string | null>(null);
+  const [sel, setSel] = useState<string | null>(initialMonth ?? null);
   const ym = sel && list.includes(sel) ? sel : lastEnded;
   useEffect(() => { capsRef.current?.querySelector(".cap.sel")?.scrollIntoView({ inline: "center", block: "nearest" }); }, [ym]);
 

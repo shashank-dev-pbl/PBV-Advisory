@@ -1,198 +1,89 @@
-import { fmtDate } from "@/lib/dates";
-import Link from "next/link";
 import { pageGate } from "@/lib/gate";
 import { createClient } from "@/lib/supabase/server";
-import { closePeriod, currentPeriod, formatPeriodLabel, previousPeriods } from "@/lib/period";
-import { getPublishedHistory } from "@/lib/periodFiguresView";
-import Charts from "./Charts";
 import { externalFirmName } from "@/lib/firm";
-import DownloadLink from "@/app/founder/dashboard/DownloadLink";
-import { CircularProgress } from "@/app/founder/shared";
-import { isReceived } from "@/lib/docItemStatus";
+import { buildPlan, booksOwner, currentFyStart, filingsForPeriod, type EngineData } from "@/lib/master/engine";
+import { monthView, ymAdd, ymOf, tickKey, misKey } from "@/lib/close/state";
+import { aggregate, figFromRow, periodsAvailable, type Fig } from "@/lib/dashboard/model";
+import { buildAttention } from "@/lib/dashboard/attention";
 import PageHeader from "../PageHeader";
 import Locked from "../Locked";
 import NoCompany from "../NoCompany";
 import SettingUp from "../SettingUp";
-import type { DocItem, PeriodFigures } from "@/lib/types";
+import DashboardView, { type FilingLine, type FilingStat } from "./DashboardView";
+import type { Answers } from "@/lib/master/types";
 
-export default async function DashboardPage() {
+const money = (n: unknown) => (typeof n === "string" || typeof n === "number" ? `₹${Number(String(n).replace(/\D/g, "")).toLocaleString("en-IN")}` : "");
+const dfmt = (iso?: string) => (iso ? new Date(`${iso}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "no date");
+
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
   const { session, locked } = await pageGate("dashboard");
   if (locked) return <Locked page="dashboard" who={session.who!} />;
   const company = session.company;
   if (!company) return <NoCompany page="dashboard" admin={session.who === "admin"} />;
-  if (company.status === "setting_up") return <SettingUp page={"dashboard"} name={company.name} />;
+  if (company.status === "setting_up") return <SettingUp page="dashboard" name={company.name} />;
+  const { m } = await searchParams;
 
   const supabase = await createClient();
-  const period = currentPeriod();
-
-  const [publishedHistory, { data: docItems }, { data: deliverableRows }, { data: lineRow }, firm] = await Promise.all([
-    getPublishedHistory(company.id, period, 6),
-    supabase.from("doc_item").select("*").eq("company_id", company.id).in("period", ["ONCE", closePeriod()]),
-    supabase
-      .from("period_figures")
-      .select("id, period, state, published_at, pdf_storage_path, pdf_filename")
-      .eq("company_id", company.id)
-      .in("period", previousPeriods(period, 6))
-      .eq("state", "published")
-      .order("period", { ascending: false }),
-    supabase.from("monthly_line").select("body, posted_by_name, posted_at, period").eq("company_id", company.id).order("period", { ascending: false }).limit(1).maybeSingle(),
+  const [master, rules, filings, eventDocs, library, files, months, published, co, firm] = await Promise.all([
+    supabase.from("company_master").select("answers").eq("company_id", company.id).maybeSingle(),
+    supabase.from("master_rule").select("*").eq("active", true).order("sort"),
+    supabase.from("master_filing").select("*").eq("active", true).order("sort"),
+    supabase.from("event_type_doc").select("event_type, doc_code, need, condition_note"),
+    supabase.from("doc_library").select("code, name, form"),
+    supabase.from("file_version").select("req_key, period").eq("company_id", company.id).eq("removed", false).not("period", "is", null),
+    supabase.from("month").select("period, submitted_at, published_at").eq("company_id", company.id),
+    supabase.from("period_figures").select("*").eq("company_id", company.id).eq("state", "published").order("version", { ascending: false }),
+    supabase.from("company").select("tracking_start").eq("id", company.id).maybeSingle(),
     externalFirmName(supabase, company.id),
   ]);
+  const err = master.error ?? rules.error ?? filings.error ?? files.error ?? months.error ?? published.error;
+  if (err) {
+    return (<><PageHeader title={company.name} accent="Dashboard" /><div className="mx-auto max-w-[1280px] px-5 py-8 md:px-8"><div className="p-4 text-[13px]" style={{ background: "#fbe9e7", border: "1px solid #e3b8b2", color: "#8c1a1a" }}>The dashboard could not load: {err.message}</div></div></>);
+  }
+  const answers = (master.data?.answers ?? {}) as Answers;
+  const today = new Date();
+  const plan = buildPlan(answers, { rules: rules.data ?? [], filings: filings.data ?? [], eventDocs: eventDocs.data ?? [], library: library.data ?? [] } as EngineData, today);
+  const have = new Set((files.data ?? []).map((f) => `${f.req_key}|${f.period}`));
+  const has = (k: string, period: string) => have.has(`${k}|${period}`);
+  const inc = answers.incorporatedOn?.slice(0, 7), fy = currentFyStart(today);
+  const trackFrom = co.data?.tracking_start ?? answers.trackingStart ?? (inc && inc > fy ? inc : fy);
 
-  const allDocItems = (docItems ?? []) as DocItem[];
-  const mustItems = allDocItems.filter((i) => i.priority === "must");
-  const mustResolved = mustItems.filter((i) => isReceived(i.status)).length;
-  const mustTotal = mustItems.length;
-  const outstanding = mustItems.filter((i) => !isReceived(i.status));
-  const oldestOutstanding = outstanding.length
-    ? [...outstanding].sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? ""))[0]
-    : null;
+  // Published months only — the founder never sees a month before it is published. The newest published version of each month.
+  const seen = new Set<string>(); const figs: Record<string, Fig> = {}; const reopened: string[] = [];
+  for (const r of published.data ?? []) { if (seen.has(r.period as string)) continue; seen.add(r.period as string); figs[r.period as string] = figFromRow(r as Record<string, number | null | string>); if (r.query_text) reopened.push(r.period as string); }
 
+  const fStat: Record<string, FilingStat> = {}; const lines: FilingLine[] = []; const docs: { ym: string; items: string[] }[] = [];
+  for (const ym of Object.keys(figs)) {
+    const fl = filingsForPeriod(plan, ym);
+    fStat[ym] = { total: fl.reduce((n, f) => n + f.ticks.length, 0), done: fl.reduce((n, f) => n + f.ticks.filter((t) => has(tickKey(f.key, t), ym)).length, 0) };
+    for (const f of fl) lines.push({ ym, name: f.name, due: f.due, done: f.ticks.every((t) => has(tickKey(f.key, t), ym)) });
+    const v = monthView({ ym, today, trackFrom, plan, has, submitted: false, published: true });
+    docs.push({ ym, items: [...(has(misKey, ym) ? ["MIS workbook"] : []), ...v.books.filter((b) => has(b.key, ym)).map((b) => b.name)] });
+  }
+  const keys = periodsAvailable("month", figs); const latestYm = keys[keys.length - 1];
+  const latest = latestYm ? aggregate("month", latestYm, figs, fStat) : null;
+  const closer = booksOwner(answers);
+  const closerLabel = closer === "founder" ? "the founder" : closer === "pba" ? "Prime Bottomline" : answers.books?.firmName || firm || "the external practitioner";
+  const pubSet = new Map((months.data ?? []).map((x) => [x.period as string, x]));
+  const attention = buildAttention({ today, trackFrom, plan, has, latest, closerLabel, closer, submittedOrPublished: (ym) => !!pubSet.get(ym)?.submitted_at });
+  // months that have ended but are not published yet — hidden from the founder
+  const preparing: string[] = [];
+  for (let ym = latestYm ? ymAdd(latestYm, 1) : trackFrom; ym < ymOf(today); ym = ymAdd(ym, 1)) if (!figs[ym] && ym >= trackFrom) preparing.push(ym);
 
-  const deliverables = (deliverableRows ?? []) as Pick<PeriodFigures, "id" | "period" | "state" | "published_at" | "pdf_storage_path" | "pdf_filename">[];
-  const latestDeliverable = deliverables[0] ?? null;
-  const published = publishedHistory.filter((m) => m.status === "published");
-
-  // The monthly cadence: the external practitioner uploads by day 7. "Due" is the month after the last one delivered.
-  // The next MIS is the month after the last one delivered; with nothing delivered yet, the month in progress.
-  const [dueY, dueM] = (latestDeliverable ? latestDeliverable.period : closePeriod()).split("-").map(Number);
-  const duePeriodDate = new Date(dueY, dueM, 1);
-  const duePeriodLabel = formatPeriodLabel(`${duePeriodDate.getFullYear()}-${String(duePeriodDate.getMonth() + 1).padStart(2, "0")}`);
-  const nextMisDue = new Date(dueY, dueM + 1, 7);
-
+  const snapshot = {
+    rounds: (answers.rounds ?? []).filter((r) => r.round).map((r) => `${r.round} — ${r.instrument?.toUpperCase()}, ${money(r.amount)}, ${dfmt(r.closedOn)}`),
+    debs: (answers.debentures ?? []).filter((d) => d.issuedOn).map((d) => `${d.type?.replace(/_/g, " ")} — ${money(d.amount)}, ${dfmt(d.issuedOn)}${d.status === "redeemed" ? " · repaid" : ""}`),
+    loans: (answers.loans ?? []).filter((l) => l.lender).map((l) => `${l.lender} — ${l.type}${l.sanctioned ? `, ${money(l.sanctioned)}` : ""}`),
+    holds: (answers.investments ?? []).filter((i) => i.what).map((i) => `${i.what.replace(/_/g, " ")}${i.heldWith ? ` with ${i.heldWith}` : ""}${i.amount ? ` — ${money(i.amount)}` : ""}`),
+  };
   return (
     <>
-      <PageHeader
-        title={company.name}
-        accent="Dashboard"
-        sub={latestDeliverable
-          ? `Figures for ${formatPeriodLabel(latestDeliverable.period)} · published ${latestDeliverable.published_at ? fmtDate(latestDeliverable.published_at) : ""}`
-          : formatPeriodLabel(closePeriod())}
+      <PageHeader title={company.name} accent="Dashboard" />
+      <DashboardView
+        figs={figs} filings={fStat} filingLines={lines} attention={attention} preparing={preparing} reopened={reopened}
+        isPBA={session.who === "pba" || session.who === "admin"} firmName={answers.books?.firmName || firm}
+        snapshot={snapshot} docs={docs} todayLabel={today.toLocaleDateString("en-IN", { day: "numeric", month: "short" })} hasMaster={!!answers.incorporatedOn} initial={m}
       />
-      <div className="mx-auto w-full max-w-[1280px] px-5 py-8 md:px-8">
-        <div className="mb-8 grid gap-3.5 md:grid-cols-2">
-          <div className="flex items-center gap-4 p-4" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 }}>
-            <CircularProgress pct={mustTotal > 0 ? Math.round((mustResolved / mustTotal) * 100) : 0} label={`${mustResolved}/${mustTotal}`} />
-            <div className="flex-1">
-              <p className="text-[10.5px] font-bold uppercase tracking-[0.06em]" style={{ color: "var(--ink-secondary)" }}>What we need from you</p>
-              <p className="mt-0.5 text-[14px] font-bold" style={{ color: "var(--ink)" }}>
-                {outstanding.length === 0 ? "Nothing outstanding" : `${outstanding.length} item${outstanding.length === 1 ? "" : "s"} still open for ${formatPeriodLabel(closePeriod())}`}
-              </p>
-              {oldestOutstanding && (
-                <p className="mt-0.5 text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>
-                  {oldestOutstanding.title}{oldestOutstanding.due_date ? ` · due ${fmtDate(oldestOutstanding.due_date)}` : ""}
-                </p>
-              )}
-            </div>
-            <Link href="/master/month" className="btn-small" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)", flexShrink: 0 }}>
-              Upload
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-4 p-4" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 }}>
-            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full" style={{ background: latestDeliverable ? "var(--bottomline-green)" : "var(--rule)" }}>
-              {latestDeliverable ? <span style={{ color: "var(--paper)", fontSize: 20 }}>✓</span> : <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--ink-secondary)", opacity: 0.5 }} />}
-            </div>
-            <div className="flex-1">
-              <p className="text-[10.5px] font-bold uppercase tracking-[0.06em]" style={{ color: "var(--ink-secondary)" }}>What you get from us</p>
-              <p className="mt-0.5 text-[14px] font-bold" style={{ color: "var(--ink)" }}>
-                {latestDeliverable ? `${formatPeriodLabel(latestDeliverable.period)} MIS delivered` : "Nothing delivered yet"}
-              </p>
-              <p className="mt-0.5 text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>
-                {duePeriodLabel} MIS due {fmtDate(nextMisDue)}
-              </p>
-            </div>
-            {deliverables.length > 0 && (
-              <a href="#deliverables" className="btn-small" style={{ background: "transparent", border: "1px solid var(--bottomline-green)", color: "var(--bottomline-green)", flexShrink: 0 }}>
-                See files
-              </a>
-            )}
-          </div>
-        </div>
-
-        {published.length === 0 ? (
-          <div className="p-6 text-center" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 }}>
-            <p className="text-[13px]" style={{ color: "var(--ink-secondary)" }}>
-              Your first set of numbers will appear here once we complete the {formatPeriodLabel(closePeriod())} close.
-            </p>
-          </div>
-        ) : (
-          <>
-            <Charts history={published} />
-            <h2 className="mb-3 mt-8 text-[12px] font-semibold uppercase tracking-[0.12em]" style={{ color: "var(--ink-secondary)" }}>Compliance</h2>
-            <div className="p-4" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 }}>
-              {lineRow ? (
-                <>
-                  <p className="text-[11px] font-semibold uppercase tracking-[.1em]" style={{ color: "var(--ink-secondary)" }}>{firm ?? "The practitioner"}&apos;s confirmation for {formatPeriodLabel(lineRow.period)}</p>
-                  <p className="mt-1 text-[15px] font-semibold">{lineRow.body}</p>
-                  <p className="mt-1 text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>Posted {new Date(lineRow.posted_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · <Link href="/filings" className="underline">see the filings</Link></p>
-                </>
-              ) : (
-                <p className="text-[13px]" style={{ color: "var(--ink-secondary)" }}>{firm ?? "Your practitioner"} has not posted this month&apos;s filings confirmation yet. It is due by the 5th.</p>
-              )}
-            </div>
-          </>
-        )}
-
-        {deliverables.length > 0 && (
-          <section id="deliverables" className="mt-10">
-            <p className="mb-3 text-[13px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--ink)" }}>Everything we have given you</p>
-            <div className="overflow-x-auto"><table className="w-full" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderCollapse: "separate", borderRadius: 10, overflow: "hidden" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--rule)" }}>
-                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em]" style={{ color: "var(--ink-secondary)" }}>Document</th>
-                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em]" style={{ color: "var(--ink-secondary)" }}>For</th>
-                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em]" style={{ color: "var(--ink-secondary)" }}>Delivered</th>
-                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.04em]" style={{ color: "var(--ink-secondary)" }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {deliverables.map((d, i) => (
-                  <tr key={d.id} style={{ borderBottom: i < deliverables.length - 1 ? "1px solid var(--rule)" : "none" }}>
-                    <td className="px-4 py-3">
-                      <p className="text-[13.5px] font-bold" style={{ color: "var(--ink)" }}>Monthly MIS</p>
-                      <p className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>P&amp;L, cash flow, working capital, and customer figures</p>
-                    </td>
-                    <td className="px-4 py-3 text-[13px]" style={{ color: "var(--ink)" }}>{formatPeriodLabel(d.period)}</td>
-                    <td className="px-4 py-3 text-[13px]" style={{ color: "var(--ink)" }}>{d.published_at ? fmtDate(d.published_at) : "—"}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <span
-                          className="flex-shrink-0"
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 600,
-                            padding: "3px 9px",
-                            borderRadius: 20,
-                            background: i === 0 ? "var(--bottomline-green)" : "var(--paper)",
-                            color: i === 0 ? "var(--paper)" : "var(--ink-secondary)",
-                          }}
-                        >
-                          {i === 0 ? "New" : "Opened"}
-                        </span>
-                        {d.pdf_storage_path ? (
-                          <DownloadLink storagePath={d.pdf_storage_path} />
-                        ) : (
-                          <span className="text-[12px]" style={{ color: "var(--ink-secondary)" }}>Not yet available</span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table></div>
-          </section>
-        )}
-
-        {latestDeliverable && (
-          <p className="mt-8 text-[12px] text-center" style={{ color: "var(--ink-secondary)" }}>
-            Every number on this page comes from the {formatPeriodLabel(latestDeliverable.period)} close. Nothing here is a forecast.
-          </p>
-        )}
-        <p className="mt-10 text-center text-[11.5px]" style={{ color: "var(--ink-secondary)" }}>
-          {firm ? `Figures prepared by ${firm} and presented by Prime Bottomline Advisory.` : "Figures presented by Prime Bottomline Advisory."}
-        </p>
-      </div>
     </>
   );
 }
