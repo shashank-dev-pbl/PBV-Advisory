@@ -8,11 +8,12 @@ const PLAN: Record<string, string> = { starter: "Starter", builder: "Builder", o
 
 export async function companyOverview(supabase: SupabaseClient, ids: string[]): Promise<CompanyOverview[]> {
   if (!ids.length) return [];
-  const [companies, access, masters, waiting] = await Promise.all([
+  const [companies, access, masters, waiting, toPrice] = await Promise.all([
     supabase.from("company").select("id, name, plan, status").in("id", ids).order("created_at"),
     supabase.from("company_access").select("company_id, role, user:user_id(name, hidden)").in("company_id", ids).is("revoked_at", null).eq("role", "pba"),
     supabase.from("company_master").select("company_id, answers").in("company_id", ids),
     supabase.from("month").select("company_id, submitted_at, published_at").in("company_id", ids).not("submitted_at", "is", null).is("published_at", null),
+    supabase.from("legal_request").select("company_id").in("company_id", ids).eq("status", "quote"),
   ]);
   const pbaBy = new Map<string, string[]>();
   for (const a of (access.data ?? []) as unknown as { company_id: string; user: { name: string | null; hidden: boolean } | null }[]) {
@@ -27,7 +28,7 @@ export async function companyOverview(supabase: SupabaseClient, ids: string[]): 
     return {
       id: c.id as string, name: c.name as string, plan: PLAN[c.plan as string] ?? (c.plan as string), status: c.status as string,
       booksBy: firm, pba: (pbaBy.get(c.id as string) ?? []).join(", ") || "—",
-      late: c.status === "live" ? await lateMonthCount(c.id as string) : 0, waiting: waitingSet.has(c.id as string), legalToPrice: 0,
+      late: c.status === "live" ? await lateMonthCount(c.id as string) : 0, waiting: waitingSet.has(c.id as string), legalToPrice: (toPrice.data ?? []).filter((x) => x.company_id === c.id).length,
     };
   }));
   return rows;

@@ -24,7 +24,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const { m } = await searchParams;
 
   const supabase = await createClient();
-  const [master, rules, filings, eventDocs, library, files, months, published, co, firm] = await Promise.all([
+  const [master, rules, filings, eventDocs, library, files, months, published, co, firm, legalRows] = await Promise.all([
     supabase.from("company_master").select("answers").eq("company_id", company.id).maybeSingle(),
     supabase.from("master_rule").select("*").eq("active", true).order("sort"),
     supabase.from("master_filing").select("*").eq("active", true).order("sort"),
@@ -35,7 +35,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     supabase.from("period_figures").select("*").eq("company_id", company.id).eq("state", "published").order("version", { ascending: false }),
     supabase.from("company").select("tracking_start").eq("id", company.id).maybeSingle(),
     externalFirmName(supabase, company.id),
+    session.who === "external" ? Promise.resolve({ data: [] as { id: string; title: string; status: string; quote_amount: number | null }[] }) : supabase.from("legal_request").select("id, title, status, quote_amount").eq("company_id", company.id).in("status", ["pay", "extra"]),
   ]);
+  const legalExtras = await supabase.from("legal_extra").select("request_id, amount").eq("status", "proposed").in("request_id", (legalRows.data ?? []).map((r) => r.id));
   const err = master.error ?? rules.error ?? filings.error ?? files.error ?? months.error ?? published.error;
   if (err) {
     return (<><PageHeader title={company.name} accent="Dashboard" /><div className="mx-auto max-w-[1280px] px-5 py-8 md:px-8"><div className="p-4 text-[13px]" style={{ background: "#fbe9e7", border: "1px solid #e3b8b2", color: "#8c1a1a" }}>The dashboard could not load: {err.message}</div></div></>);
@@ -65,7 +67,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const closer = booksOwner(answers);
   const closerLabel = closer === "founder" ? "the founder" : closer === "pba" ? "Prime Bottomline" : answers.books?.firmName || firm || "the external practitioner";
   const pubSet = new Map((months.data ?? []).map((x) => [x.period as string, x]));
-  const attention = buildAttention({ today, trackFrom, plan, has, latest, closerLabel, closer, submittedOrPublished: (ym) => !!pubSet.get(ym)?.submitted_at });
+  const attention = buildAttention({ today, trackFrom, plan, has, latest, closerLabel, closer, forFounder: session.who === "founder", legal: (legalRows.data ?? []).map((r) => ({ id: r.id, title: r.title, status: r.status as "pay" | "extra", owed: r.status === "extra" ? (legalExtras.data ?? []).filter((x) => x.request_id === r.id).reduce((n, x) => n + Number(x.amount), 0) : Number(r.quote_amount ?? 0) })), submittedOrPublished: (ym) => !!pubSet.get(ym)?.submitted_at });
   // months that have ended but are not published yet — hidden from the founder
   const preparing: string[] = [];
   for (let ym = latestYm ? ymAdd(latestYm, 1) : trackFrom; ym < ymOf(today); ym = ymAdd(ym, 1)) if (!figs[ym] && ym >= trackFrom) preparing.push(ym);

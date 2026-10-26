@@ -10,7 +10,7 @@ const clean = (n: string) => n.replace(/ — .*/, "");
 
 export function buildAttention(p: {
   today: Date; trackFrom: string; plan: Plan; has: (k: string, period: string) => boolean; latest: Agg | null; submittedOrPublished: (ym: string) => boolean;
-  closerLabel: string; closer: Owner;
+  closerLabel: string; closer: Owner; legal?: { id: string; title: string; status: "pay" | "extra"; owed: number }[]; forFounder?: boolean;
 }): AttItem[] {
   const out: AttItem[] = [];
   const iso = `${p.today.getFullYear()}-${String(p.today.getMonth() + 1).padStart(2, "0")}-${String(p.today.getDate()).padStart(2, "0")}`;
@@ -46,6 +46,10 @@ export function buildAttention(p: {
   if (a && a.r90 > 0) out.push({ lv: "amber", title: `**${L(a.r90)}** owed to you for more than 90 days`, detail: `Out of ${L(a.rec)} owed in total at the end of ${ymLabel(a.lastYm, true)}. Money this old is the least likely to arrive.` });
   if (a && a.collLow2) out.push({ lv: "amber", title: "Collected under 80% of billing for two months running", detail: `${ymLabel(ymAdd(a.lastYm, -1))} and ${ymLabel(a.lastYm)}.` });
   if (a && a.notices && a.notices > 0) out.push({ lv: "red", title: `${a.notices} open government notice${a.notices > 1 ? "s" : ""}` });
+  const lw = p.legal ?? [];
+  if (lw.length) out.push({ lv: "red", title: `${lw.length} legal request${lw.length > 1 ? "s" : ""} waiting on ${p.forFounder ? "you" : "the founder"}`,
+    detail: lw.map((r) => (r.status === "pay" ? `${r.title} — pay ₹${Math.round(r.owed * 1.18).toLocaleString("en-IN")} to start` : `${r.title} — ready; approve ₹${Math.round(r.owed * 1.18).toLocaleString("en-IN")} of extra work to receive it`)).join("\n"),
+    act: { label: "Open Legal", href: `/legal?r=${lw[0].id}` } });
   const ord = { red: 0, amber: 1, grey: 2 } as const;
   return out.sort((x, y) => ord[x.lv] - ord[y.lv]);
 }

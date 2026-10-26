@@ -12,6 +12,7 @@ type Props = {
   companies: { id: string; name: string; status: string }[];
   companyId: string | null;
   lateMonths: number;
+  legalBadge: { n: number; label: string } | null;
   masterDone: number | null;
   children: React.ReactNode;
 };
@@ -42,7 +43,7 @@ function NavItem({ page, who, pathname, extra, label, href, matchPrefix, sub, on
   );
 }
 
-export default function PortalShell({ who, companies, companyId, lateMonths, masterDone, children }: Props) {
+export default function PortalShell({ who, companies, companyId, lateMonths, legalBadge, masterDone, children }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -87,7 +88,7 @@ export default function PortalShell({ who, companies, companyId, lateMonths, mas
           <span>Legal</span><Lock size={13} strokeWidth={2} />
         </span>
       ) : (
-        <NavItem page="legal" who={who} pathname={pathname} onNavigate={close} />
+        <NavItem page="legal" who={who} pathname={pathname} onNavigate={close} extra={legalBadge ? <span className="rounded-full px-1.5 text-[10.5px] font-bold" style={{ background: "#fbe9e7", color: "#b3261e" }}>{legalBadge.n} {legalBadge.label}</span> : null} />
       )}
       <NavItem page="dataroom" who={who} pathname={pathname} onNavigate={close} />
       <NavItem page="files" who={who} pathname={pathname} onNavigate={close} />
