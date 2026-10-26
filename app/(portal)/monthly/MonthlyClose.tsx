@@ -14,7 +14,7 @@ import { recordFile, removeFile } from "../company-master/actions";
 import Drawer, { type ExplainerFull, type SummaryValue } from "../company-master/Drawer";
 import { Modal, type ModalState } from "../company-master/ui";
 import type { FileRow, SummaryRow } from "../company-master/MasterWizard";
-import { publishMonth, reopenMonth, setTrackingStart, submitMonth, verifyFiling } from "./actions";
+import { publishMonth, reopenMonth, setTrackingStart, submitMis, submitMonth, verifyFiling } from "./actions";
 
 export type MonthRow = { period: string; submitted_by: string | null; submitted_by_name: string | null; submitted_at: string | null; published_by_name: string | null; published_at: string | null; reopened: { by: string; at: string; reason: string }[] | null };
 export type VerifyRow = { period: string; filing_key: string; verified_by_name: string };
@@ -101,7 +101,8 @@ export default function MonthlyClose({ companyId, meName, who, meId, firmName, a
       const path = `${companyId}/master/monthly/${p.period}/${safeStorageSegment(p.key)}/${uid()}-${safeStorageSegment(f.name)}`;
       const { error } = await createClient().storage.from("docs").upload(path, f);
       if (error) throw error;
-      unwrap(await recordFile({ reqKey: p.key, storagePath: path, filename: f.name, reason: p.reason || undefined, period: p.period }));
+      if (p.key === misKey) unwrap(await submitMis({ period: p.period, storagePath: path, filename: f.name, reason: p.reason || undefined }));   // read and checked first; refused with the reason if a check fails
+      else unwrap(await recordFile({ reqKey: p.key, storagePath: path, filename: f.name, reason: p.reason || undefined, period: p.period }));
       const prev = versionsOf(p.key, p.period)[0];
       setFileRows((rows) => [{ id: uid(), req_key: p.key, period: p.period, version: (prev?.version ?? 0) + 1, storage_path: path, filename: f.name, by_name: meName, at: new Date().toISOString(), reason: p.reason || null, removed: false }, ...rows]);
       if (p.key !== misKey) setDrawer({ key: p.key, period: p.period, name: p.name, ctx: `${label(p.period, true)} · monthly close`, owner: p.owner, justUploaded: true });   // the figures are entered while the file is fresh

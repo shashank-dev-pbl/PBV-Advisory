@@ -7,6 +7,8 @@ import { guarded } from "@/lib/actionResult";
 import { buildPlan, booksOwner, type EngineData } from "@/lib/master/engine";
 import { canPublish, canSubmit, monthView, ymOf, type Role } from "@/lib/close/state";
 import type { Answers } from "@/lib/master/types";
+import { ingestMis, publishFigures, reopenFigures, submitFigures } from "@/lib/mis/ingest";
+import { recordFileVersion } from "@/lib/files/record";
 
 // Every rule here is checked on the server with the same function the screen uses, never trusted from the browser.
 const MEMBERS = ["founder", "practitioner", "pba"] as const;
@@ -47,6 +49,7 @@ async function _submitMonth(period: string) {
   const { answers, view } = await loadMonth(supabase, user.company_id, period);
   const refusal = canSubmit(role, booksOwner(answers) === "founder" ? "own" : booksOwner(answers) === "pba" ? "pba" : "firm", view, period, new Date());
   if (refusal) throw new Error(refusal);
+  await submitFigures(supabase, user, period);
   const { error } = await supabase.from("month").upsert({ company_id: user.company_id, period, submitted_by: user.id, submitted_by_name: by, submitted_at: new Date().toISOString(), published_by: null, published_by_name: null, published_at: null }, { onConflict: "company_id,period" });
   if (error) throw new Error(error.message);
   await supabase.from("master_log").insert({ company_id: user.company_id, who_name: by, kind: "answer", note: `Submitted ${period} for checking` });
@@ -61,6 +64,7 @@ async function _publishMonth(period: string, reason?: string) {
   const refusal = canPublish(role, month.submitted_by, user.id);
   if (refusal) throw new Error(refusal);
   if (!view.ready) throw new Error("Something has been removed since this month was submitted. It needs everything in again.");
+  await publishFigures(supabase, user, period);
   const { error } = await supabase.from("month").update({ published_by: user.id, published_by_name: by, published_at: new Date().toISOString() }).eq("company_id", user.company_id).eq("period", period);
   if (error) throw new Error(error.message);
   await supabase.from("master_log").insert({ company_id: user.company_id, who_name: by, kind: "answer", note: `Published ${period}`, reason: reason?.trim() || null });
@@ -74,6 +78,7 @@ async function _reopenMonth(period: string, reason: string) {
   if (!reason.trim()) throw new Error("Say why you are reopening this month.");
   const { data: m } = await supabase.from("month").select("reopened, submitted_at").eq("company_id", user.company_id).eq("period", period).maybeSingle();
   if (!m?.submitted_at) throw new Error("This month has not been submitted");
+  await reopenFigures(supabase, user, period, reason.trim());
   const reopened = [...((m.reopened as unknown[]) ?? []), { by, at: new Date().toISOString(), reason: reason.trim() }];
   const { error } = await supabase.from("month").update({ submitted_at: null, submitted_by: null, submitted_by_name: null, published_at: null, published_by: null, published_by_name: null, reopened }).eq("company_id", user.company_id).eq("period", period);
   if (error) throw new Error(error.message);
@@ -109,3 +114,15 @@ export async function publishMonth(...a: Parameters<typeof _publishMonth>) { ret
 export async function reopenMonth(...a: Parameters<typeof _reopenMonth>) { return guarded(() => _reopenMonth(...a)); }
 export async function verifyFiling(...a: Parameters<typeof _verifyFiling>) { return guarded(() => _verifyFiling(...a)); }
 export async function setTrackingStart(...a: Parameters<typeof _setTrackingStart>) { return guarded(() => _setTrackingStart(...a)); }
+
+// The MIS workbook: read and checked first, and only recorded as the month's file if it passes — a wrong number is worse than a late month.
+async function _submitMis(input: { period: string; storagePath: string; filename: string; reason?: string }) {
+  okPeriod(input.period);
+  const { user, supabase, by, role } = await ctx();
+  if (role === "founder") throw new Error("The MIS workbook is uploaded by the person who closes the books.");
+  const done = await ingestMis(supabase, user, { period: input.period, storagePath: input.storagePath, filename: input.filename });
+  if (!done.ok) throw new Error(done.message);
+  await recordFileVersion(supabase, user, by, { reqKey: "MIS", storagePath: input.storagePath, filename: input.filename, reason: input.reason, period: input.period });
+  refresh();
+}
+export async function submitMis(...a: Parameters<typeof _submitMis>) { return guarded(() => _submitMis(...a)); }
