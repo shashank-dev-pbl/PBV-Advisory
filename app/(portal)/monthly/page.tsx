@@ -10,11 +10,11 @@ import type { FileRow, Explainer, SummaryRow } from "../company-master/MasterWiz
 import type { Answers, EventTypeDoc, LibDoc, MasterFiling, MasterRule } from "@/lib/master/types";
 
 export default async function MonthlyPage() {
-  const { session, locked } = await pageGate("monthly");
-  if (locked) return <Locked page="monthly" who={session.who!} />;
+  const { session, locked } = await pageGate("close");
+  if (locked) return <Locked page="close" who={session.who!} />;
   const company = session.company;
-  if (!company) return <NoCompany page="monthly" admin={session.who === "admin"} />;
-  if (company.status === "setting_up") return <SettingUp page="monthly" name={company.name} />;
+  if (!company) return <NoCompany page="close" admin={session.who === "admin"} />;
+  if (company.status === "setting_up") return <SettingUp page="close" name={company.name} />;
 
   const supabase = await createClient();
   const [master, rules, filings, eventDocs, library, explainers, files, months, verifies, firm, summaries, co] = await Promise.all([

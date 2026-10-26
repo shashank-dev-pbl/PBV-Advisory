@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, Menu, X } from "lucide-react";
+import { Lock, Menu, X } from "lucide-react";
 import { PAGES, canOpen, type PageKey, type Who } from "@/lib/access";
 import { switchCompany } from "./actions";
 
@@ -11,7 +11,7 @@ type Props = {
   who: Who;
   companies: { id: string; name: string; status: string }[];
   companyId: string | null;
-  closeWaiting: number;
+  lateMonths: number;
   masterDone: number | null;
   children: React.ReactNode;
 };
@@ -42,12 +42,10 @@ function NavItem({ page, who, pathname, extra, label, href, matchPrefix, sub, on
   );
 }
 
-export default function PortalShell({ who, companies, companyId, closeWaiting, masterDone, children }: Props) {
+export default function PortalShell({ who, companies, companyId, lateMonths, masterDone, children }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const inMaster = pathname.startsWith("/master") || pathname.startsWith("/compliance");
-  const [masterOpen, setMasterOpen] = useState(inMaster);
   const [, startTransition] = useTransition();
   const close = () => setOpen(false);
 
@@ -78,45 +76,32 @@ export default function PortalShell({ who, companies, companyId, closeWaiting, m
         )}
       </div>
 
-      <NavItem page="home" who={who} pathname={pathname} onNavigate={close} />
+      {who !== "founder" && <NavItem page={who === "admin" ? "companies" : "home"} who={who} pathname={pathname} onNavigate={close} label="Companies" matchPrefix={who === "admin" ? "/admin/companies" : "/home"} />}
       <NavItem page="dashboard" who={who} pathname={pathname} onNavigate={close} />
+      <NavItem
+        page="close" who={who} pathname={pathname} onNavigate={close}
+        extra={lateMonths > 0 ? <span className="rounded-full px-1.5 text-[10.5px] font-bold" style={{ background: "#fbe9e7", color: "#b3261e" }}>{lateMonths} late</span> : null}
+      />
+      {who === "external" ? (
+        <span className="flex items-center justify-between text-[13.5px]" style={{ padding: "8px 12px", borderRadius: 7, color: "var(--ink-secondary)", cursor: "not-allowed" }} title="Legal is not open to external practitioners">
+          <span>Legal</span><Lock size={13} strokeWidth={2} />
+        </span>
+      ) : (
+        <NavItem page="legal" who={who} pathname={pathname} onNavigate={close} />
+      )}
+      <NavItem page="dataroom" who={who} pathname={pathname} onNavigate={close} />
+      <NavItem page="files" who={who} pathname={pathname} onNavigate={close} />
       <NavItem
         page="cmaster" who={who} pathname={pathname} onNavigate={close}
         extra={masterDone !== null ? <span className="text-[11px] font-bold" style={{ color: pathname.startsWith("/company-master") ? "var(--paper)" : "var(--ink-secondary)" }}>{masterDone}/12</span> : null}
       />
-      <button
-        onClick={() => setMasterOpen((v) => !v)}
-        aria-expanded={masterOpen}
-        className="flex w-full items-center justify-between text-[13.5px]"
-        style={{ padding: "8px 12px", borderRadius: 7, color: "var(--ink)", background: "transparent", fontWeight: inMaster ? 700 : 500, textAlign: "left" }}
-      >
-        <span>Master</span>
-        <ChevronDown size={14} strokeWidth={2} style={{ transform: masterOpen ? "rotate(180deg)" : undefined, transition: "transform .15s" }} />
-      </button>
-      {masterOpen && (
-        <div className="mb-1 ml-3 flex flex-col gap-0.5 border-l pl-2" style={{ borderColor: "var(--rule)" }}>
-          <NavItem page="up-once" who={who} pathname={pathname} onNavigate={close} label="Docs" href="/master/services" matchPrefix="/master" sub />
-          <NavItem page="compliance" who={who} pathname={pathname} onNavigate={close} sub />
-        </div>
-      )}
-      <NavItem
-        page="close" who={who} pathname={pathname} onNavigate={close}
-        extra={closeWaiting > 0 ? (
-          <span className="rounded-full px-1.5 text-[10.5px] font-bold" style={{ background: "var(--status-uploaded)", color: "#fff" }}>{closeWaiting}</span>
-        ) : null}
-      />
-      <NavItem page="monthly" who={who} pathname={pathname} onNavigate={close} />
-      <NavItem page="filings" who={who} pathname={pathname} onNavigate={close} />
-      <NavItem page="files" who={who} pathname={pathname} onNavigate={close} />
-      <NavItem page="dataroom" who={who} pathname={pathname} onNavigate={close} />
-      {(canOpen(who, "companies") || canOpen(who, "people")) && (
+      {canOpen(who, "people") && (
         <>
           <div className="my-2" style={{ borderTop: "1px solid var(--rule)" }} />
           <p className="px-3 pb-0.5 text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: "var(--ink-secondary)" }}>Admin</p>
+          <NavItem page="people" who={who} pathname={pathname} onNavigate={close} />
         </>
       )}
-      <NavItem page="companies" who={who} pathname={pathname} onNavigate={close} />
-      <NavItem page="people" who={who} pathname={pathname} onNavigate={close} />
     </nav>
   );
 

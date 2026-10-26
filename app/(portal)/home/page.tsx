@@ -64,7 +64,7 @@ export default async function HomePage() {
                   </span>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {submitted > 0 && <OpenCompany companyId={company.id} href="/close" label={`Check ${formatPeriodLabel(closePeriod()).split(" ")[0]}`} primary />}
+                  {submitted > 0 && <OpenCompany companyId={company.id} href="/monthly" label={`Check ${formatPeriodLabel(closePeriod()).split(" ")[0]}`} primary />}
                   <OpenCompany companyId={company.id} href="/master/month" label="Monthly uploads" />
                   <OpenCompany companyId={company.id} href="/filings" label="Filings" />
                   <OpenCompany companyId={company.id} href="/dashboard" label="Dashboard" />
