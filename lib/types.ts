@@ -152,6 +152,13 @@ export const PERIOD_FIGURES_FIELDS = [
   "payables_total", "billed_month", "collections_month",
 ] as const;
 
+// Template v1.1 adds these. Optional: a v1.0 workbook has none of them, and the dashboard says so rather than showing zero.
+export const PERIOD_FIGURES_V11_FIELDS = [
+  "gst_output", "gst_itc", "gst_paid_cash", "igst", "cgst", "sgst", "tds_salary", "tds_vendor", "tds_rent", "pt_paid", "interest_fees",
+  "employees", "contractors", "notices_open",
+  "exp_salaries", "exp_contractors", "exp_cloud", "exp_marketing", "exp_rent", "exp_travel", "exp_software", "exp_other",
+] as const;
+
 export type PeriodFiguresState = "draft" | "submitted" | "verified" | "published" | "superseded";
 
 export type PeriodFigures = {

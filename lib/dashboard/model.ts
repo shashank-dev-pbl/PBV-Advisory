@@ -26,9 +26,11 @@ export function figFromRow(r: Row): Fig {
     billed: n("billed_month"), coll: n("collections_month"), clients: typeof r.clients_active === "number" ? r.clients_active : 0, added: typeof r.clients_added === "number" ? r.clients_added : 0, lost: typeof r.clients_lost === "number" ? r.clients_lost : 0,
     top: n("top_client_revenue"), top5: n("top5_client_revenue"), rec: n("receivables_total"), r0: n("receivables_0_30"), r30: n("receivables_31_60"), r60: n("receivables_61_90"), r90: n("receivables_90_plus"), pay: n("payables_total"),
     sub: n("revenue_subscription"), svc: n("revenue_service"), proj: n("revenue_project"),
-    expBy: null, emp: typeof r.employees === "number" ? r.employees : null, con: typeof r.contractors === "number" ? r.contractors : null,
+    expBy: ["exp_salaries", "exp_contractors", "exp_cloud", "exp_marketing", "exp_rent", "exp_travel", "exp_software", "exp_other"].every((k) => typeof r[k] === "number")
+      ? { "Salaries": n("exp_salaries"), "Contractors": n("exp_contractors"), "Cloud and AI tools": n("exp_cloud"), "Marketing": n("exp_marketing"), "Office rent": n("exp_rent"), "Travel": n("exp_travel"), "Software": n("exp_software"), "Everything else": n("exp_other") } : null,
+    emp: typeof r.employees === "number" ? r.employees : null, con: typeof r.contractors === "number" ? r.contractors : null,
     gstOut: opt("gst_output"), itc: opt("gst_itc"), gst: opt("gst_paid_cash"), igst: opt("igst"), cgst: opt("cgst"), sgst: opt("sgst"),
-    tdsSal: opt("tds_salary"), tdsCon: opt("tds_vendor"), tdsRent: opt("tds_rent"), tds: null, pt: opt("pt_paid"), lateFee: opt("interest_fees"), lateNote: typeof r.interest_note === "string" ? r.interest_note : "", notices: typeof r.notices_open === "number" ? r.notices_open : null,
+    tdsSal: opt("tds_salary"), tdsCon: opt("tds_vendor"), tdsRent: opt("tds_rent"), tds: typeof r.tds_salary === "number" && typeof r.tds_vendor === "number" && typeof r.tds_rent === "number" ? (n("tds_salary") + n("tds_vendor") + n("tds_rent")) : null, pt: opt("pt_paid"), lateFee: opt("interest_fees"), lateNote: typeof r.interest_note === "string" ? r.interest_note : "", notices: typeof r.notices_open === "number" ? r.notices_open : null,
   };
 }
 

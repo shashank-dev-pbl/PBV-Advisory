@@ -234,9 +234,9 @@ export default function DashboardView({ figs, filings, filingLines, attention, p
         <section className="ds lowr">
           <Expander title="Team">{a.emp != null ? <div className="tiles4" style={{ marginTop: 4 }}>
             <Tile label="Team" val={<>{a.emp} <small>people</small></>} sub={a.con != null ? `and ${a.con} contractors` : ""} d={dDelta(a, p, "emp", pl, (v) => String(Math.round(v)))} tip="People on payroll at the end of the period." />
-            <Tile label="Salary cost" val={a.expBy ? L(a.expBy.sal) : "—"} sub={a.expBy ? `${pct(a.expBy.sal / a.exp)} of expenses` : ""} />
+            <Tile label="Salary cost" val={a.expBy ? L(a.expBy.Salaries) : "—"} sub={a.expBy ? `${pct(a.expBy.Salaries / a.exp)} of expenses` : ""} />
             <Tile label="Revenue per person" val={L(a.net / a.n / a.emp)} sub="a month" />
-            <Tile label="Cost per person" val={a.expBy ? L(a.expBy.sal / a.n / a.emp) : "—"} sub="salary, a month" />
+            <Tile label="Cost per person" val={a.expBy ? L(a.expBy.Salaries / a.n / a.emp) : "—"} sub="salary, a month" />
           </div> : <NA what="Headcount and salary cost" />}</Expander>
           <Expander title="Funding, loans and investments"><div className="snap">{([["Money raised", snapshot.rounds], ["Debentures", snapshot.debs], ["Loans", snapshot.loans], ["Investments held", snapshot.holds]] as [string, string[]][]).map(([h, arr]) => <div key={h}><div className="tlab">{h}</div>{arr.length ? arr.map((x) => <div key={x}>{x}</div>) : <div className="dm">None</div>}</div>)}</div><div className="dm" style={{ marginTop: 8 }}>From the company master. <Link className="lnk" href="/dataroom">See the documents in the data room</Link></div></Expander>
           <Expander title="Documents behind these numbers"><div className="flist">{docs.filter((d) => a.months.includes(d.ym)).reverse().map((d) => <div className="fl" key={d.ym}><b style={{ width: 70 }}>{ymLabel(d.ym)}</b>{d.items.length ? d.items.map((n) => <Link key={n} className="lnk" href={`/monthly?m=${d.ym}`}>{n}</Link>) : <span className="dm">Nothing attached</span>}</div>)}</div></Expander>

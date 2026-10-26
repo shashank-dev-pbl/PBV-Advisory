@@ -42,7 +42,7 @@ export async function ingestMis(supabase: SupabaseClient, user: Who, p: { period
   }).select("id").single();
   if (ue || !upload) return { ok: false, message: "Could not record the upload — try again." };
 
-  const figures = Object.fromEntries(PERIOD_FIGURES_FIELDS.map((f) => [f, result.figures[f]]));
+  const figures = { ...Object.fromEntries(PERIOD_FIGURES_FIELDS.map((f) => [f, result.figures[f]])), ...result.extras };
   if (active) {
     const { error } = await supabase.from("period_figures").update({ source_upload_id: upload.id, query_text: null, ...figures }).eq("id", active.id).eq("state", "draft");
     if (error) return { ok: false, message: "Could not save the extracted figures — try again." };

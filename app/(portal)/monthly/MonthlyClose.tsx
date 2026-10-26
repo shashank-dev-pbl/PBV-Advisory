@@ -162,7 +162,7 @@ export default function MonthlyClose({ companyId, meName, initialMonth, who, meI
       <div className={`dcard ${up ? "" : "missing"}`} key={r.key}>
         <div className="dct">
           <div className="dn tap" onClick={tap}><b>{r.name}</b><span className="ib" title="What is this?">i</span>
-            <div className="dm">{up ? `v${up.version} · uploaded by ${up.by_name ?? "—"} · ${fmtDate(up.at)}` : `Not uploaded · waiting on ${ownLabel(r.owner)}${due ? ` · due ${due}` : ""}`}</div></div>
+            <div className="dm">{up ? `v${up.version} · uploaded by ${up.by_name ?? "—"} · ${fmtDate(up.at)}` : `Not uploaded · waiting on ${ownLabel(r.owner)}${due ? ` · due ${due}` : ""}`}{r.key === misKey && !up && <> · <a className="lnk" href="/mis-template-v1.1.xlsx" download>Download template v1.1</a></>}</div></div>
           <div className="dacts">
             {n > 0 && <button className="cnt-chip" onClick={() => setHist({ ...hist, [fk(r.key, period)]: !open })} title="Every version kept">{n} upload{n > 1 ? "s" : ""} {open ? "▴" : "▾"}</button>}
             {mayUpload && (up
