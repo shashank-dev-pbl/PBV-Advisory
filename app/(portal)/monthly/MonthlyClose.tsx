@@ -14,7 +14,7 @@ import { recordFile, removeFile } from "../company-master/actions";
 import Drawer, { type ExplainerFull, type SummaryValue } from "../company-master/Drawer";
 import { Modal, type ModalState } from "../company-master/ui";
 import type { FileRow, SummaryRow } from "../company-master/MasterWizard";
-import { publishMonth, reopenMonth, setTrackingStart, submitMis, submitMonth, verifyFiling } from "./actions";
+import { fillWithTestFiles, publishMonth, reopenMonth, setTrackingStart, submitMis, submitMonth, verifyFiling } from "./actions";
 
 export type MonthRow = { period: string; submitted_by: string | null; submitted_by_name: string | null; submitted_at: string | null; published_by_name: string | null; published_at: string | null; reopened: { by: string; at: string; reason: string }[] | null };
 export type VerifyRow = { period: string; filing_key: string; verified_by_name: string };
@@ -27,8 +27,8 @@ const CODE_EXPLAINER: Record<string, string> = {};
 
 type Who = "founder" | "external" | "pba" | "admin";
 
-export default function MonthlyClose({ companyId, meName, initialMonth, who, meId, firmName, answers, trackingStart, data, explainers, files, summaries, months, verifies }: {
-  companyId: string; meName: string; initialMonth?: string; who: Who; meId: string; firmName: string | null; answers: Answers; trackingStart: string | null; data: EngineData;
+export default function MonthlyClose({ companyId, meName, initialMonth, devTools, who, meId, firmName, answers, trackingStart, data, explainers, files, summaries, months, verifies }: {
+  companyId: string; meName: string; initialMonth?: string; devTools?: boolean; who: Who; meId: string; firmName: string | null; answers: Answers; trackingStart: string | null; data: EngineData;
   explainers: ExplainerFull[]; files: FileRow[]; summaries: SummaryRow[]; months: MonthRow[]; verifies: VerifyRow[];
 }) {
   const role = who === "admin" ? "pba" : who;
@@ -291,6 +291,7 @@ export default function MonthlyClose({ companyId, meName, initialMonth, who, meI
                   {close.map(([a, b, ok]) => <div className="ckrow" key={a}><span className={`ck ${ok ? "ok" : ""}`}>{ok ? "✓" : ""}</span><span style={{ flex: 1 }}>{a}</span><span className="dm">{b}</span></div>)}
                   <div className="next" style={{ marginTop: 12, flexWrap: "wrap" }}>{action}</div>
                   <div className="dm" style={{ marginTop: 8 }}>When published, this month&apos;s figures flow to the dashboard.</div>
+                  {devTools && isPBA && v.state !== "published" && <div style={{ marginTop: 10 }}><button className="b quiet xs" disabled={saving} onClick={() => run(() => fillWithTestFiles(ym), () => {})}>Dev only: fill with test files</button><span className="dm"> placeholders for everything except the MIS workbook</span></div>}
                 </div>
               </div>
             </div>

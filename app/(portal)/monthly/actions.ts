@@ -126,3 +126,27 @@ async function _submitMis(input: { period: string; storagePath: string; filename
   refresh();
 }
 export async function submitMis(...a: Parameters<typeof _submitMis>) { return guarded(() => _submitMis(...a)); }
+
+// DEV ONLY: puts a placeholder file against every document and filing proof a month is still missing (not the MIS workbook, which is read
+// for real), so the two-person submit and publish rules can be tried without uploading twenty files by hand. Refused on production and on
+// any company that is not a test company.
+export const devToolsOn = (companyName: string) => process.env.VERCEL_ENV !== "production" && /\(test\)/i.test(companyName);
+async function _fillWithTestFiles(period: string) {
+  okPeriod(period);
+  const { user, supabase, by, role } = await ctx();
+  const { data: co } = await supabase.from("company").select("name").eq("id", user.company_id).maybeSingle();
+  if (!devToolsOn(co?.name ?? "")) throw new Error("This tool is only for test companies on the dev site.");
+  if (role !== "pba") throw new Error("Only Prime Bottomline staff can use it.");
+  const { answers, view } = await loadMonth(supabase, user.company_id, period);
+  void answers;
+  const path = `${user.company_id}/master/dev-fill/placeholder.pdf`;
+  await supabase.storage.from("docs").upload(path, new Blob(["%PDF-1.4 test placeholder"], { type: "application/pdf" }), { upsert: true });
+  const { data: have } = await supabase.from("file_version").select("req_key").eq("company_id", user.company_id).eq("period", period).eq("removed", false);
+  const got = new Set((have ?? []).map((f) => f.req_key as string));
+  const keys = [...view.docs, ...view.books].map((r) => r.key).concat(view.filings.flatMap((f) => f.ticks.map((t) => `F:${f.key}:${t}`)));
+  const rows = keys.filter((k) => !got.has(k)).map((k) => ({ company_id: user.company_id, req_key: k, period, version: 1, storage_path: path, filename: "test-file.pdf", by_name: by, by_role: user.role, reason: null }));
+  if (rows.length) { const { error } = await supabase.from("file_version").insert(rows); if (error) throw new Error(error.message); }
+  refresh();
+  return rows.length;
+}
+export async function fillWithTestFiles(...a: Parameters<typeof _fillWithTestFiles>) { return guarded(() => _fillWithTestFiles(...a)); }

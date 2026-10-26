@@ -5,6 +5,7 @@ import PageHeader from "../PageHeader";
 import Locked from "../Locked";
 import NoCompany from "../NoCompany";
 import SettingUp from "../SettingUp";
+import { devToolsOn } from "./actions";
 import MonthlyClose, { type MonthRow, type VerifyRow } from "./MonthlyClose";
 import type { FileRow, Explainer, SummaryRow } from "../company-master/MasterWizard";
 import type { Answers, EventTypeDoc, LibDoc, MasterFiling, MasterRule } from "@/lib/master/types";
@@ -52,6 +53,7 @@ export default async function MonthlyPage({ searchParams }: { searchParams: Prom
       <MonthlyClose
         companyId={company.id}
         initialMonth={m && /^\d{4}-\d{2}$/.test(m) ? m : undefined}
+        devTools={devToolsOn(company.name)}
         meName={session.user!.name ?? "You"}
         who={session.who as "founder" | "external" | "pba" | "admin"}
         meId={session.user!.id}
