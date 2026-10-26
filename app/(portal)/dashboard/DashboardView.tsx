@@ -2,8 +2,8 @@
 
 import "../proto.css";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { L, aggregate, bucketsFor, dDelta, delta, fyLabel, niceTicks, pct, periodName, periodOf, periodsAvailable, prevKey, ymAdd, ymLabel, type Agg, type Bucket, type Delta, type Fig, type View } from "@/lib/dashboard/model";
+import { useEffect, useRef, useState } from "react";
+import { L, aggregate, bucketsFor, dDelta, delta, fyLabel, niceTicks, pct, periodName, periodOf, periodsAvailable, prevKey, ymLabel, type Agg, type Bucket, type Delta, type Fig, type View } from "@/lib/dashboard/model";
 
 export type AttItem = { lv: "red" | "amber" | "grey"; title: string; detail?: string; act?: { label: string; href: string } };   // **bold** markers in title and detail
 export type FilingStat = { total: number; done: number };
@@ -116,7 +116,7 @@ export default function DashboardView({ figs, filings, filingLines, attention, p
   const a = k ? aggregate(view, k, figs, filings) : null;
   const pk = k ? prevKey(view, k) : "", p = a ? aggregate(view, pk, figs, filings) : null;
   const pl = view === "month" ? ymLabel(pk) : periodName(view, pk, true);
-  const B = useMemo(() => (k ? bucketsFor(view, k, figs, filings) : []), [view, k, figs, filings]);
+  const B = k ? bucketsFor(view, k, figs, filings) : [];
   const onMove = (e: React.MouseEvent) => {
     const t = (e.target as HTMLElement).closest?.("[data-tt]") as HTMLElement | null;
     if (!t) { if (tip) setTip(null); return; }
