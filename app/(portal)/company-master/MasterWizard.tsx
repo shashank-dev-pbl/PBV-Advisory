@@ -8,6 +8,7 @@ import { unwrap } from "@/lib/actionResult";
 import { fmtDate } from "@/lib/dates";
 import { buildPlan, booksOwner, type EngineData } from "@/lib/master/engine";
 import { clean, maxLen, stateOfGstin } from "@/lib/idformats";
+import { EVENT_DOC_EXPLAINER } from "@/lib/dataroom/model";
 import { STEP_DEFS, defaultTracking, fieldErrors, isAnswered, rowErrors, lastEndedMonth, stepComplete, trackingOptions, valueAt, visibleQuestions, type Ctx, type Opt, type Q } from "@/lib/master/questions";
 import type { Answers, Owner, Plan } from "@/lib/master/types";
 import { recordFile, removeFile, saveAnswers, setStepDone } from "./actions";
@@ -48,8 +49,6 @@ function cleanup(a: Answers, id: string, value: unknown): Answers {
 }
 const OPT_LABEL = (o: string | Opt) => (Array.isArray(o) ? o : [o, o]) as [string, string];
 
-// Event document -> the explainer that describes it.
-const CODE_EXPLAINER: Record<string, string> = { COI: "coi", PAN: "pan", TAN: "tan", BR: "br", PAS3: "pas3", MGT14: "mgt14", CHG4: "chg4", CHG1: "chg", CHG9: "chg", CHGC: "chg", REDEEM: "red", DCERT: "dcert", TERM: "ts", SSA: "sha", SHA: "sha" };
 
 export default function MasterWizard({ companyId, meName, firmName, initialAnswers, initialDone, data, explainers, files, summaries, log }: {
   companyId: string; meName: string; firmName: string | null; initialAnswers: Answers; initialDone: number[]; data: EngineData; explainers: Explainer[]; files: FileRow[]; summaries: SummaryRow[]; log: LogItem[];
@@ -158,7 +157,7 @@ export default function MasterWizard({ companyId, meName, firmName, initialAnswe
   /* ---------------- drawer ---------------- */
   function docTypeFor(key: string): string {
     const rule = ruleOf.get(key.split(":")[0]);
-    if (rule && rule.section === "event") return CODE_EXPLAINER[key.split(":").pop() ?? ""] ?? "generic";
+    if (rule && rule.section === "event") return EVENT_DOC_EXPLAINER[key.split(":").pop() ?? ""] ?? "generic";
     return rule?.doc_type ?? "generic";
   }
   function drawerTarget(): DrawerTarget | null {
