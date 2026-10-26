@@ -50,7 +50,7 @@ export default function LegalView({ companyId, meName, who, types, requests, ope
   const [finds, setFinds] = useState<{ level: "High" | "Medium" | "Low"; text: string }[]>([{ level: "High", text: "" }]);
   const [about, setAbout] = useState(false);
   const type = (id: string) => types.find((t) => t.id === id)!;
-  const act = (what: string, fn: () => Promise<unknown>, then?: () => void) => startT(async () => { setErr(""); setWorking(what); try { unwrap((await fn()) as never); then?.(); router.refresh(); } catch (e) { setErr(e instanceof Error ? e.message : "Could not do that"); } setWorking(""); });
+  const act = (what: string, fn: () => Promise<unknown>, then?: () => void) => startT(async () => { setErr(""); setWorking(what); try { const res = await fn(); if (res && typeof res === "object" && "ok" in res) unwrap(res as never); then?.(); router.refresh(); } catch (e) { setErr(e instanceof Error ? e.message : "Could not do that"); } setWorking(""); });
 
   const mine = requests.filter((r) => type(r.type_id)?.kind === tab);
   const waiting = requests.filter((r) => r.status === "pay" || r.status === "extra");
