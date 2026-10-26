@@ -9,6 +9,7 @@ import { canPublish, canSubmit, monthView, ymOf, type Role } from "@/lib/close/s
 import type { Answers } from "@/lib/master/types";
 import { ingestMis, publishFigures, reopenFigures, submitFigures } from "@/lib/mis/ingest";
 import { recordFileVersion } from "@/lib/files/record";
+import { devToolsOn } from "@/lib/dev/tools";
 
 // Every rule here is checked on the server with the same function the screen uses, never trusted from the browser.
 const MEMBERS = ["founder", "practitioner", "pba"] as const;
@@ -130,7 +131,6 @@ export async function submitMis(...a: Parameters<typeof _submitMis>) { return gu
 // DEV ONLY: puts a placeholder file against every document and filing proof a month is still missing (not the MIS workbook, which is read
 // for real), so the two-person submit and publish rules can be tried without uploading twenty files by hand. Refused on production and on
 // any company that is not a test company.
-export const devToolsOn = (companyName: string) => process.env.VERCEL_ENV !== "production" && /\(test\)/i.test(companyName);
 async function _fillWithTestFiles(period: string) {
   okPeriod(period);
   const { user, supabase, by, role } = await ctx();

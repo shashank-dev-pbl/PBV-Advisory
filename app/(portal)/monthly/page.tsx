@@ -5,7 +5,7 @@ import PageHeader from "../PageHeader";
 import Locked from "../Locked";
 import NoCompany from "../NoCompany";
 import SettingUp from "../SettingUp";
-import { devToolsOn } from "./actions";
+import { devToolsOn } from "@/lib/dev/tools";
 import MonthlyClose, { type MonthRow, type VerifyRow } from "./MonthlyClose";
 import type { FileRow, Explainer, SummaryRow } from "../company-master/MasterWizard";
 import type { Answers, EventTypeDoc, LibDoc, MasterFiling, MasterRule } from "@/lib/master/types";
