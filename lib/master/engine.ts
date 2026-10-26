@@ -125,7 +125,7 @@ function completeRows(a: Answers): Answers {
     gst: a.gst ? { ...a.gst, gstins: (a.gst.gstins ?? []).filter((g) => checkId("gstin", g.gstin, a, g) === null && !!g.gstin) } : a.gst,
     loans: (a.loans ?? []).filter((l) => l.lender?.trim()),
     debentures: (a.debentures ?? []).filter((d) => d.issuedOn),
-    rounds: (a.rounds ?? []).filter((r) => r.closedOn),
+    rounds: (a.rounds ?? []).filter((r) => r.round && r.instrument),
     investments: (a.investments ?? []).filter((i) => i.what),
   };
 }
