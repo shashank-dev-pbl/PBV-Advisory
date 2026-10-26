@@ -109,13 +109,18 @@ export default function Rows({ items, demo }: { items: OutreachItem[]; demo: boo
               aria-expanded={on}
             >
               <td className="p-3 font-bold">
-                <ChevronRight size={13} className="mr-1 inline align-middle" style={{ transform: on ? "rotate(90deg)" : undefined, transition: "transform .15s" }} />
-                {/* The link icon stays glued to the last word of the name, so it never drops onto its own line. */}
-                {i.company_name.slice(0, i.company_name.lastIndexOf(" ") + 1)}
-                <span className="whitespace-nowrap">
-                  {i.company_name.slice(i.company_name.lastIndexOf(" ") + 1)}
-                  {i.website && <a href={i.website} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} aria-label="Website" className="ml-1.5 inline-block align-middle"><ExternalLink size={12} /></a>}
-                </span>
+                {/* Arrow and name are two blocks side by side, so a wrapped name lines up under its own first letter. */}
+                <div className="flex items-start gap-1.5">
+                  <ChevronRight size={13} className="mt-[3px] shrink-0" style={{ transform: on ? "rotate(90deg)" : undefined, transition: "transform .15s" }} />
+                  <span>
+                    {i.company_name.slice(0, i.company_name.lastIndexOf(" ") + 1)}
+                    {/* The link icon stays glued to the last word, so it never drops onto its own line. */}
+                    <span className="whitespace-nowrap">
+                      {i.company_name.slice(i.company_name.lastIndexOf(" ") + 1)}
+                      {i.website && <a href={i.website} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} aria-label="Website" className="ml-1.5 inline-block align-middle"><ExternalLink size={12} /></a>}
+                    </span>
+                  </span>
+                </div>
               </td>
               <td className="p-3">
                 {i.founder_name ? (
