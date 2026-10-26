@@ -5,19 +5,14 @@
 export type Who = "founder" | "external" | "pba" | "admin";
 
 export type PageKey =
-  | "home" | "dashboard" | "up-once" | "up-month" | "up-qy"
-  | "close" | "legal" | "filings" | "compliance" | "cmaster" | "files" | "dataroom" | "companies" | "people" | "outreach";
+  | "home" | "dashboard"
+  | "close" | "legal" | "cmaster" | "files" | "dataroom" | "companies" | "people" | "outreach";
 
 export const PAGES: Record<PageKey, { label: string; href: string }> = {
-  home: { label: "My companies", href: "/home" },
+  home: { label: "Companies", href: "/home" },
   dashboard: { label: "Dashboard", href: "/dashboard" },
-  "up-once": { label: "One-time", href: "/master/once" },
-  "up-month": { label: "Monthly", href: "/master/month" },
-  "up-qy": { label: "Quarterly & yearly", href: "/master/qy" },
   close: { label: "Monthly close", href: "/monthly" },
   legal: { label: "Legal", href: "/legal" },
-  filings: { label: "Filings", href: "/filings" },
-  compliance: { label: "Compliance", href: "/compliance" },
   cmaster: { label: "Company master", href: "/company-master" },
   files: { label: "Files delivered", href: "/files" },
   dataroom: { label: "Data room", href: "/dataroom" },
@@ -29,13 +24,8 @@ export const PAGES: Record<PageKey, { label: string; href: string }> = {
 export const ACCESS: Record<PageKey, Who[]> = {
   home: ["external", "pba", "admin"],
   dashboard: ["founder", "external", "pba", "admin"],
-  "up-once": ["founder", "external", "pba", "admin"],
-  "up-month": ["founder", "external", "pba", "admin"],
-  "up-qy": ["founder", "external", "pba", "admin"],
   close: ["founder", "external", "pba", "admin"],
   legal: ["founder", "pba", "admin"],       // an external practitioner sees the lock, never the page
-  filings: ["founder", "external", "pba", "admin"],
-  compliance: ["founder", "external", "pba", "admin"],
   cmaster: ["founder", "external", "pba", "admin"],
   files: ["founder", "external", "pba", "admin"],
   dataroom: ["founder", "external", "pba", "admin"],

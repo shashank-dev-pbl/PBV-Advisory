@@ -1,6 +1,8 @@
 import { pageGate } from "@/lib/gate";
 import { closePeriod, currentPeriod, formatPeriodLabel, previousPeriods } from "@/lib/period";
 import { listCompanies, getCompanyDetail } from "../actions";
+import { createClient } from "@/lib/supabase/server";
+import { companyOverview } from "@/lib/companies/overview";
 import PageHeader from "../../PageHeader";
 import Locked from "../../Locked";
 import CompaniesAdmin from "./CompaniesAdmin";
@@ -41,11 +43,12 @@ export default async function CompaniesPage({ searchParams }: { searchParams: Pr
   } catch (e) {
     return failed(e);
   }
+  const rows = await companyOverview(await createClient(), companies.map((c) => c.id));
   const periodOptions = [...new Set([currentPeriod(), closePeriod(), previousPeriods(closePeriod(), 2)[0]])].map((p) => ({ value: p, label: formatPeriodLabel(p) }));
   return (
     <>
-      <PageHeader title="Companies" sub="Create companies, and see who is on each" />
-      <CompaniesAdmin companies={companies} periodOptions={periodOptions} />
+      <PageHeader title="Companies" />
+      <CompaniesAdmin companies={companies} rows={rows} periodOptions={periodOptions} />
     </>
   );
 }

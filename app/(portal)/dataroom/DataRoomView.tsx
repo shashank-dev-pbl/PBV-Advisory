@@ -9,7 +9,7 @@ import { unwrap } from "@/lib/actionResult";
 import { fmtDate } from "@/lib/dates";
 import { buildPlan, booksOwner, type EngineData } from "@/lib/master/engine";
 import type { Answers, Owner } from "@/lib/master/types";
-import { CAT_COLOUR, CAT_NAME, EVENT_DOC_EXPLAINER, roomEvents, standardGroups, timelineYears, type RoomEvent } from "@/lib/dataroom/model";
+import { CAT_COLOUR, CAT_NAME, EVENT_DOC_EXPLAINER, groupLog, roomEvents, standardGroups, timelineYears, type RoomEvent } from "@/lib/dataroom/model";
 import { recordFile, removeFile } from "../company-master/actions";
 import Drawer, { type SummaryValue } from "../company-master/Drawer";
 import { Modal, type ModalState } from "../company-master/ui";
@@ -158,7 +158,7 @@ export default function DataRoomView({ companyId, meName, firmName, answers, dat
       <div className="content" style={{ padding: "18px 22px" }}>
         {err && <div className="sys warn" style={{ marginLeft: 0 }}>{err}</div>}
         <div className="tabs2">
-          {([["std", "Standard documents", null], ["tl", "Company timeline", events.length], ["act", "Activity", log.length]] as const).map(([k, l, c]) => (
+          {([["std", "Standard documents", null], ["tl", "Company timeline", events.length], ["act", "Activity", groupLog(log).length]] as const).map(([k, l, c]) => (
             <div key={k} className={`tab2 ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}>{l}{c !== null && <> <small>{c}</small></>}</div>
           ))}
           <span className="dm" style={{ marginLeft: "auto" }}>{docCount} document{docCount === 1 ? "" : "s"} in the room</span>
@@ -192,8 +192,8 @@ export default function DataRoomView({ companyId, meName, firmName, answers, dat
         )}
 
         {tab === "act" && (
-          <div className="dcard">{log.length ? log.map((l) => (
-            <div className="arow" key={l.id}><b>{l.who_name}</b> <span className="dm">{fmtDate(l.at)}{l.step ? ` · step ${l.step}` : ""}</span><div>{l.note}</div>{l.reason && <div className="dm">Why: {l.reason}</div>}</div>
+          <div className="dcard">{log.length ? groupLog(log).map((l) => (
+            <div className="arow" key={l.id}><b>{l.who_name}</b> <span className="dm">{fmtDate(l.at)}{l.step ? ` · step ${l.step}` : ""}</span><div>{l.note}{l.times > 1 ? ` (×${l.times})` : ""}</div>{l.reason && <div className="dm">Why: {l.reason}</div>}</div>
           )) : <div className="dm" style={{ padding: "10px 0" }}>Nothing yet.</div>}
           <div className="dm" style={{ marginTop: 8 }}>Kept permanently. Nothing in the data room is ever deleted — removed files stay in each document&apos;s history.</div></div>
         )}

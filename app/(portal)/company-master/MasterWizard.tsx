@@ -8,7 +8,7 @@ import { unwrap } from "@/lib/actionResult";
 import { fmtDate } from "@/lib/dates";
 import { buildPlan, booksOwner, type EngineData } from "@/lib/master/engine";
 import { clean, maxLen, stateOfGstin } from "@/lib/idformats";
-import { EVENT_DOC_EXPLAINER } from "@/lib/dataroom/model";
+import { EVENT_DOC_EXPLAINER, groupLog } from "@/lib/dataroom/model";
 import { STEP_DEFS, defaultTracking, fieldErrors, isAnswered, rowErrors, lastEndedMonth, stepComplete, trackingOptions, valueAt, visibleQuestions, type Ctx, type Opt, type Q } from "@/lib/master/questions";
 import type { Answers, Owner, Plan } from "@/lib/master/types";
 import { recordFile, removeFile, saveAnswers, setStepDone } from "./actions";
@@ -424,8 +424,8 @@ export default function MasterWizard({ companyId, meName, firmName, initialAnswe
           <section style={{ marginTop: 28 }}>
             <div className="pg">History</div>
             <div className="hist" style={{ borderTop: 0 }}>
-              {log.length === 0 ? <div className="hrow">Nothing recorded yet.</div> : log.slice(0, 10).map((l) => (
-                <div className="hrow" key={l.id}><span className="hd">{fmtDate(l.at)} · {l.who_name}{l.step ? ` · step ${l.step}` : ""} · {l.note}{l.reason ? ` — “${l.reason}”` : ""}</span></div>))}
+              {log.length === 0 ? <div className="hrow">Nothing recorded yet.</div> : groupLog(log).slice(0, 10).map((l) => (
+                <div className="hrow" key={l.id}><span className="hd">{fmtDate(l.at)} · {l.who_name}{l.step ? ` · step ${l.step}` : ""} · {l.note}{l.times > 1 ? ` (×${l.times})` : ""}{l.reason ? ` — “${l.reason}”` : ""}</span></div>))}
             </div>
           </section>
         </div>

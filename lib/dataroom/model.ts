@@ -52,3 +52,14 @@ export function timelineYears(a: Answers, today: Date): number[] {
 
 // Which explainer describes an event document, by its library code; anything else falls back to the generic one.
 export const EVENT_DOC_EXPLAINER: Record<string, string> = { COI: "coi", PAN: "pan", TAN: "tan", BR: "br", PAS3: "pas3", MGT14: "mgt14", CHG4: "chg4", CHG1: "chg", CHG9: "chg", CHGC: "chg", REDEEM: "red", DCERT: "dcert", TERM: "ts", SSA: "sha", SHA: "sha" };
+
+// Runs of the same entry (a dozen documents marked "later" in one go) show once, with a count.
+export function groupLog<T extends { who_name: string | null; note: string; reason: string | null; step: number | null }>(items: T[]): (T & { times: number })[] {
+  const out: (T & { times: number })[] = [];
+  for (const it of items) {
+    const last = out[out.length - 1];
+    if (last && last.who_name === it.who_name && last.note === it.note && last.reason === it.reason && last.step === it.step) last.times++;
+    else out.push({ ...it, times: 1 });
+  }
+  return out;
+}

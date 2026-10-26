@@ -7,10 +7,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createCompany, type CompanyRow } from "../actions";
 import { switchCompany } from "../../actions";
+import CompaniesTable from "../../CompaniesTable";
+import type { CompanyOverview } from "@/lib/companies/overview";
 
 const PLAN_LABEL: Record<string, string> = { starter: "Starter", builder: "Builder", operator: "Operator" };
 
-export default function CompaniesAdmin({ companies, periodOptions }: { companies: CompanyRow[]; periodOptions: { value: string; label: string }[] }) {
+export default function CompaniesAdmin({ rows, periodOptions }: { companies: CompanyRow[]; rows: CompanyOverview[]; periodOptions: { value: string; label: string }[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -36,15 +38,15 @@ export default function CompaniesAdmin({ companies, periodOptions }: { companies
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1000px] px-5 py-8 md:px-8">
-      <div className="mb-4">
+    <div className="w-full">
+      <div className="px-[22px] pt-[18px]">
         <button onClick={() => setOpen((v) => !v)} className="btn-small" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)" }}>
           + New company
         </button>
       </div>
 
       {open && (
-        <div className="mb-6 p-4" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 }}>
+        <div className="mx-[22px] mb-6 mt-4 p-4" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 }}>
           <p className="mb-3 text-[14px] font-bold">New company</p>
           <div className="grid gap-3 md:grid-cols-2">
             <label className="text-[12px] font-semibold">Company name
@@ -87,32 +89,7 @@ export default function CompaniesAdmin({ companies, periodOptions }: { companies
         </div>
       )}
 
-      <table className="w-full" style={{ background: "var(--paper-deep)", border: "1px solid var(--rule)", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ borderBottom: "1px solid var(--rule)" }}>
-            {["Company", "Plan", "Founder", "External practitioner", "PBA practitioner", "Status"].map((h) => (
-              <th key={h} className="px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.04em]" style={{ color: "var(--ink-secondary)" }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {companies.map((c) => (
-            <tr key={c.id} onClick={async () => { await switchCompany(c.id); router.push(`/admin/companies?c=${c.id}`); }} className="cursor-pointer hover:bg-black/[0.03]" style={{ borderBottom: "1px solid var(--rule)" }}>
-              <td className="px-3 py-2.5 text-[13.5px] font-bold"><Link href={`/admin/companies?c=${c.id}`} style={{ color: "var(--ink)" }}>{c.name}</Link></td>
-              <td className="px-3 py-2.5 text-[13px]">{PLAN_LABEL[c.plan] ?? c.plan}</td>
-              <td className="px-3 py-2.5 text-[13px]">{c.founder.join(", ") || <span style={{ color: "var(--ink-secondary)" }}>—</span>}</td>
-              <td className="px-3 py-2.5 text-[13px]">{c.external.join(", ") || <span style={{ color: "var(--ink-secondary)" }}>—</span>}</td>
-              <td className="px-3 py-2.5 text-[13px]">{c.pba.join(", ") || <span style={{ color: "var(--ink-secondary)" }}>—</span>}</td>
-              <td className="px-3 py-2.5">
-                <span className="pill" style={{ background: c.status === "live" ? "var(--bottomline-green)" : "rgba(107,99,87,0.14)", color: c.status === "live" ? "#fff" : "var(--ink-secondary)" }}>
-                  {c.status === "live" ? "Live" : "Setting up"}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <p className="mt-3 text-center text-[12px]" style={{ color: "var(--ink-secondary)" }}>Click a company to see and change who is on it.</p>
+      <CompaniesTable rows={rows} intro="Every company on the portal." manage />
     </div>
   );
 }
