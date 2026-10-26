@@ -502,3 +502,9 @@
 .p5 .lstats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:700px){.p5 .lgrid, .p5 .ltypes{grid-template-columns:1fr}
 .p5 .lprog span{font-size:9px}}
+.p5 .spin{display:inline-block;width:12px;height:12px;border:2px solid #b9cdb5;border-top-color:#004d00;border-radius:50%;animation:p5spin .7s linear infinite;vertical-align:-2px;margin-right:6px}
+.p5 .spin.w{border-color:rgba(255,255,255,.45);border-top-color:#fff}
+@keyframes p5spin{to{transform:rotate(360deg)}}
+.p5 .drop.busy{background:#f4f8f2;border-style:dashed;border-color:#b9cdb5}
+.p5 .ferr{color:#b3261e;font-size:11.5px;margin-top:4px;line-height:1.35}
+.p5 button:disabled{opacity:.6;cursor:progress}

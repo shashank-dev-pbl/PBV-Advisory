@@ -1,5 +1,6 @@
 import { INDIAN_STATES } from "@/lib/compliance";
 import { currentFyStart } from "./engine";
+import { checkId, type IdFormat } from "@/lib/idformats";
 import type { Answers, Owner, Plan } from "./types";
 
 // The conversation, step by step, exactly as the prototype asks it (12 — Prototype.html). Questions appear one at a time: a
@@ -7,8 +8,8 @@ import type { Answers, Owner, Plan } from "./types";
 // data and the engine, never here.
 
 export type Opt = [value: string | boolean, label: string];
-export type FieldDef = [path: string, label: string, kind?: "text" | "number" | "date" | "select", options?: readonly string[]];
-export type ColDef = [key: string, label: string, kind: "text" | "date" | "select", weight: number, options?: readonly (string | Opt)[]];
+export type FieldDef = [path: string, label: string, kind?: "text" | "number" | "date" | "select", options?: readonly string[], fmt?: IdFormat];
+export type ColDef = [key: string, label: string, kind: "text" | "date" | "select", weight: number, options?: readonly (string | Opt)[], fmt?: IdFormat];
 type Common = { id: string; help?: string };
 export type Q =
   | (Common & { kind: "choice"; ask: string; key: string; opts: Opt[] })
@@ -99,8 +100,8 @@ export function questionsFor(i: number, a: Answers, ctx: Ctx): Q[] {
         q.push({ id: "track", kind: "month", ask: "Which month should monthly tracking start from?", key: "trackingStart", help: "Defaults to the start of this financial year. Founder, practitioner and Prime Bottomline can all change it later on the Monthly close page." });
       }
       q.push({ id: "ids", kind: "fields", ask: "A few details from the certificate", req: ["details.legalName", "details.pan", "details.state"], fields: [
-        ["details.legalName", "Legal name"], ["details.cin", a.entity === "llp" ? "LLPIN" : isCompany(a) ? "CIN" : "Registration number"], ["details.pan", "PAN"],
-        ["details.tan", "TAN (leave blank if none)"], ["details.state", "Registered office state", "select", STATES]] });
+        ["details.legalName", "Legal name"], ["details.cin", a.entity === "llp" ? "LLPIN" : isCompany(a) ? "CIN" : "Registration number", "text", undefined, a.entity === "llp" ? "llpin" : isCompany(a) ? "cin" : undefined], ["details.pan", "PAN", "text", undefined, "pan"],
+        ["details.tan", "TAN (leave blank if none)", "text", undefined, "tan"], ["details.state", "Registered office state", "select", STATES]] });
       const coi = std("R01")[0] ?? std("R03")[0] ?? std("R05")[0];
       if (coi) q.push({ id: "up_coi", kind: "upload", ask: a.entity === "partnership" ? "Upload the partnership deed" : "Upload the certificate of incorporation", key: coi.key, owner: "founder" });
       const moa = std("R02")[0] ?? std("R04")[0];
@@ -129,7 +130,7 @@ export function questionsFor(i: number, a: Answers, ctx: Ctx): Q[] {
     }
     case 2: {
       q.push({ id: "banks", kind: "rows", ask: "List every bank account the company has", list: "banks", help: "Each account adds one statement request every month.", req: ["bank", "last4"], blank: { bank: "", type: "Current", last4: "" },
-        cols: [["bank", "Bank", "text", 1.4], ["type", "Type", "select", 1, ["Current", "Savings", "OD / CC", "Escrow", "EEFC"]], ["last4", "Last 4 digits", "text", 0.8]] });
+        cols: [["bank", "Bank", "text", 1.4], ["type", "Type", "select", 1, ["Current", "Savings", "OD / CC", "Escrow", "EEFC"]], ["last4", "Last 4 digits", "text", 0.8, undefined, "last4"]] });
       if (ack.banks) for (const b of a.banks ?? []) q.push({ id: `up_bank_${b.id}`, kind: "upload", ask: `Upload last month's statement — ${b.bank} ••${b.last4}`, key: `R16:${b.id}`, owner: "founder", period: lastM });
       break;
     }
@@ -137,7 +138,7 @@ export function questionsFor(i: number, a: Answers, ctx: Ctx): Q[] {
       q.push({ id: "gst", kind: "choice", ask: "Is the company registered for GST?", key: "gst.registered", opts: yes });
       if (a.gst?.registered) {
         q.push({ id: "gstins", kind: "rows", ask: "Add each GSTIN", list: "gst.gstins", help: "Regular files monthly. QRMP and Composition file quarterly. Composition claims no input credit.", req: ["gstin"], blank: { gstin: "", state: "Tamil Nadu", scheme: "regular" },
-          cols: [["gstin", "GSTIN", "text", 1.6], ["state", "State", "select", 1, STATES], ["scheme", "Scheme", "select", 1, [["regular", "Regular"], ["qrmp", "QRMP"], ["composition", "Composition"]]]] });
+          cols: [["gstin", "GSTIN", "text", 1.6, undefined, "gstin"], ["state", "State", "select", 1, STATES], ["scheme", "Scheme", "select", 1, [["regular", "Regular"], ["qrmp", "QRMP"], ["composition", "Composition"]]]] });
         if (ack.gstins) for (const g of a.gst?.gstins ?? []) q.push({ id: `up_gst_${g.id}`, kind: "upload", ask: `Upload the GST registration certificate — ${g.gstin}`, key: `R17:${g.id}`, owner: "founder" });
       }
       break;
@@ -145,7 +146,7 @@ export function questionsFor(i: number, a: Answers, ctx: Ctx): Q[] {
     case 4: {
       q.push({ id: "salaries", kind: "choice", ask: "Does the company pay salaries?", key: "salaries.pays", opts: yes });
       if (a.salaries?.pays) {
-        q.push({ id: "heads", kind: "fields", ask: "How many people does it pay?", req: ["salaries.employees"], fields: [["salaries.employees", "Employees on payroll", "number"], ["salaries.contractors", "Contractors / consultants", "number"],
+        q.push({ id: "heads", kind: "fields", ask: "How many people does it pay?", req: ["salaries.employees"], fields: [["salaries.employees", "Employees on payroll", "number", undefined, "count"], ["salaries.contractors", "Contractors / consultants", "number"],
           ["salaries.payrollTool", "Payroll is run on", "select", ["Excel", "Zoho Payroll", "Keka", "greytHR", "RazorpayX Payroll", "Our accountant runs it", "Other"]]] });
         if (ack.heads) {
           const e = a.salaries?.employees ?? 0;
@@ -233,14 +234,26 @@ export function questionsFor(i: number, a: Answers, ctx: Ctx): Q[] {
   return q;
 }
 
+// What is wrong with the government IDs and counts typed in a question, by field, in plain words.
+export function fieldErrors(fields: FieldDef[], a: Answers): { path: string; msg: string }[] {
+  const out: { path: string; msg: string }[] = [];
+  for (const [path, , , , fmt] of fields) if (fmt) { const m = checkId(fmt, String(get(a, path) ?? ""), a); if (m) out.push({ path, msg: m }); }
+  return out;
+}
+export function rowErrors(cols: ColDef[], row: Record<string, unknown>, a: Answers): { key: string; msg: string }[] {
+  const out: { key: string; msg: string }[] = [];
+  for (const [key, , , , , fmt] of cols) if (fmt) { const m = checkId(fmt, String(row[key] ?? ""), a, row); if (m) out.push({ key, msg: m }); }
+  return out;
+}
+
 export function isAnswered(q: Q, a: Answers, has: (key: string, period?: string) => boolean): boolean {
   const ack = a.ack ?? {};
   if (q.kind === "note") return true;
   if (q.kind === "choice" || q.kind === "date") { const v = get(a, q.key); return v !== undefined && v !== null && v !== "" && !!ack[q.id]; }
   if (q.kind === "month") return !!a.trackingStart && !!ack[q.id];
   if (q.kind === "multi") { const v = get(a, q.key); return Array.isArray(v) && v.length > 0 && !!ack[q.id]; }
-  if (q.kind === "fields") return !!ack[q.id] && q.req.every((p) => String(get(a, p) ?? "").trim());
-  if (q.kind === "rows") { const v = get(a, q.list); return !!ack[q.id] && Array.isArray(v) && v.length > 0 && (v as Record<string, unknown>[]).every((r) => q.req.every((k) => String(r[k] ?? "").trim())); }
+  if (q.kind === "fields") return !!ack[q.id] && q.req.every((p) => String(get(a, p) ?? "").trim()) && fieldErrors(q.fields, a).length === 0;
+  if (q.kind === "rows") { const v = get(a, q.list); return !!ack[q.id] && Array.isArray(v) && v.length > 0 && (v as Record<string, unknown>[]).every((r) => q.req.every((k) => String(r[k] ?? "").trim()) && rowErrors(q.cols, r, a).length === 0); }
   if (q.kind === "upload") return has(q.key, q.period) || !!a.later?.[q.key];
   return q.docs.every((d) => has(d.key) || !!a.later?.[d.key] || !!a.na?.[d.key]);
 }

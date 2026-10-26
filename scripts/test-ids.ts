@@ -1,0 +1,26 @@
+import assert from "node:assert/strict";
+import { checkId, gstinCheckChar, stateOfGstin } from "../lib/idformats";
+const a = { entity: "private" as const, incorporatedOn: "2023-06-12", details: { pan: "AABCX1234F", state: "Karnataka" } };
+assert.equal(checkId("pan", "AABCX1234F", a), null);
+assert.match(checkId("pan", "AABPX1234F", a)!, /C/);
+assert.match(checkId("pan", "ABCDE123", a)!, /10 characters/);
+assert.match(checkId("pan", "12345ABCDE", a)!, /10 characters/);
+assert.equal(checkId("tan", "BLRX12345A", a), null);
+assert.match(checkId("tan", "BLRX1234AA", a)!, /TAN/);
+assert.equal(checkId("cin", "U72900KA2023PTC123456", a), null);
+assert.match(checkId("cin", "U72900KA2019PTC123456", a)!, /2019/);
+assert.match(checkId("cin", "U72900MH2023PTC123456", a)!, /Maharashtra/);
+assert.match(checkId("cin", "X72900KA2023PTC123456", a)!, /21 characters/);
+assert.equal(checkId("llpin", "AAB-1234", a), null);
+assert.match(checkId("llpin", "AAB1234", a)!, /LLPIN/);
+// A published sample GSTIN: its check character must verify.
+assert.equal(gstinCheckChar("27AAPFU0939F1Z"), "V");
+assert.equal(stateOfGstin("27AAPFU0939F1ZV"), "Maharashtra");
+const g = `29AABCX1234F1Z`; const full = g + gstinCheckChar(g);
+assert.equal(checkId("gstin", full, a, { state: "Karnataka" }), null);
+assert.match(checkId("gstin", full, a, { state: "Tamil Nadu" })!, /Karnataka/);
+assert.match(checkId("gstin", g + (full[14] === "A" ? "B" : "A"), a)!, /check/i);
+assert.match(checkId("gstin", `29AABCY1234F1Z${gstinCheckChar("29AABCY1234F1Z")}`, a)!, /PAN/);
+assert.equal(checkId("last4", "1123", a), null); assert.match(checkId("last4", "112", a)!, /four/);
+assert.equal(checkId("pan", "", a), null);
+console.log("ok - government ID formats");

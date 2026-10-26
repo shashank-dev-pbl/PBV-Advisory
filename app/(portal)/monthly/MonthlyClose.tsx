@@ -50,7 +50,8 @@ export default function MonthlyClose({ companyId, who, meId, firmName, answers, 
   const [drawer, setDrawer] = useState<{ key: string; period: string; name: string; ctx: string; owner: Owner; justUploaded?: boolean } | null>(null);
   const [hist, setHist] = useState<Record<string, boolean>>({});
   const [err, setErr] = useState("");
-  const [, start] = useTransition();
+  const [saving, start] = useTransition();
+  const [uploading, setUploading] = useState<{ key: string; period: string; filename: string } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const pending = useRef<{ key: string; name: string; period: string; reason: string; owner: Owner } | null>(null);
   const capsRef = useRef<HTMLDivElement>(null);
@@ -95,6 +96,7 @@ export default function MonthlyClose({ companyId, who, meId, firmName, answers, 
     if (fileInput.current) fileInput.current.value = "";
     if (!f || !p) return;
     setErr("");
+    setUploading({ key: p.key, period: p.period, filename: f.name });
     try {
       const path = `${companyId}/master/monthly/${p.period}/${safeStorageSegment(p.key)}/${uid()}-${safeStorageSegment(f.name)}`;
       const { error } = await createClient().storage.from("docs").upload(path, f);
@@ -104,6 +106,7 @@ export default function MonthlyClose({ companyId, who, meId, firmName, answers, 
       setFileRows((rows) => [{ id: uid(), req_key: p.key, period: p.period, version: (prev?.version ?? 0) + 1, storage_path: path, filename: f.name, by_name: "You", at: new Date().toISOString(), reason: p.reason || null, removed: false }, ...rows]);
       if (p.key !== misKey) setDrawer({ key: p.key, period: p.period, name: p.name, ctx: `${label(p.period, true)} · monthly close`, owner: p.owner, justUploaded: true });   // the figures are entered while the file is fresh
     } catch (e) { setErr(e instanceof Error ? e.message : "Upload failed"); }
+    setUploading(null);
   }
 
   /* ---------- tracking start ---------- */
@@ -148,6 +151,9 @@ export default function MonthlyClose({ companyId, who, meId, firmName, answers, 
   const docTypeFor = (key: string) => (key === misKey ? "mis" : key.startsWith("F:") ? (plan.filings.find((f) => f.key === key.split(":")[1])?.doc_type ?? "generic") : (ruleOf.get(key.split(":")[0])?.doc_type ?? CODE_EXPLAINER[key] ?? "generic"));
 
   function docCard(r: { key: string; name: string; owner: Owner }, period: string, mayUpload: boolean) {
+    if (uploading && uploading.key === r.key && uploading.period === period) {
+      return <div className="dcard" key={r.key} role="status" aria-live="polite"><div className="dct"><div className="dn"><b>{r.name}</b><div className="dm"><span className="spin" />Uploading {uploading.filename}…</div></div><div className="dacts"><button className="b solid xs" disabled>Uploading…</button></div></div></div>;
+    }
     const up = currentOf(r.key, period); const n = versionsOf(r.key, period).length; const open = hist[fk(r.key, period)];
     const tap = () => setDrawer({ key: r.key, period, name: r.name, ctx: `${label(period, true)} · monthly close`, owner: r.owner });
     const due = r.key === misKey ? short(dueOn(period, DUE_DAY.books)) : null;
@@ -180,11 +186,11 @@ export default function MonthlyClose({ companyId, who, meId, firmName, answers, 
             <div className={`dm ${late ? "late" : ""}`}>Due {short(f.due)}{late ? " · late" : ""}{ver ? ` · verified by ${ver}` : ""}</div></div>
           <div className="fsides">
             {f.ticks.map((t) => {
-              const k = tickKey(f.key, t); const u = currentOf(k, period); const [sl, doc] = proof(t); const n = versionsOf(k, period).length;
+              const k = tickKey(f.key, t); const u = currentOf(k, period); const busyTick = uploading?.key === k && uploading.period === period; const [sl, doc] = proof(t); const n = versionsOf(k, period).length;
               return (
                 <div key={t} className={`side-b ${u ? "on" : ""}`} title={u ? `${doc} uploaded by ${u.by_name ?? ""}` : `Attach the ${doc.toLowerCase()} to tick this`}
                   onClick={() => { if (u) setHist({ ...hist, [fk(k, period)]: !hist[fk(k, period)] }); else if (canBooks) uploadAct(k, `${f.name} — ${doc}`, period, f.owner); }}>
-                  <span className="tk">{u ? "✓" : ""}</span><div><div className="sl2">{sl}</div><div className="sd">{u ? `${doc}${n > 1 ? ` · v${n}` : ""}` : canBooks ? `Attach ${doc.toLowerCase()}` : `${doc} — ${ownLabel(f.owner)}`}</div></div>
+                  <span className="tk">{busyTick ? <span className="spin" style={{ margin: 0 }} /> : u ? "✓" : ""}</span><div><div className="sl2">{sl}</div><div className="sd">{busyTick ? "Uploading…" : u ? `${doc}${n > 1 ? ` · v${n}` : ""}` : canBooks ? `Attach ${doc.toLowerCase()}` : `${doc} — ${ownLabel(f.owner)}`}</div></div>
                 </div>
               );
             })}
@@ -218,10 +224,10 @@ export default function MonthlyClose({ companyId, who, meId, firmName, answers, 
 
   let action: React.ReactNode;
   if (v.state === "published") action = <><span className="achip">Published by {row?.published_by_name} · {row?.published_at ? fmtDate(row.published_at) : ""}</span>{isPBA && <button className="b quiet xs" onClick={doReopen}>Reopen</button>}</>;
-  else if (v.state === "submitted") action = isPBA ? (publishRefusal ? <span className="dm">{publishRefusal}</span> : <button className="b solid" onClick={doPublish}>Verify and publish</button>) : <span className="dm">Submitted by {row?.submitted_by_name}. Waiting for Prime Bottomline to check and publish.</span>;
+  else if (v.state === "submitted") action = isPBA ? (publishRefusal ? <span className="dm">{publishRefusal}</span> : <button className="b solid" disabled={saving} onClick={doPublish}>{saving ? <><span className="spin w" />Saving…</> : "Verify and publish"}</button>) : <span className="dm">Submitted by {row?.submitted_by_name}. Waiting for Prime Bottomline to check and publish.</span>;
   else if (v.state === "untracked") action = <span className="dm">This month is before the tracking start. Its files are kept; move the start back to track it again.</span>;
   else if (ym === cur) action = <span className="dm">The month ends on {fmtDate(`${ymAdd(ym, 1)}-01`).replace(/^1 /, "")}. Documents are due by {short(dueOn(ym, DUE_DAY.from_company))}.</span>;
-  else action = <><button className="b solid" disabled={!!submitRefusal} onClick={doSubmit}>Submit for checking</button>{submitRefusal && <span className="dm">{v.ready ? submitRefusal : "Unlocks when everything above is ticked."}</span>}</>;
+  else action = <><button className="b solid" disabled={!!submitRefusal || saving} onClick={doSubmit}>{saving ? <><span className="spin w" />Saving…</> : "Submit for checking"}</button>{submitRefusal && <span className="dm">{v.ready ? submitRefusal : "Unlocks when everything above is ticked."}</span>}</>;
 
   const mayDocs = true;                                             // anyone on the company can upload company documents
   const mis: Request = { key: misKey, name: "MIS workbook", owner: closer, section: "books", tier: "mandatory", schedule: "monthly", rule_id: "MIS", doc_type: "mis", period: ym, due: dueOn(ym, DUE_DAY.books) };

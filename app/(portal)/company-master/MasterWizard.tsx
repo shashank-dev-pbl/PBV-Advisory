@@ -7,7 +7,8 @@ import { safeStorageSegment } from "@/lib/storagePath";
 import { unwrap } from "@/lib/actionResult";
 import { fmtDate } from "@/lib/dates";
 import { buildPlan, booksOwner, type EngineData } from "@/lib/master/engine";
-import { STEP_DEFS, defaultTracking, isAnswered, lastEndedMonth, stepComplete, trackingOptions, valueAt, visibleQuestions, type Ctx, type Opt, type Q } from "@/lib/master/questions";
+import { clean, maxLen } from "@/lib/idformats";
+import { STEP_DEFS, defaultTracking, fieldErrors, isAnswered, rowErrors, lastEndedMonth, stepComplete, trackingOptions, valueAt, visibleQuestions, type Ctx, type Opt, type Q } from "@/lib/master/questions";
 import type { Answers, Owner, Plan } from "@/lib/master/types";
 import { recordFile, removeFile, saveAnswers, setStepDone } from "./actions";
 import Drawer, { type DrawerTarget, type ExplainerFull, type SummaryValue } from "./Drawer";
@@ -66,7 +67,8 @@ export default function MasterWizard({ companyId, firmName, initialAnswers, init
   const [hist, setHist] = useState<Record<string, boolean>>({});
   const [fresh, setFresh] = useState<Set<string>>(new Set());
   const [err, setErr] = useState("");
-  const [, start] = useTransition();
+  const [saving, start] = useTransition();
+  const [uploading, setUploading] = useState<{ key: string; period: string | null; filename: string } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const pending = useRef<{ key: string; name: string; period: string | null; reason: string } | null>(null);
 
@@ -137,14 +139,16 @@ export default function MasterWizard({ companyId, firmName, initialAnswers, init
     if (fileInput.current) fileInput.current.value = "";
     if (!f || !p) return;
     setErr("");
+    setUploading({ key: p.key, period: p.period, filename: f.name });
     try {
-      const path = `${companyId}/master/${safeStorageSegment(p.key)}/${Date.now()}-${safeStorageSegment(f.name)}`;
+      const path = `${companyId}/master/${safeStorageSegment(p.key)}/${uid()}-${safeStorageSegment(f.name)}`;
       const { error } = await createClient().storage.from("docs").upload(path, f);
       if (error) throw error;
       unwrap(await recordFile({ reqKey: p.key, storagePath: path, filename: f.name, reason: p.reason || undefined, period: p.period }));
       const prev = versionsOf(p.key, p.period)[0];
       setFileRows((rows) => [{ id: uid(), req_key: p.key, period: p.period, version: (prev?.version ?? 0) + 1, storage_path: path, filename: f.name, by_name: "You", at: new Date().toISOString(), reason: p.reason || null, removed: false }, ...rows]);
     } catch (e) { setErr(e instanceof Error ? e.message : "Upload failed"); }
+    setUploading(null);
   }
   const later = (key: string) => commit(setPath(answers, `later.${key.replace(/\./g, "_")}`, true), "Marked a document as later");
 
@@ -220,39 +224,57 @@ export default function MasterWizard({ companyId, firmName, initialAnswers, init
         <div className="next"><button className="b solid" disabled={!v.length} onClick={() => ackQ(q)}>Next</button></div></>;
     }
     if (q.kind === "fields") {
-      return <><div className="fields">{q.fields.map(([path, label, kind, opts]) => (
+      const errs = fieldErrors(q.fields, answers);
+      return <><div className="fields">{q.fields.map(([path, label, kind, opts, fmt]) => {
+        const val = String(valueAt(answers, path) ?? ""); const bad = errs.find((e) => e.path === path);
+        return (
         <div className="f" key={path}><label>{label}</label>
-          {kind === "select" ? <select value={String(valueAt(answers, path) ?? "")} onChange={(e) => apply(setPath(answers, path, e.target.value))}><option value="">Choose…</option>{(opts ?? []).map((o) => <option key={o}>{o}</option>)}</select>
-            : <input type={kind === "number" ? "number" : "text"} value={String(valueAt(answers, path) ?? "")} onChange={(e) => apply(setPath(answers, path, kind === "number" ? (e.target.value === "" ? undefined : Number(e.target.value)) : e.target.value))} />}
-        </div>))}</div>
-        <div className="next"><button className="b solid" onClick={() => {
-          if (q.req.every((p) => String(valueAt(answers, p) ?? "").trim())) ackQ(q);
-          else { setErr("Fill in the required details first."); }
-        }}>Next</button><span className="help">{q.req.length < q.fields.length ? "Fields marked optional can be left blank." : ""}</span></div></>;
+          {kind === "select" ? <select value={val} onChange={(e) => apply(setPath(answers, path, e.target.value))}><option value="">Choose…</option>{(opts ?? []).map((o) => <option key={o}>{o}</option>)}</select>
+            : <input type={kind === "number" ? "number" : "text"} value={val} min={kind === "number" ? 0 : undefined} step={kind === "number" ? 1 : undefined}
+                maxLength={fmt ? maxLen[fmt] : undefined} autoCapitalize={fmt ? "characters" : undefined} spellCheck={fmt ? false : undefined} aria-invalid={bad ? true : undefined}
+                style={bad && val ? { borderColor: "#b3261e" } : undefined}
+                onChange={(e) => apply(setPath(answers, path, kind === "number" ? (e.target.value === "" ? undefined : Math.max(0, Math.floor(Number(e.target.value)))) : fmt ? clean(fmt, e.target.value) : e.target.value))} />}
+          {bad && val && <div className="ferr">{bad.msg}</div>}
+        </div>);
+      })}</div>
+        <div className="next"><button className="b solid" disabled={saving} onClick={() => {
+          if (!q.req.every((p) => String(valueAt(answers, p) ?? "").trim())) setErr("Fill in the required details first.");
+          else if (errs.length) setErr(errs[0].msg);
+          else { setErr(""); ackQ(q); }
+        }}>{saving ? "Saving…" : "Next"}</button><span className="help">{q.req.length < q.fields.length ? "Fields marked optional can be left blank." : ""}</span></div></>;
     }
     if (q.kind === "rows") {
       const rows = ((valueAt(answers, q.list) as Record<string, unknown>[] | undefined) ?? []);
       const tpl = q.cols.map((c) => `${c[3]}fr`).join(" ") + " 24px";
-      const setRow = (n: number, k: string, v: string) => apply(setPath(answers, q.list, rows.map((r, j) => (j === n ? { ...r, [k]: v } : r))));
+      const fmtOf = (k: string) => q.cols.find((c) => c[0] === k)?.[5];
+      const setRow = (n: number, k: string, v: string) => { const f = fmtOf(k); apply(setPath(answers, q.list, rows.map((r, j) => (j === n ? { ...r, [k]: f ? clean(f, v) : v } : r)))); };
       return <><div className="rows"><div className="row head" style={{ gridTemplateColumns: tpl }}>{q.cols.map((c) => <span key={c[0]}>{c[1]}</span>)}<span /></div>
         {rows.length === 0 ? <div className="row" style={{ color: "var(--muted)", fontSize: 12.5 }}>Nothing added yet.</div> : rows.map((r, n) => (
           <div className="row" key={String(r.id)} style={{ gridTemplateColumns: tpl }}>
             {q.cols.map(([k, label, kind, , opts]) => kind === "select"
               ? <select key={k} value={String(r[k] ?? "")} onChange={(e) => setRow(n, k, e.target.value)}>{(opts ?? []).map((o) => { const [a, b] = OPT_LABEL(o as string | Opt); return <option key={a} value={a}>{b}</option>; })}</select>
-              : <input key={k} type={kind} value={String(r[k] ?? "")} placeholder={label} onChange={(e) => setRow(n, k, e.target.value)} />)}
+              : <span key={k} style={{ display: "block", minWidth: 0 }}><input type={kind} value={String(r[k] ?? "")} placeholder={label} maxLength={fmtOf(k) ? maxLen[fmtOf(k)!] : undefined} autoCapitalize={fmtOf(k) ? "characters" : undefined} spellCheck={fmtOf(k) ? false : undefined}
+                  style={rowErrors(q.cols, r, answers).some((e) => e.key === k) && String(r[k] ?? "") ? { borderColor: "#b3261e" } : undefined} onChange={(e) => setRow(n, k, e.target.value)} />
+                  {rowErrors(q.cols, r, answers).filter((e) => e.key === k && String(r[k] ?? "")).map((e) => <span key={e.key} className="ferr">{e.msg}</span>)}</span>)}
             <button className="x" aria-label="Remove" onClick={() => commit(setPath(answers, q.list, rows.filter((_, j) => j !== n)), `Removed a row: ${q.ask}`)}>×</button>
           </div>))}</div>
         <span className="add" role="button" onClick={() => commit(setPath(answers, q.list, [...rows, { id: uid(), ...q.blank }]), `Added a row: ${q.ask}`)}>+ Add another</span>
         <div className="next"><button className="b solid" onClick={() => {
-          if (rows.length && rows.every((r) => q.req.every((k) => String(r[k] ?? "").trim()))) ackQ(q); else setErr("Complete every line first, or remove the ones you do not need.");
-        }}>Done adding</button></div></>;
+          const bad = rows.map((r) => rowErrors(q.cols, r, answers)[0]).find(Boolean);
+          if (!(rows.length && rows.every((r) => q.req.every((k) => String(r[k] ?? "").trim())))) setErr("Complete every line first, or remove the ones you do not need.");
+          else if (bad) setErr(bad.msg);
+          else { setErr(""); ackQ(q); }
+        }}>{saving ? "Saving…" : "Done adding"}</button></div></>;
     }
     return null;
   }
 
   function uploadBox(key: string, name: string, code: string | null, owner: Owner, period: string | null = null, na?: boolean) {
+    if (uploading && uploading.key === key && (uploading.period ?? null) === (period ?? null)) {
+      return <div className="drop busy" role="status" aria-live="polite"><div className="dn"><b>{name}</b><div className="dm"><span className="spin" />Uploading {uploading.filename}…</div></div><button className="b solid xs" disabled>Uploading…</button></div>;
+    }
     const up = currentOf(key, period);
-    const n = versionsOf(key, period).filter((f) => !f.removed || true).length;
+    const n = versionsOf(key, period).length;
     const open = hist[fk(key, period)];
     const naNow = !!answers.na?.[key.replace(/\./g, "_")];
     const tap = () => setDrawer({ key, period, name, ctx: "Company master" });
@@ -344,7 +366,7 @@ export default function MasterWizard({ companyId, firmName, initialAnswers, init
           <div><span>Documents marked &quot;later&quot;</span>{laterN} — sitting on the owners&apos; lists</div>
         </div>
         <div className="complete"><div><div className="t">{finished ? "Master is live" : "Finish the master"}</div><div className="d">{finished ? "Requests start with the next cycle. Catch-up months are open now." : "The checklist is generated and the first requests go out."}</div></div>
-          <div className="acts">{finished ? <span className="achip">Live ✓</span> : <button className="b solid" onClick={finishStep}>Finish and go live</button>}</div></div>
+          <div className="acts">{finished ? <span className="achip">Live ✓</span> : <button className="b solid" disabled={saving} onClick={finishStep}>{saving ? <><span className="spin w" />Saving…</> : "Finish and go live"}</button>}</div></div>
       </>
     );
   }
@@ -382,13 +404,13 @@ export default function MasterWizard({ companyId, firmName, initialAnswers, init
           {i === 11 ? review() : (
             <>
               {reviewing && <div className="reviewbar">Reviewing a finished step. Changes here update what&apos;s generated from next month.<button className="b xs" onClick={() => setView(null)}>Back to step {cur + 1}</button></div>}
-              <div className="sthead"><div><div className="n">Step {i + 1} of 12</div><h2>{STEP_DEFS[i].t}</h2></div><span className="badge">{done(i) ? <span className="achip">Complete ✓</span> : null}</span></div>
+              <div className="sthead"><div><div className="n">Step {i + 1} of 12</div><h2>{STEP_DEFS[i].t}</h2></div><span className="badge">{saving ? <span className="achip"><span className="spin" />Saving…</span> : done(i) ? <span className="achip">Complete ✓</span> : null}</span></div>
               {out.map((q, k) => turn(q, k === out.length - 1))}
               {!complete && remaining > 0 && <div className="locknote" style={{ marginLeft: 42 }}>{remaining} more question{remaining > 1 ? "s" : ""} will appear as you answer.</div>}
               {complete && (
                 <div className="complete"><div><div className="t">{done(i) ? `Step ${i + 1} is complete` : `That covers ${STEP_DEFS[i].t.toLowerCase()}`}</div><div className="d">{done(i) ? "Its items are on the right." : "Mark it complete to unlock the next step."}</div></div>
                   <div className="acts">
-                    {!done(i) && <button className="b solid" onClick={finishStep}>Complete step {i + 1}</button>}
+                    {!done(i) && <button className="b solid" disabled={saving} onClick={finishStep}>{saving ? <><span className="spin w" />Saving…</> : `Complete step ${i + 1}`}</button>}
                     {done(i) && !reviewing && <button className="b solid" onClick={proceed}>Proceed to step {i + 2}: {STEP_DEFS[i + 1].t} →</button>}
                   </div></div>
               )}
