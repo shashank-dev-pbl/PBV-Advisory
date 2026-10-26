@@ -25,8 +25,8 @@ export type DrawerTarget = {
 const isPdf = (f: string) => /\.pdf$/i.test(f);
 const isImg = (f: string) => /\.(png|jpe?g|gif|webp)$/i.test(f);
 
-export default function Drawer({ t, onClose, onUpload, onRemove, onSaved }: {
-  t: DrawerTarget; onClose: () => void; onUpload: (replace: boolean) => void; onRemove: () => void; onSaved: (v: SummaryValue[]) => void;
+export default function Drawer({ t, me, onClose, onUpload, onRemove, onSaved }: {
+  t: DrawerTarget; me: string; onClose: () => void; onUpload: (replace: boolean) => void; onRemove: () => void; onSaved: (v: SummaryValue[]) => void;
 }) {
   const ex = t.explainer;
   const current = t.versions.filter((v) => !v.removed).sort((a, b) => b.version - a.version)[0];
@@ -47,7 +47,7 @@ export default function Drawer({ t, onClose, onUpload, onRemove, onSaved }: {
     setBusy(true); setErr("");
     try {
       unwrap(await saveSummary({ reqKey: t.key, period: t.period ?? null, values: draft }));
-      onSaved(fields.map((f) => ({ field: f.label, value: draft[f.label] ?? "", entered_by_name: "You", entered_at: new Date().toISOString() })).filter((v) => v.value));
+      onSaved(fields.map((f) => ({ field: f.label, value: draft[f.label] ?? "", entered_by_name: me, entered_at: new Date().toISOString() })).filter((v) => v.value));
       setEditing(false);
     } catch (e) { setErr(e instanceof Error ? e.message : "Could not save"); }
     setBusy(false);

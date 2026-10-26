@@ -434,7 +434,7 @@ export default function MasterWizard({ companyId, meName, firmName, initialAnswe
         {panel()}
       </div>
       {modal && <Modal m={modal} onClose={() => setModal(null)} />}
-      {dt && <Drawer t={dt} onClose={() => setDrawer(null)}
+      {dt && <Drawer t={dt} me={meName} onClose={() => setDrawer(null)}
         onUpload={(replace) => (replace ? uploadAct(dt.key, dt.name, dt.period ?? null) : pickFile(dt.key, dt.name, dt.period ?? null, ""))}
         onRemove={() => removeAct(dt.key, dt.name, dt.period ?? null)}
         onSaved={(vals: SummaryValue[]) => setSums((rows) => [...rows.filter((r) => !(r.req_key === dt.key && r.period_key === (dt.period ?? ""))), ...vals.map((v) => ({ req_key: dt.key, period_key: dt.period ?? "", field: v.field, value: v.value, entered_by_name: v.entered_by_name, entered_at: v.entered_at }))])} />}

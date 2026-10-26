@@ -148,7 +148,7 @@ export default function MonthlyClose({ companyId, meName, who, meId, firmName, a
   /* ---------- render pieces ---------- */
   const explain = useMemo(() => new Map(explainers.map((e) => [e.doc_type, e])), [explainers]);
   const ruleOf = useMemo(() => new Map(data.rules.map((r) => [r.rule_id, r])), [data.rules]);
-  const docTypeFor = (key: string) => (key === misKey ? "mis" : key.startsWith("F:") ? (plan.filings.find((f) => f.key === key.split(":")[1])?.doc_type ?? "generic") : (ruleOf.get(key.split(":")[0])?.doc_type ?? CODE_EXPLAINER[key] ?? "generic"));
+  const docTypeFor = (key: string) => (key === misKey ? "mis" : key.startsWith("F:") ? (plan.filings.find((f) => f.key === key.slice(2).replace(/:(paid|filed)$/, ""))?.doc_type ?? "generic") : (ruleOf.get(key.split(":")[0])?.doc_type ?? CODE_EXPLAINER[key] ?? "generic"));
 
   function docCard(r: { key: string; name: string; owner: Owner }, period: string, mayUpload: boolean) {
     if (uploading && uploading.key === r.key && uploading.period === period) {
@@ -297,7 +297,7 @@ export default function MonthlyClose({ companyId, meName, who, meId, firmName, a
         )}
       </div>
       {modal && <Modal m={modal} onClose={() => setModal(null)} />}
-      {target && <Drawer t={target} onClose={() => setDrawer(null)}
+      {target && <Drawer t={target} me={meName} onClose={() => setDrawer(null)}
         onUpload={(replace) => (replace ? uploadAct(target.key, target.name, target.period!, target.owner) : pickFile(target.key, target.name, target.period!, "", target.owner))}
         onRemove={() => removeAct(target.key, target.name, target.period!)}
         onSaved={(vals: SummaryValue[]) => setSums((rows) => [...rows.filter((r) => !(r.req_key === target.key && r.period_key === target.period)), ...vals.map((x) => ({ req_key: target.key, period_key: target.period!, field: x.field, value: x.value, entered_by_name: x.entered_by_name, entered_at: x.entered_at }))])} />}
