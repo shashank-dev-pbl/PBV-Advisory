@@ -66,7 +66,7 @@ export default async function OutreachPage({ searchParams }: { searchParams: Pro
                 <thead>
                   <tr className="eyebrow" style={{ borderBottom: "1px solid var(--rule)" }}>
                     <th className="p-3">Company</th><th className="p-3">Founder</th><th className="p-3">Status</th>
-                    <th className="p-3">Last move</th><th className="p-3">Sector · HQ</th><th className="p-3">Raised</th><th className="p-3">Note</th>
+                    <th className="p-3 whitespace-nowrap">Last move</th><th className="p-3 whitespace-nowrap">Sector / HQ</th><th className="p-3">Raised</th><th className="p-3">Note</th>
                   </tr>
                 </thead>
                 <tbody>
