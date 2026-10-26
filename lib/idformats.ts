@@ -2,7 +2,7 @@
 // repeat across IDs (the PAN inside a GSTIN, the year inside a CIN) must agree with each other.
 import type { Answers } from "@/lib/master/types";
 
-export type IdFormat = "pan" | "tan" | "cin" | "llpin" | "gstin" | "last4" | "count";
+export type IdFormat = "pan" | "tan" | "cin" | "llpin" | "gstin" | "last4" | "count" | "amount";
 
 const GST_STATE: Record<string, string> = {
   "01": "Jammu and Kashmir", "02": "Himachal Pradesh", "03": "Punjab", "04": "Chandigarh", "05": "Uttarakhand", "06": "Haryana", "07": "Delhi",
@@ -28,8 +28,8 @@ const CIN_RE = /^([LU])(\d{5})([A-Z]{2})(\d{4})([A-Z]{3})(\d{6})$/;
 const LLPIN_RE = /^[A-Z]{3}-\d{4}$/;
 
 export const clean = (fmt: IdFormat, v: string) =>
-  fmt === "last4" || fmt === "count" ? v.replace(/\D/g, "") : fmt === "llpin" ? v.toUpperCase().replace(/\s/g, "") : v.toUpperCase().replace(/[\s-]/g, "");
-export const maxLen: Record<IdFormat, number> = { pan: 10, tan: 10, cin: 21, llpin: 8, gstin: 15, last4: 4, count: 6 };
+  fmt === "last4" || fmt === "count" || fmt === "amount" ? v.replace(/\D/g, "") : fmt === "llpin" ? v.toUpperCase().replace(/\s/g, "") : v.toUpperCase().replace(/[\s-]/g, "");
+export const maxLen: Record<IdFormat, number> = { pan: 10, tan: 10, cin: 21, llpin: 8, gstin: 15, last4: 4, count: 6, amount: 14 };
 
 // Returns what is wrong, in words the person can act on, or null when it is fine. Blank is not an error here: required-ness is separate.
 export function checkId(fmt: IdFormat, raw: string | undefined, a: Answers, row?: Record<string, unknown>): string | null {
@@ -65,6 +65,7 @@ export function checkId(fmt: IdFormat, raw: string | undefined, a: Answers, row?
       return null;
     }
     case "last4": return /^\d{4}$/.test(v) ? null : "Enter exactly the last four digits of the account number.";
+    case "amount": return /^\d{1,14}$/.test(v) && +v > 0 ? null : "Enter the amount in rupees, digits only.";
     case "count": return /^\d{1,6}$/.test(v) ? null : "Enter a whole number.";
   }
 }

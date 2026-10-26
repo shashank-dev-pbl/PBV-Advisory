@@ -27,8 +27,8 @@ const CODE_EXPLAINER: Record<string, string> = {};
 
 type Who = "founder" | "external" | "pba" | "admin";
 
-export default function MonthlyClose({ companyId, who, meId, firmName, answers, trackingStart, data, explainers, files, summaries, months, verifies }: {
-  companyId: string; who: Who; meId: string; firmName: string | null; answers: Answers; trackingStart: string | null; data: EngineData;
+export default function MonthlyClose({ companyId, meName, who, meId, firmName, answers, trackingStart, data, explainers, files, summaries, months, verifies }: {
+  companyId: string; meName: string; who: Who; meId: string; firmName: string | null; answers: Answers; trackingStart: string | null; data: EngineData;
   explainers: ExplainerFull[]; files: FileRow[]; summaries: SummaryRow[]; months: MonthRow[]; verifies: VerifyRow[];
 }) {
   const role = who === "admin" ? "pba" : who;
@@ -103,7 +103,7 @@ export default function MonthlyClose({ companyId, who, meId, firmName, answers, 
       if (error) throw error;
       unwrap(await recordFile({ reqKey: p.key, storagePath: path, filename: f.name, reason: p.reason || undefined, period: p.period }));
       const prev = versionsOf(p.key, p.period)[0];
-      setFileRows((rows) => [{ id: uid(), req_key: p.key, period: p.period, version: (prev?.version ?? 0) + 1, storage_path: path, filename: f.name, by_name: "You", at: new Date().toISOString(), reason: p.reason || null, removed: false }, ...rows]);
+      setFileRows((rows) => [{ id: uid(), req_key: p.key, period: p.period, version: (prev?.version ?? 0) + 1, storage_path: path, filename: f.name, by_name: meName, at: new Date().toISOString(), reason: p.reason || null, removed: false }, ...rows]);
       if (p.key !== misKey) setDrawer({ key: p.key, period: p.period, name: p.name, ctx: `${label(p.period, true)} · monthly close`, owner: p.owner, justUploaded: true });   // the figures are entered while the file is fresh
     } catch (e) { setErr(e instanceof Error ? e.message : "Upload failed"); }
     setUploading(null);
@@ -132,18 +132,18 @@ export default function MonthlyClose({ companyId, who, meId, firmName, answers, 
   const run = (fn: () => Promise<unknown>, after: () => void) => start(async () => { setErr(""); try { unwrap(await fn() as never); after(); } catch (e) { setErr(e instanceof Error ? e.message : "Could not do that"); } });
   function doSubmit() {
     setModal({ title: `Submit ${label(ym, true)} for checking?`, confirm: "Submit", body: <>Everything for the month is in. Prime Bottomline checks the figures against last month before anything reaches the dashboard.</>,
-      onOk: () => { setModal(null); run(() => submitMonth(ym), () => stamp({ submitted_at: new Date().toISOString(), submitted_by: meId, submitted_by_name: "You", published_at: null }, ym)); } });
+      onOk: () => { setModal(null); run(() => submitMonth(ym), () => stamp({ submitted_at: new Date().toISOString(), submitted_by: meId, submitted_by_name: meName, published_at: null }, ym)); } });
   }
   function doPublish() {
     setModal({ title: `Verify and publish ${label(ym, true)}?`, reason: true, confirm: "Verify and publish", body: <>The figures go to the dashboard and the month is marked closed. A published month can be reopened with corrections; earlier versions are kept.</>,
-      onOk: (r) => { setModal(null); run(() => publishMonth(ym, r), () => stamp({ published_at: new Date().toISOString(), published_by_name: "You" }, ym)); } });
+      onOk: (r) => { setModal(null); run(() => publishMonth(ym, r), () => stamp({ published_at: new Date().toISOString(), published_by_name: meName }, ym)); } });
   }
   function doReopen() {
     setModal({ title: `Reopen ${label(ym, true)}?`, reason: true, confirm: "Reopen", body: <>The dashboard keeps showing the published figures until the month is published again. The reopening is recorded.</>,
       onOk: (r) => { setModal(null); run(() => reopenMonth(ym, r), () => stamp({ submitted_at: null, published_at: null, submitted_by: null }, ym)); } });
   }
   const verifiedBy = (period: string, key: string) => verifyRows.find((v) => v.period === period && v.filing_key === key)?.verified_by_name;
-  const doVerify = (key: string) => run(() => verifyFiling(ym, key), () => setVerifyRows((v) => [...v, { period: ym, filing_key: key, verified_by_name: "You" }]));
+  const doVerify = (key: string) => run(() => verifyFiling(ym, key), () => setVerifyRows((v) => [...v, { period: ym, filing_key: key, verified_by_name: meName }]));
 
   /* ---------- render pieces ---------- */
   const explain = useMemo(() => new Map(explainers.map((e) => [e.doc_type, e])), [explainers]);
@@ -226,7 +226,7 @@ export default function MonthlyClose({ companyId, who, meId, firmName, answers, 
   if (v.state === "published") action = <><span className="achip">Published by {row?.published_by_name} · {row?.published_at ? fmtDate(row.published_at) : ""}</span>{isPBA && <button className="b quiet xs" onClick={doReopen}>Reopen</button>}</>;
   else if (v.state === "submitted") action = isPBA ? (publishRefusal ? <span className="dm">{publishRefusal}</span> : <button className="b solid" disabled={saving} onClick={doPublish}>{saving ? <><span className="spin w" />Saving…</> : "Verify and publish"}</button>) : <span className="dm">Submitted by {row?.submitted_by_name}. Waiting for Prime Bottomline to check and publish.</span>;
   else if (v.state === "untracked") action = <span className="dm">This month is before the tracking start. Its files are kept; move the start back to track it again.</span>;
-  else if (ym === cur) action = <span className="dm">The month ends on {fmtDate(`${ymAdd(ym, 1)}-01`).replace(/^1 /, "")}. Documents are due by {short(dueOn(ym, DUE_DAY.from_company))}.</span>;
+  else if (ym === cur) action = <span className="dm">The month ends on {short(`${ym}-${String(new Date(+ym.slice(0, 4), +ym.slice(5), 0).getDate()).padStart(2, "0")}`)}. Documents are due by {short(dueOn(ym, DUE_DAY.from_company))}.</span>;
   else action = <><button className="b solid" disabled={!!submitRefusal || saving} onClick={doSubmit}>{saving ? <><span className="spin w" />Saving…</> : "Submit for checking"}</button>{submitRefusal && <span className="dm">{v.ready ? submitRefusal : "Unlocks when everything above is ticked."}</span>}</>;
 
   const mayDocs = true;                                             // anyone on the company can upload company documents
@@ -244,7 +244,7 @@ export default function MonthlyClose({ companyId, who, meId, firmName, answers, 
       <div className="mwrap" style={{ padding: "18px 22px" }}>
         {err && <div className="sys warn" style={{ marginLeft: 0 }}>{err}</div>}
         <div className="trackbar">
-          <div><b>Tracking from {label(trackFrom, true)}</b><span className="dm"> · {list.filter((m) => m >= trackFrom && m <= cur).length} months{trackFrom === defaultTrack ? " · the default, start of this financial year" : ` · changed from the default (${label(defaultTrack, true)})`}</span></div>
+          <div><b>Tracking from {label(trackFrom, true)}</b><span className="dm"> · {list.filter((m) => m >= trackFrom && m <= cur).length === 1 ? "1 month" : `${list.filter((m) => m >= trackFrom && m <= cur).length} months`}{trackFrom === defaultTrack ? " · the default, start of this financial year" : ` · changed from the default (${label(defaultTrack, true)})`}</span></div>
           <label className="dm">Change start <select value={trackFrom} onChange={(e) => changeTrack(e.target.value)}>{options.map((m) => <option key={m} value={m}>{label(m, true)}</option>)}</select></label>
         </div>
         <div className="mlegend">

@@ -93,6 +93,8 @@ export function questionsFor(i: number, a: Answers, ctx: Ctx): Q[] {
   const q: Q[] = [];
   const std = (rule: string) => ctx.plan.standard.filter((s) => s.rule_id === rule);
   const lastM = lastEndedMonth(today);
+  const track = a.trackingStart ?? defaultTracking(a, today);
+  const askLast = lastM >= track;      // a company tracked from this month has no last month to show
 
   switch (i) {
     case 0: {
@@ -134,7 +136,7 @@ export function questionsFor(i: number, a: Answers, ctx: Ctx): Q[] {
     case 2: {
       q.push({ id: "banks", kind: "rows", ask: "List every bank account the company has", list: "banks", help: "Each account adds one statement request every month.", req: ["bank", "last4"], blank: { bank: "", type: "Current", last4: "" },
         cols: [["bank", "Bank", "text", 1.4], ["type", "Type", "select", 1, ["Current", "Savings", "OD / CC", "Escrow", "EEFC"]], ["last4", "Last 4 digits", "text", 0.8, undefined, "last4"]] });
-      if (ack.banks) for (const b of a.banks ?? []) q.push({ id: `up_bank_${b.id}`, kind: "upload", ask: `Upload last month's statement — ${b.bank} ••${b.last4}`, key: `R16:${b.id}`, owner: "founder", period: lastM });
+      if (ack.banks && askLast) for (const b of a.banks ?? []) q.push({ id: `up_bank_${b.id}`, kind: "upload", ask: `Upload last month's statement — ${b.bank} ••${b.last4}`, key: `R16:${b.id}`, owner: "founder", period: lastM });
       break;
     }
     case 3: {
@@ -157,7 +159,7 @@ export function questionsFor(i: number, a: Answers, ctx: Ctx): Q[] {
           q.push({ id: "esi", kind: "choice", ask: "Is it registered for ESI?", key: "salaries.esi", opts: yes, help: e >= 10 ? `With ${e} employees, ESI usually applies if anyone earns up to ₹21,000 a month.` : "Usually from 10 employees." });
           q.push({ id: "pt", kind: "multi", ask: "Which states is it registered for professional tax in?", key: "salaries.ptStates", help: "One challan a month per state.", opts: ["Tamil Nadu", "Karnataka", "Maharashtra", "Kerala", "Telangana", "West Bengal", "Gujarat", "Andhra Pradesh", "None"] });
           q.push({ id: "fsal", kind: "choice", ask: "Do the founders draw a salary?", key: "salaries.foundersPaid", opts: yes });
-          q.push({ id: "up_pay", kind: "upload", ask: "Upload last month's payroll register", key: "R24", owner: "founder", period: lastM });
+          if (askLast) q.push({ id: "up_pay", kind: "upload", ask: "Upload last month's payroll register", key: "R24", owner: "founder", period: lastM });
           const head = std("R23")[0];
           if (head) q.push({ id: "up_head", kind: "upload", ask: "Upload the current headcount list", key: head.key, owner: "founder" });
         }
@@ -183,7 +185,7 @@ export function questionsFor(i: number, a: Answers, ctx: Ctx): Q[] {
       q.push({ id: "hasLoans", kind: "choice", ask: "Does the company have any loans today?", key: "has.loans", opts: yes, help: "Include loans from directors and related companies." });
       if (a.has?.loans) {
         q.push({ id: "loans", kind: "rows", ask: "Add each loan", list: "loans", req: ["lender"], blank: { lender: "", type: "Term loan", sanctioned: "", takenOn: "", secured: "yes" },
-          cols: [["lender", "Lender", "text", 1.2], ["type", "Type", "select", 1.3, LOAN_TYPES], ["sanctioned", "Sanctioned ₹", "text", 1], ["takenOn", "Taken on", "date", 1], ["secured", "Secured", "select", 0.7, [["yes", "Yes"], ["no", "No"]]]] });
+          cols: [["lender", "Lender", "text", 1.2], ["type", "Type", "select", 1.3, LOAN_TYPES], ["sanctioned", "Sanctioned ₹", "text", 1, undefined, "amount"], ["takenOn", "Taken on", "date", 1], ["secured", "Secured", "select", 0.7, [["yes", "Yes"], ["no", "No"]]]] });
         if (ack.loans) {
           const per = evDocs(ctx.plan, ["R43"], () => true, ctx);
           (a.loans ?? []).forEach((l, k) => {
@@ -199,7 +201,7 @@ export function questionsFor(i: number, a: Answers, ctx: Ctx): Q[] {
       q.push({ id: "hasDebs", kind: "choice", ask: "Has the company ever issued debentures?", key: "has.debentures", opts: yes });
       if (a.has?.debentures) {
         q.push({ id: "debs", kind: "rows", ask: "Add each debenture issue", list: "debentures", req: ["issuedOn", "amount"], blank: { issuedOn: "", type: "secured_ncd", amount: "", status: "outstanding", redeemedOn: "" },
-          cols: [["issuedOn", "Issued on", "date", 1], ["type", "Type", "select", 1.3, Object.entries(DEB_TYPES)], ["amount", "Amount ₹", "text", 1], ["status", "Status", "select", 1, [["outstanding", "Outstanding"], ["redeemed", "Redeemed"]]], ["redeemedOn", "Redeemed on", "date", 1]] });
+          cols: [["issuedOn", "Issued on", "date", 1], ["type", "Type", "select", 1.3, Object.entries(DEB_TYPES)], ["amount", "Amount ₹", "text", 1, undefined, "amount"], ["status", "Status", "select", 1, [["outstanding", "Outstanding"], ["redeemed", "Redeemed"]]], ["redeemedOn", "Redeemed on", "date", 1]] });
         if (ack.debs) (a.debentures ?? []).forEach((d) => {
           const issue = ctx.plan.events.find((e) => e.key === `R48:${d.id}`);
           const red = ctx.plan.events.find((e) => e.key === `R49:${d.id}`);
@@ -215,7 +217,7 @@ export function questionsFor(i: number, a: Answers, ctx: Ctx): Q[] {
       q.push({ id: "hasRounds", kind: "choice", ask: "Has the company raised money from investors?", key: "has.rounds", opts: yes });
       if (a.has?.rounds) {
         q.push({ id: "rounds", kind: "rows", ask: "Add each round", list: "rounds", help: "The instrument decides which documents we ask for.", req: ["closedOn", "amount"], blank: { round: "Seed", instrument: "ccps", closedOn: "", amount: "", foreign: "" },
-          cols: [["round", "Round", "select", 1, ["Pre-seed", "Seed", "Bridge", "Pre-Series A", "Series A", "Series B", "Strategic", "Other"]], ["instrument", "Instrument", "select", 1.3, Object.entries(INSTR)], ["closedOn", "Closed on", "date", 1], ["amount", "Amount ₹", "text", 1], ["foreign", "Foreign investor?", "select", 0.8, [["", "No"], ["yes", "Yes"]]]] });
+          cols: [["round", "Round", "select", 1, ["Pre-seed", "Seed", "Bridge", "Pre-Series A", "Series A", "Series B", "Strategic", "Other"]], ["instrument", "Instrument", "select", 1.3, Object.entries(INSTR)], ["closedOn", "Closed on", "date", 1], ["amount", "Amount ₹", "text", 1, undefined, "amount"], ["foreign", "Foreign investor?", "select", 0.8, [["", "No"], ["yes", "Yes"]]]] });
         if (ack.rounds) {
           (a.rounds ?? []).forEach((r) => {
             const ev = ctx.plan.events.find((e) => e.key === `R51:${r.id}` || e.key === `R53:${r.id}`);
@@ -230,7 +232,7 @@ export function questionsFor(i: number, a: Answers, ctx: Ctx): Q[] {
     case 10: {
       q.push({ id: "hasHold", kind: "choice", ask: "Does the company hold investments, or has it lent money to anyone?", key: "has.investments", opts: yes });
       if (a.has?.investments) q.push({ id: "holdings", kind: "rows", ask: "Add each one", list: "investments", req: ["heldWith"], blank: { what: "fd", heldWith: "", amount: "" },
-        cols: [["what", "What", "select", 1.4, HOLD_TYPES], ["heldWith", "Held with", "text", 1.4], ["amount", "Amount ₹", "text", 1]] });
+        cols: [["what", "What", "select", 1.4, HOLD_TYPES], ["heldWith", "Held with", "text", 1.4], ["amount", "Amount ₹", "text", 1, undefined, "amount"]] });
       break;
     }
   }

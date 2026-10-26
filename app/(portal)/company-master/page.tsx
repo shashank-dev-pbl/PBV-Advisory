@@ -48,6 +48,7 @@ export default async function CompanyMasterPage() {
       <PageHeader title={company.name} accent="Company master" />
       <MasterWizard
         companyId={company.id}
+        meName={session.user!.name ?? "You"}
         firmName={firm}
         initialAnswers={(master.data?.answers ?? {}) as Answers}
         initialDone={done}

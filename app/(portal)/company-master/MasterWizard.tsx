@@ -7,7 +7,7 @@ import { safeStorageSegment } from "@/lib/storagePath";
 import { unwrap } from "@/lib/actionResult";
 import { fmtDate } from "@/lib/dates";
 import { buildPlan, booksOwner, type EngineData } from "@/lib/master/engine";
-import { clean, maxLen } from "@/lib/idformats";
+import { clean, maxLen, stateOfGstin } from "@/lib/idformats";
 import { STEP_DEFS, defaultTracking, fieldErrors, isAnswered, rowErrors, lastEndedMonth, stepComplete, trackingOptions, valueAt, visibleQuestions, type Ctx, type Opt, type Q } from "@/lib/master/questions";
 import type { Answers, Owner, Plan } from "@/lib/master/types";
 import { recordFile, removeFile, saveAnswers, setStepDone } from "./actions";
@@ -51,8 +51,8 @@ const OPT_LABEL = (o: string | Opt) => (Array.isArray(o) ? o : [o, o]) as [strin
 // Event document -> the explainer that describes it.
 const CODE_EXPLAINER: Record<string, string> = { COI: "coi", PAN: "pan", TAN: "tan", BR: "br", PAS3: "pas3", MGT14: "mgt14", CHG4: "chg4", CHG1: "chg", CHG9: "chg", CHGC: "chg", REDEEM: "red", DCERT: "dcert", TERM: "ts", SSA: "sha", SHA: "sha" };
 
-export default function MasterWizard({ companyId, firmName, initialAnswers, initialDone, data, explainers, files, summaries, log }: {
-  companyId: string; firmName: string | null; initialAnswers: Answers; initialDone: number[]; data: EngineData; explainers: Explainer[]; files: FileRow[]; summaries: SummaryRow[]; log: LogItem[];
+export default function MasterWizard({ companyId, meName, firmName, initialAnswers, initialDone, data, explainers, files, summaries, log }: {
+  companyId: string; meName: string; firmName: string | null; initialAnswers: Answers; initialDone: number[]; data: EngineData; explainers: Explainer[]; files: FileRow[]; summaries: SummaryRow[]; log: LogItem[];
 }) {
   const [answers, setAnswers] = useState<Answers>(initialAnswers);
   const [doneSet, setDoneSet] = useState<number[]>(initialDone.map((n) => n - 1));      // 0-based here, 1-based in the database
@@ -68,6 +68,8 @@ export default function MasterWizard({ companyId, firmName, initialAnswers, init
   const [fresh, setFresh] = useState<Set<string>>(new Set());
   const [err, setErr] = useState("");
   const [saving, start] = useTransition();
+  const [nextPending, setNextPending] = useState(false);       // only the Next / Done button says "Saving…", not every autosave
+  const nextSaving = saving && nextPending;
   const [uploading, setUploading] = useState<{ key: string; period: string | null; filename: string } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const pending = useRef<{ key: string; name: string; period: string | null; reason: string } | null>(null);
@@ -100,11 +102,12 @@ export default function MasterWizard({ companyId, firmName, initialAnswers, init
     start(async () => {
       try { unwrap(await saveAnswers({ answers: next, step: step + 1, what, why })); }
       catch (e) { setErr(e instanceof Error ? e.message : "Could not save"); }
+      finally { setNextPending(false); }
     });
   }
   const stepIndex = view ?? cur;
   const commit = (next: Answers, what: string, why?: string) => { apply(next); persist(next, what, stepIndex, why); };
-  const ackQ = (q: Q) => { setEdit(null); commit(setPath(answers, `ack.${q.id}`, true), `Answered: ${"ask" in q ? q.ask : q.id}`); };
+  const ackQ = (q: Q) => { setEdit(null); setNextPending(true); commit(setPath(answers, `ack.${q.id}`, true), `Answered: ${"ask" in q ? q.ask : q.id}`); };
   const unack = (id: string, why?: string) => commit(setPath(answers, `ack.${id}`, false), `Reopened an answer`, why);
 
   /* ---------------- uploads ---------------- */
@@ -146,7 +149,7 @@ export default function MasterWizard({ companyId, firmName, initialAnswers, init
       if (error) throw error;
       unwrap(await recordFile({ reqKey: p.key, storagePath: path, filename: f.name, reason: p.reason || undefined, period: p.period }));
       const prev = versionsOf(p.key, p.period)[0];
-      setFileRows((rows) => [{ id: uid(), req_key: p.key, period: p.period, version: (prev?.version ?? 0) + 1, storage_path: path, filename: f.name, by_name: "You", at: new Date().toISOString(), reason: p.reason || null, removed: false }, ...rows]);
+      setFileRows((rows) => [{ id: uid(), req_key: p.key, period: p.period, version: (prev?.version ?? 0) + 1, storage_path: path, filename: f.name, by_name: meName, at: new Date().toISOString(), reason: p.reason || null, removed: false }, ...rows]);
     } catch (e) { setErr(e instanceof Error ? e.message : "Upload failed"); }
     setUploading(null);
   }
@@ -237,17 +240,20 @@ export default function MasterWizard({ companyId, firmName, initialAnswers, init
           {bad && val && <div className="ferr">{bad.msg}</div>}
         </div>);
       })}</div>
-        <div className="next"><button className="b solid" disabled={saving} onClick={() => {
+        <div className="next"><button className="b solid" disabled={nextSaving} onClick={() => {
           if (!q.req.every((p) => String(valueAt(answers, p) ?? "").trim())) setErr("Fill in the required details first.");
           else if (errs.length) setErr(errs[0].msg);
           else { setErr(""); ackQ(q); }
-        }}>{saving ? "Saving…" : "Next"}</button><span className="help">{q.req.length < q.fields.length ? "Fields marked optional can be left blank." : ""}</span></div></>;
+        }}>{nextSaving ? "Saving…" : "Next"}</button><span className="help">{q.req.length < q.fields.length ? "Fields marked optional can be left blank." : ""}</span></div></>;
     }
     if (q.kind === "rows") {
       const rows = ((valueAt(answers, q.list) as Record<string, unknown>[] | undefined) ?? []);
       const tpl = q.cols.map((c) => `${c[3]}fr`).join(" ") + " 24px";
       const fmtOf = (k: string) => q.cols.find((c) => c[0] === k)?.[5];
-      const setRow = (n: number, k: string, v: string) => { setEdit(q.id); const f = fmtOf(k); apply(setPath(answers, q.list, rows.map((r, j) => (j === n ? { ...r, [k]: f ? clean(f, v) : v } : r)))); };
+      const setRow = (n: number, k: string, v: string) => {
+        setEdit(q.id); const f = fmtOf(k); const val = f ? clean(f, v) : v;
+        apply(setPath(answers, q.list, rows.map((r, j) => (j === n ? { ...r, [k]: val, ...(k === "gstin" && stateOfGstin(val) ? { state: stateOfGstin(val) } : {}) } : r))));
+      };
       return <><div className="rows"><div className="row head" style={{ gridTemplateColumns: tpl }}>{q.cols.map((c) => <span key={c[0]}>{c[1]}</span>)}<span /></div>
         {rows.length === 0 ? <div className="row" style={{ color: "var(--muted)", fontSize: 12.5 }}>Nothing added yet.</div> : rows.map((r, n) => (
           <div className="row" key={String(r.id)} style={{ gridTemplateColumns: tpl }}>
@@ -264,7 +270,7 @@ export default function MasterWizard({ companyId, firmName, initialAnswers, init
           if (!(rows.length && rows.every((r) => q.req.every((k) => String(r[k] ?? "").trim())))) setErr("Complete every line first, or remove the ones you do not need.");
           else if (bad) setErr(bad.msg);
           else { setErr(""); ackQ(q); }
-        }}>{saving ? "Saving…" : "Done adding"}</button></div></>;
+        }}>{nextSaving ? "Saving…" : "Done adding"}</button></div></>;
     }
     return null;
   }
@@ -359,7 +365,7 @@ export default function MasterWizard({ companyId, firmName, initialAnswers, init
           <div><span>Entity</span>{entity}, incorporated {a.incorporatedOn ? fmtDate(a.incorporatedOn) : "—"}</div>
           <div><span>Books</span>{a.books?.software || "—"}, closed by {ownLabel(closer)}</div>
           <div><span>Bank accounts</span>{a.banks?.length ?? 0}</div>
-          <div><span>GSTINs</span>{a.gst?.registered ? (a.gst.gstins ?? []).map((g) => g.scheme).join(", ") || "—" : "Not registered"}</div>
+          <div><span>GSTINs</span>{a.gst?.registered ? (a.gst.gstins ?? []).filter((g) => g.gstin).map((g) => `${g.gstin} · ${g.state} · ${g.scheme}`).join(", ") || "—" : "Not registered"}</div>
           <div><span>People</span>{a.salaries?.pays ? `${a.salaries.employees ?? 0} employees, ${a.salaries.contractors ?? 0} contractors · PF ${a.salaries.pf ? "yes" : "no"} · ESI ${a.salaries.esi ? "yes" : "no"}` : "No salaries"}</div>
           <div><span>Loans · debentures · rounds</span>{a.has?.loans ? a.loans?.length ?? 0 : 0} · {a.has?.debentures ? a.debentures?.length ?? 0 : 0} · {a.has?.rounds ? a.rounds?.length ?? 0 : 0}</div>
           <div><span>Items generated</span>{total}</div>
@@ -408,7 +414,7 @@ export default function MasterWizard({ companyId, firmName, initialAnswers, init
               {out.map((q, k) => turn(q, k === out.length - 1))}
               {!complete && remaining > 0 && <div className="locknote" style={{ marginLeft: 42 }}>{remaining} more question{remaining > 1 ? "s" : ""} will appear as you answer.</div>}
               {complete && (
-                <div className="complete"><div><div className="t">{done(i) ? `Step ${i + 1} is complete` : `That covers ${STEP_DEFS[i].t.toLowerCase()}`}</div><div className="d">{done(i) ? "Its items are on the right." : "Mark it complete to unlock the next step."}</div></div>
+                <div className="complete"><div><div className="t">{done(i) ? `Step ${i + 1} is complete` : `That covers ${STEP_DEFS[i].t.split(" ").map((x) => (x.length > 1 && x === x.toUpperCase() ? x : x.toLowerCase())).join(" ")}`}</div><div className="d">{done(i) ? "Its items are on the right." : "Mark it complete to unlock the next step."}</div></div>
                   <div className="acts">
                     {!done(i) && <button className="b solid" disabled={saving} onClick={finishStep}>{saving ? <><span className="spin w" />Saving…</> : `Complete step ${i + 1}`}</button>}
                     {done(i) && !reviewing && <button className="b solid" onClick={proceed}>Proceed to step {i + 2}: {STEP_DEFS[i + 1].t} →</button>}

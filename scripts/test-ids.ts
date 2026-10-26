@@ -23,4 +23,5 @@ assert.match(checkId("gstin", g + (full[14] === "A" ? "B" : "A"), a)!, /check/i)
 assert.match(checkId("gstin", `29AABCY1234F1Z${gstinCheckChar("29AABCY1234F1Z")}`, a)!, /PAN/);
 assert.equal(checkId("last4", "1123", a), null); assert.match(checkId("last4", "112", a)!, /four/);
 assert.equal(checkId("pan", "", a), null);
+assert.equal(checkId("amount", "2500000", a), null); assert.match(checkId("amount", "abc", a)!, /digits/);
 console.log("ok - government ID formats");

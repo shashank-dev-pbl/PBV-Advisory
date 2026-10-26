@@ -50,6 +50,7 @@ export default async function MonthlyPage() {
       <PageHeader title={company.name} accent="Monthly close" />
       <MonthlyClose
         companyId={company.id}
+        meName={session.user!.name ?? "You"}
         who={session.who as "founder" | "external" | "pba" | "admin"}
         meId={session.user!.id}
         firmName={firm}
