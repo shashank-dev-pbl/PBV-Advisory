@@ -36,7 +36,7 @@ const xploro: Answers = {
   details: { legalName: "Xploro", pan: "AAAAA0000A", tan: "BLRX00000X", state: "Tamil Nadu" },
   books: { software: "Tally", closer: "firm", firmOnPortal: true, firmName: "SPARC & Co" },
   banks: [{ id: "b1", bank: "HDFC", type: "Current", last4: "1234" }],
-  gst: { registered: true, gstins: [{ id: "g1", gstin: "33AAAAA0000A1Z5", state: "Tamil Nadu", scheme: "regular" }] },
+  gst: { registered: true, gstins: [{ id: "g1", gstin: "33AAAAA0000A1Z9", state: "Tamil Nadu", scheme: "regular" }] },
   salaries: { pays: true, employees: 14, contractors: 5, pf: false, esi: false, ptStates: [], foundersPaid: true },
   tds: { types: ["salaries", "vendors"] },
   revenue: { types: ["subscription", "service"], partners: true, sharing: "full", gateways: ["Razorpay", "PayU"], advances: false, exports: true },
@@ -103,7 +103,7 @@ assert.equal(pfAug.length, 3 + 3, "PF, ESI and Karnataka PT in August; Tamil Nad
 assert.equal(filingsForPeriod(pf, "2026-09").some((f) => f.name.includes("Tamil Nadu")), true);
 assert.equal(requestsForPeriod(pf, "2026-08").length, aug.length, "no extra documents for PF/ESI/PT");
 // QRMP and Composition
-const q = buildPlan({ ...xploro, gst: { registered: true, gstins: [{ id: "g1", gstin: "33AAAAA0000A1Z5", state: "Tamil Nadu", scheme: "qrmp" }, { id: "g2", gstin: "27AAAAA0000A1Z5", state: "Maharashtra", scheme: "composition" }] } }, data, today);
+const q = buildPlan({ ...xploro, gst: { registered: true, gstins: [{ id: "g1", gstin: "33AAAAA0000A1Z9", state: "Tamil Nadu", scheme: "qrmp" }, { id: "g2", gstin: "27AAAAA0000A1Z2", state: "Maharashtra", scheme: "composition" }] } }, data, today);
 assert.equal(filingsForPeriod(q, "2026-08").filter((f) => f.filing_id === "F03").length, 1, "PMT-06 in month 1 of the quarter");
 assert.equal(filingsForPeriod(q, "2026-09").filter((f) => ["F04", "F05", "F06"].includes(f.filing_id)).length, 3, "quarter-end GST returns");
 assert.equal(filingsForPeriod(q, "2026-09").find((f) => f.filing_id === "F06")!.due, "2026-10-18", "CMP-08 on the 18th");

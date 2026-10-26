@@ -53,7 +53,10 @@ export function catchNote(a: Answers, today = new Date()): string {
   const to = lastEndedMonth(today);
   const n = Math.max(0, (+to.slice(0, 4) - +from.slice(0, 4)) * 12 + (+to.slice(5) - +from.slice(5)) + 1);
   const old = a.incorporatedOn.slice(0, 7) < fy;
-  return `${old ? `Incorporated ${fmtD(a.incorporatedOn)} — older than this financial year.` : `Incorporated ${fmtD(a.incorporatedOn)}, within this financial year.`} We'll collect <b>${n} catch-up month${n === 1 ? "" : "s"}</b> (${monLabel(from)} – ${monLabel(to)}), then every month from ${monLabel(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`)}. The data room timeline starts on ${fmtD(a.incorporatedOn)}.`;
+  const when = old ? `Incorporated ${fmtD(a.incorporatedOn)} — older than this financial year.` : `Incorporated ${fmtD(a.incorporatedOn)}, within this financial year.`;
+  const thisMonth = monLabel(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`);
+  const catchUp = n === 0 ? `There are no catch-up months — the first month to collect is ${thisMonth}, once it ends` : `We'll collect <b>${n} catch-up month${n === 1 ? "" : "s"}</b> (${monLabel(from)}${n > 1 ? ` – ${monLabel(to)}` : ""}), then every month from ${thisMonth}`;
+  return `${when} ${catchUp}. The data room timeline starts on ${fmtD(a.incorporatedOn)}.`;
 }
 
 export function defaultTracking(a: Answers, today = new Date()): string {

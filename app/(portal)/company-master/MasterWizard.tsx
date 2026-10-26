@@ -104,7 +104,7 @@ export default function MasterWizard({ companyId, firmName, initialAnswers, init
   }
   const stepIndex = view ?? cur;
   const commit = (next: Answers, what: string, why?: string) => { apply(next); persist(next, what, stepIndex, why); };
-  const ackQ = (q: Q) => commit(setPath(answers, `ack.${q.id}`, true), `Answered: ${"ask" in q ? q.ask : q.id}`);
+  const ackQ = (q: Q) => { setEdit(null); commit(setPath(answers, `ack.${q.id}`, true), `Answered: ${"ask" in q ? q.ask : q.id}`); };
   const unack = (id: string, why?: string) => commit(setPath(answers, `ack.${id}`, false), `Reopened an answer`, why);
 
   /* ---------------- uploads ---------------- */
@@ -233,7 +233,7 @@ export default function MasterWizard({ companyId, firmName, initialAnswers, init
             : <input type={kind === "number" ? "number" : "text"} value={val} min={kind === "number" ? 0 : undefined} step={kind === "number" ? 1 : undefined}
                 maxLength={fmt ? maxLen[fmt] : undefined} autoCapitalize={fmt ? "characters" : undefined} spellCheck={fmt ? false : undefined} aria-invalid={bad ? true : undefined}
                 style={bad && val ? { borderColor: "#b3261e" } : undefined}
-                onChange={(e) => apply(setPath(answers, path, kind === "number" ? (e.target.value === "" ? undefined : Math.max(0, Math.floor(Number(e.target.value)))) : fmt ? clean(fmt, e.target.value) : e.target.value))} />}
+                onChange={(e) => { setEdit(q.id); apply(setPath(answers, path, kind === "number" ? (e.target.value === "" ? undefined : Math.max(0, Math.floor(Number(e.target.value)))) : fmt ? clean(fmt, e.target.value) : e.target.value)); }} />}
           {bad && val && <div className="ferr">{bad.msg}</div>}
         </div>);
       })}</div>
@@ -247,7 +247,7 @@ export default function MasterWizard({ companyId, firmName, initialAnswers, init
       const rows = ((valueAt(answers, q.list) as Record<string, unknown>[] | undefined) ?? []);
       const tpl = q.cols.map((c) => `${c[3]}fr`).join(" ") + " 24px";
       const fmtOf = (k: string) => q.cols.find((c) => c[0] === k)?.[5];
-      const setRow = (n: number, k: string, v: string) => { const f = fmtOf(k); apply(setPath(answers, q.list, rows.map((r, j) => (j === n ? { ...r, [k]: f ? clean(f, v) : v } : r)))); };
+      const setRow = (n: number, k: string, v: string) => { setEdit(q.id); const f = fmtOf(k); apply(setPath(answers, q.list, rows.map((r, j) => (j === n ? { ...r, [k]: f ? clean(f, v) : v } : r)))); };
       return <><div className="rows"><div className="row head" style={{ gridTemplateColumns: tpl }}>{q.cols.map((c) => <span key={c[0]}>{c[1]}</span>)}<span /></div>
         {rows.length === 0 ? <div className="row" style={{ color: "var(--muted)", fontSize: 12.5 }}>Nothing added yet.</div> : rows.map((r, n) => (
           <div className="row" key={String(r.id)} style={{ gridTemplateColumns: tpl }}>

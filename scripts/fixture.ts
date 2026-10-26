@@ -21,7 +21,7 @@ export const xploro: Answers = {
   details: { legalName: "Xploro", pan: "AAAAA0000A", tan: "BLRX00000X", state: "Tamil Nadu" },
   books: { software: "Tally", closer: "firm", firmOnPortal: true, firmName: "SPARC & Co" },
   banks: [{ id: "b1", bank: "HDFC", type: "Current", last4: "1234" }],
-  gst: { registered: true, gstins: [{ id: "g1", gstin: "33AAAAA0000A1Z5", state: "Tamil Nadu", scheme: "regular" }] },
+  gst: { registered: true, gstins: [{ id: "g1", gstin: "33AAAAA0000A1Z9", state: "Tamil Nadu", scheme: "regular" }] },
   salaries: { pays: true, employees: 14, contractors: 5, pf: false, esi: false, ptStates: [], foundersPaid: true },
   tds: { types: ["salaries", "vendors"] },
   revenue: { types: ["subscription", "service"], partners: true, sharing: "full", gateways: ["Razorpay", "PayU"], advances: false, exports: true },

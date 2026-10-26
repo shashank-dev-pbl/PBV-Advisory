@@ -1,3 +1,4 @@
+import { checkId } from "@/lib/idformats";
 import type {
   Answers, EventDocReq, EventTypeDoc, FilingDef, FilingRow, LibDoc, MasterFiling, MasterRule, Owner, Plan, Recurring, Request, StdDoc, Tier, TimelineEvent,
 } from "./types";
@@ -116,7 +117,21 @@ const INSTRUMENT_EVENT: Record<string, string> = { equity: "equity", ccps: "ccps
 
 export type EngineData = { rules: MasterRule[]; filings: MasterFiling[]; eventDocs: EventTypeDoc[]; library: LibDoc[] };
 
-export function buildPlan(a: Answers, data: EngineData, today: Date = new Date()): Plan {
+// A row still being typed (no bank name yet, a GSTIN that is not a GSTIN) must not ask the company for anything.
+function completeRows(a: Answers): Answers {
+  return {
+    ...a,
+    banks: (a.banks ?? []).filter((b) => b.bank?.trim() && /^\d{4}$/.test(b.last4 ?? "")),
+    gst: a.gst ? { ...a.gst, gstins: (a.gst.gstins ?? []).filter((g) => checkId("gstin", g.gstin, a, g) === null && !!g.gstin) } : a.gst,
+    loans: (a.loans ?? []).filter((l) => l.lender?.trim()),
+    debentures: (a.debentures ?? []).filter((d) => d.issuedOn),
+    rounds: (a.rounds ?? []).filter((r) => r.closedOn),
+    investments: (a.investments ?? []).filter((i) => i.what),
+  };
+}
+
+export function buildPlan(a0: Answers, data: EngineData, today: Date = new Date()): Plan {
+  const a = completeRows(a0);
   const lib = new Map(data.library.map((d) => [d.code, d]));
   const rules = [...data.rules].sort((x, y) => x.sort - y.sort);
   const plan: Plan = { standard: [], events: [], recurring: [], filings: [] };
