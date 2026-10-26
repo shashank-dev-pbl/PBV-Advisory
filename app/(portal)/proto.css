@@ -508,3 +508,12 @@
 .p5 .drop.busy{background:#f4f8f2;border-style:dashed;border-color:#b9cdb5}
 .p5 .ferr{color:#b3261e;font-size:11.5px;margin-top:4px;line-height:1.35}
 .p5 button:disabled{opacity:.6;cursor:progress}
+
+/* Upload cards on a laptop-width centre column: the text keeps a readable width and the buttons wrap underneath */
+.p5 .drop{flex-wrap:wrap}
+.p5 .drop .dn{flex:1 1 230px}
+.p5 .drop>.b,.p5 .drop>.own,.p5 .drop>.cnt-chip{flex:0 0 auto}
+.p5 .dct{flex-wrap:wrap}
+.p5 .dct .dn{flex:1 1 230px}
+.p5 .dacts{flex-wrap:wrap}
+@media (max-width:1400px){.p5 .layout{grid-template-columns:210px minmax(0,1fr) 290px;gap:18px;padding:22px 20px 70px}}
