@@ -50,10 +50,18 @@ export type OutreachResult =
   | { ok: true; counts: Record<string, number>; items: OutreachItem[] }
   | { ok: false; reason: "not_configured" | "failed"; detail?: string };
 
-async function call<T>(path: string): Promise<T> {
-  const base = process.env.OUTREACH_API_URL!.replace(/\/$/, "");
-  const res = await fetch(`${base}${path}`, {
-    headers: { "x-extension-key": process.env.OUTREACH_API_KEY! },
+// Production reads the live bot. Dev, preview and local runs never read it: they use their own OUTREACH_DEV_* pair
+// (a separate bot app) or, with none set, sample data. So testing here can never touch live leads.
+export const isProd = () => process.env.VERCEL_ENV === "production";
+export function outreachConfig(): { base: string; key: string } | null {
+  const base = isProd() ? process.env.OUTREACH_API_URL : process.env.OUTREACH_DEV_API_URL;
+  const key = isProd() ? process.env.OUTREACH_API_KEY : process.env.OUTREACH_DEV_API_KEY;
+  return base && key ? { base: base.replace(/\/$/, ""), key } : null;
+}
+
+async function call<T>(cfg: { base: string; key: string }, path: string): Promise<T> {
+  const res = await fetch(`${cfg.base}${path}`, {
+    headers: { "x-extension-key": cfg.key },
     cache: "no-store",
   });
   if (!(res.headers.get("content-type") ?? "").includes("application/json")) throw new Error(`Unexpected reply (status ${res.status})`);
@@ -63,11 +71,12 @@ async function call<T>(path: string): Promise<T> {
 }
 
 export async function loadOutreach(stages: string[]): Promise<OutreachResult> {
-  if (!process.env.OUTREACH_API_URL || !process.env.OUTREACH_API_KEY) return { ok: false, reason: "not_configured" };
+  const cfg = outreachConfig();
+  if (!cfg) return { ok: false, reason: "not_configured" };
   try {
     const [{ counts }, { items }] = await Promise.all([
-      call<{ counts: Record<string, number> }>("/api/queue?summary=1"),
-      call<{ items: OutreachItem[] }>(`/api/queue?stage=${encodeURIComponent(stages.join(","))}&limit=200`),
+      call<{ counts: Record<string, number> }>(cfg, "/api/queue?summary=1"),
+      call<{ items: OutreachItem[] }>(cfg, `/api/queue?stage=${encodeURIComponent(stages.join(","))}&limit=200`),
     ]);
     return { ok: true, counts, items };
   } catch (e) {

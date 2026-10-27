@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth";
 import { canOpen } from "@/lib/access";
+import { outreachConfig } from "@/lib/outreach";
 import { guarded, type ActionResult } from "@/lib/actionResult";
 
 // The one write on the Outreach page: give the bot the founder it could not find on its own. The lead moves to
@@ -18,9 +19,9 @@ export async function giveFounder(input: {
   return guarded(async () => {
     const session = await getSession();
     if (!session.user || !session.who || !canOpen(session.who, "outreach")) throw new Error("You don't have access to this action");
-    const base = process.env.OUTREACH_API_URL?.replace(/\/$/, "");
-    const key = process.env.OUTREACH_API_KEY;
-    if (!base || !key) throw new Error("Outreach is not connected on this deployment");
+    const cfg = outreachConfig();
+    if (!cfg) throw new Error("Outreach is not connected on this deployment");
+    const { base, key } = cfg;
 
     const founderUrl = input.founderUrl.trim().split("?")[0].replace(/\/$/, "");
     const founderName = input.founderName.trim();
