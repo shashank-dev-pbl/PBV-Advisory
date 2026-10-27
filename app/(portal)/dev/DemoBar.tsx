@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import "../proto.css";
 import { unwrap } from "@/lib/actionResult";
 import { fillTestCompany, resetTestCompany } from "./actions";
 
@@ -12,7 +13,7 @@ export default function DemoBar() {
   const [ask, setAsk] = useState<null | "fill" | "reset">(null);
   const run = (kind: "fill" | "reset") => start(async () => {
     setErr(""); setWhat(kind); setAsk(null);
-    try { unwrap(await (kind === "fill" ? fillTestCompany() : resetTestCompany())); window.location.assign("/dashboard"); }
+    try { unwrap(await (kind === "fill" ? fillTestCompany() : resetTestCompany())); window.location.reload(); }
     catch (e) { setErr(e instanceof Error ? e.message : "Could not do that"); setWhat(""); }
   });
   return (
@@ -24,6 +25,15 @@ export default function DemoBar() {
         <button disabled={busy} onClick={() => setAsk("fill")} style={{ background: "#fff", color: "#26527f", borderRadius: 6, padding: "3px 10px", fontWeight: 700 }}>Fill with Xploro</button>
         <button disabled={busy} onClick={() => setAsk("reset")} style={{ background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,.6)", borderRadius: 6, padding: "3px 10px" }}>Reset everything</button>
       </span>
+      {busy && (
+        <div role="status" aria-live="polite" style={{ position: "fixed", inset: 0, background: "rgba(244,240,230,.82)", display: "grid", placeItems: "center", zIndex: 120 }}>
+          <div style={{ background: "#fff", color: "#1a1a1a", borderRadius: 12, padding: "20px 26px", textAlign: "center", boxShadow: "0 8px 30px rgba(0,0,0,.15)" }}>
+            <div className="p5"><span className="spin" style={{ width: 22, height: 22 }} /></div>
+            <div style={{ fontWeight: 700, marginTop: 10 }}>{what === "fill" ? "Filling with Xploro…" : "Resetting…"}</div>
+            <div style={{ fontSize: 12.5, opacity: 0.7, marginTop: 2 }}>{what === "fill" ? "About 20 seconds. Please don't click anything." : "A few seconds."}</div>
+          </div>
+        </div>
+      )}
       {ask && (
         <div role="dialog" aria-modal="true" onClick={(e) => { if (e.target === e.currentTarget) setAsk(null); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.35)", display: "grid", placeItems: "center", zIndex: 100 }}>
           <div style={{ background: "#fff", color: "#1a1a1a", borderRadius: 12, padding: 22, maxWidth: 440 }}>

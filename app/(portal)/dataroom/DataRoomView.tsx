@@ -34,6 +34,8 @@ export default function DataRoomView({ companyId, meName, firmName, answers, dat
   const [fileRows, setFileRows] = useState<FileRow[]>(files);
   const [sums, setSums] = useState<SummaryRow[]>(summaries);
   const [sel, setSel] = useState<string | null>(null);
+  const [zoom, setZoom] = useState<number | null>(null);        // a year opened into its months
+  const [origin, setOrigin] = useState("50%");
   const [modal, setModal] = useState<ModalState | null>(null);
   const [drawer, setDrawer] = useState<{ key: string; name: string; owner: Owner; code: string | null; justUploaded?: boolean } | null>(null);
   const [hist, setHist] = useState<Record<string, boolean>>({});
@@ -112,8 +114,9 @@ export default function DataRoomView({ companyId, meName, firmName, answers, dat
 
   /* ---- timeline ---- */
   function timeline() {
-    const dated = events.filter((e) => e.date);
-    const years = timelineYears(answers, today);
+    const allYears = timelineYears(answers, today);
+    const dated = events.filter((e) => e.date && (zoom === null || e.date.startsWith(String(zoom))));
+    const years = zoom === null ? allYears : [zoom];
     const start = new Date(`${years[0]}-01-01T00:00:00`), end = new Date(`${years[years.length - 1] + 1}-01-01T00:00:00`);
     const W = Math.max(760, width - 4);
     const x = (d: string) => 24 + (W - 48) * ((new Date(`${d}T00:00:00`).getTime() - start.getTime()) / (end.getTime() - start.getTime()));
@@ -134,11 +137,27 @@ export default function DataRoomView({ companyId, meName, firmName, answers, dat
       );
     });
     const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const nIn = (y: number) => events.filter((e) => e.date?.startsWith(String(y))).length;
+    const openYear = (y: number, ev: React.MouseEvent) => {
+      const r = (ev.currentTarget as HTMLElement).getBoundingClientRect(), box = (ev.currentTarget.parentElement as HTMLElement).getBoundingClientRect();
+      setOrigin(`${Math.round(r.left - box.left + r.width / 2)}px 50%`); setSel(null); setZoom(y);
+    };
+    const showToday = todayIso >= `${years[0]}-01-01` && todayIso < `${years[years.length - 1] + 1}-01-01`;
     return (
-      <div className="tlwrap"><div className="tl" style={{ width: W }}>
-        {years.map((y, i) => <div key={y} className={`yband ${i % 2 ? "alt" : ""}`} style={{ left: x(`${y}-01-01`), width: x(`${y + 1}-01-01`) - x(`${y}-01-01`) }}><span>{y}</span></div>)}
-        <div className="axis" style={{ top: AX - 1 }} /><div className="today" style={{ left: x(todayIso) }}><span>Today</span></div>{items}
-      </div></div>
+      <>
+        {zoom !== null && <button className="tlback" onClick={() => { setOrigin("50%"); setSel(null); setZoom(null); }}>← All years</button>}
+        {zoom === null && allYears.length > 0 && <div className="tlhint">Click a year to open its months.</div>}
+        <div className="tlwrap"><div key={zoom ?? "all"} className="tl tlzoom" style={{ width: W, transformOrigin: origin }}>
+          {zoom === null
+            ? years.map((y, i) => <div key={y} className={`yband click ${i % 2 ? "alt" : ""}`} role="button" tabIndex={0} aria-label={`Open ${y}`} onClick={(e) => openYear(y, e)} onKeyDown={(e) => { if (e.key === "Enter") setZoom(y); }}
+                style={{ left: x(`${y}-01-01`), width: x(`${y + 1}-01-01`) - x(`${y}-01-01`) }}><span>{y}</span><small>{nIn(y)} event{nIn(y) === 1 ? "" : "s"}</small></div>)
+            : MONTHS.map((m, i) => { const a = `${zoom}-${String(i + 1).padStart(2, "0")}-01`, b = i === 11 ? `${zoom + 1}-01-01` : `${zoom}-${String(i + 2).padStart(2, "0")}-01`;
+                return <div key={m} className={`yband ${i % 2 ? "alt" : ""}`} style={{ left: x(a), width: x(b) - x(a) }}><span>{m}</span></div>; })}
+          <div className="axis" style={{ top: AX - 1 }} />{showToday && <div className="today" style={{ left: x(todayIso) }}><span>Today</span></div>}{items}
+        </div></div>
+        {zoom !== null && dated.length === 0 && <div className="dm" style={{ marginBottom: 10 }}>No events in {zoom}.</div>}
+      </>
     );
   }
   const selected = events.find((e) => e.key === sel) ?? events.filter((e) => e.date).slice(-1)[0] ?? null;

@@ -522,3 +522,25 @@
 .p5 .ring b,.p5 .ring span{display:block;line-height:1.1;margin:0}
 
 .p5 .att .ad{white-space:pre-line}
+
+.p5 .step .sl{display:flex;align-items:center;gap:4px}
+.p5 .step .sl .lockic{margin-left:0;flex:0 0 auto}
+.p5 .allstep{padding-bottom:22px;margin-bottom:22px;border-bottom:1px solid #e6e0d1;scroll-margin-top:12px}
+.p5 .sys.ok{background:#e8f3e8;color:#1e4620}
+/* company timeline: zoom between the years and one year's months */
+@keyframes tlin{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+@keyframes tlpop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.p5 .tlzoom{animation:tlin .42s cubic-bezier(.2,.7,.2,1) both}
+.p5 .tlzoom .evcard,.p5 .tlzoom .node,.p5 .tlzoom .stem{animation:tlpop .5s cubic-bezier(.2,.7,.2,1) both;animation-delay:.12s}
+.p5 .yband.click{cursor:pointer;transition:background .2s}
+.p5 .yband.click:hover{background:#f1ecdd}
+.p5 .yband.click:hover span{color:#1e4620}
+.p5 .yband small{position:absolute;bottom:22px;left:8px;font-size:10.5px;color:#a8a293}
+.p5 .tlback{display:inline-flex;align-items:center;gap:6px;margin:0 0 10px;padding:5px 12px;border:1px solid #d8cfbc;border-radius:20px;background:#fff;font-size:12.5px;font-weight:700;color:#1e4620;cursor:pointer;transition:background .15s,transform .15s}
+.p5 .tlback:hover{background:#f1ecdd;transform:translateX(-2px)}
+.p5 .tlhint{font-size:11.5px;color:#8b8779;margin-bottom:8px}
+.navspin{width:12px;height:12px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;display:inline-block;animation:navspin .7s linear infinite;opacity:.8}
+@keyframes navspin{to{transform:rotate(360deg)}}
+.p5 .pageload{padding:22px}
+.p5 .sk{background:linear-gradient(90deg,#ece6d6 25%,#f4efe2 50%,#ece6d6 75%);background-size:200% 100%;animation:skm 1.2s infinite;border-radius:10px}
+@keyframes skm{to{background-position:-200% 0}}

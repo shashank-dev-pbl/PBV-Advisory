@@ -13,25 +13,27 @@ export default async function PortalLayout({ children }: { children: React.React
   if (!session.user || !session.who) redirect(session.reason ? `/login?e=${encodeURIComponent(session.reason)}` : "/login");
 
   // The badge on "Monthly close": how many tracked months are late.
-  const lateMonths = session.company ? await lateMonthCount(session.company.id) : 0;
+  const lateP = session.company ? lateMonthCount(session.company.id) : Promise.resolve(0);
 
   // The badge on Legal: what is waiting for the founder (pay or approve extra), or for Prime Bottomline to price.
-  let legalBadge: { n: number; label: string } | null = null;
-  if (session.company && session.who !== "external") {
-    const supabase = await createClient();
+  const supabase = await createClient();
+  const legalP = (async () => {
+    let legalBadge: { n: number; label: string } | null = null;
+    if (!session.company || session.who === "external") return legalBadge;
     const { data } = await supabase.from("legal_request").select("status").eq("company_id", session.company.id).in("status", ["quote", "pay", "extra"]);
     const rows = data ?? [];
     const n = session.who === "founder" ? rows.filter((r) => r.status === "pay" || r.status === "extra").length : rows.filter((r) => r.status === "quote").length;
     if (n > 0) legalBadge = { n, label: session.who === "founder" ? "for you" : "to price" };
-  }
+    return legalBadge;
+  })();
 
   // Steps of the company master done, shown as a badge until it is finished.
-  let masterDone: number | null = null;
-  if (session.company) {
-    const supabase = await createClient();
+  const masterP = (async () => {
+    if (!session.company) return null;
     const { data } = await supabase.from("company_master").select("steps_done, completed").eq("company_id", session.company.id).maybeSingle();
-    masterDone = data?.completed ? null : ((data?.steps_done as number[] | undefined)?.length ?? 0);
-  }
+    return data?.completed ? null : ((data?.steps_done as number[] | undefined)?.length ?? 0);
+  })();
+  const [lateMonths, legalBadge, masterDone] = await Promise.all([lateP, legalP, masterP]);
 
   return (
     <>

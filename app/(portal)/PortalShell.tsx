@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Lock, Menu, X } from "lucide-react";
 import { PAGES, canOpen, type PageKey, type Who } from "@/lib/access";
@@ -16,6 +16,12 @@ type Props = {
   masterDone: number | null;
   children: React.ReactNode;
 };
+
+// Shows a small spinner on the menu item the moment it is clicked, until the page has loaded.
+function LinkPending() {
+  const { pending } = useLinkStatus();
+  return pending ? <span className="navspin" aria-label="Loading" role="status" /> : null;
+}
 
 // Only the pages this person can open appear at all — no greyed-out, locked entries.
 function NavItem({ page, who, pathname, extra, label, href, matchPrefix, sub, onNavigate }: {
@@ -38,7 +44,7 @@ function NavItem({ page, who, pathname, extra, label, href, matchPrefix, sub, on
       }}
     >
       <span>{label ?? p.label}</span>
-      {extra}
+      <span className="flex items-center gap-1.5">{extra}<LinkPending /></span>
     </Link>
   );
 }
@@ -47,7 +53,7 @@ export default function PortalShell({ who, companies, companyId, lateMonths, leg
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [, startTransition] = useTransition();
+  const [switching, startTransition] = useTransition();
   const close = () => setOpen(false);
 
   const sidebar = (
@@ -55,10 +61,10 @@ export default function PortalShell({ who, companies, companyId, lateMonths, leg
       <p className="eyebrow px-3 pb-2 pt-1" style={{ color: "var(--bottomline-green)" }}>Prime Bottomline Advisory</p>
 
       <div className="px-3 pb-3">
-        <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: "var(--ink-secondary)" }}>Company</p>
+        <p className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.08em]" style={{ color: "var(--ink-secondary)" }}>Company{switching && <><span className="navspin" role="status" aria-label="Switching" /><span className="normal-case tracking-normal">Switching…</span></>}</p>
         {companies.length > 1 ? (
           <select
-            className="input-field"
+            className="input-field" disabled={switching} aria-busy={switching}
             style={{ minHeight: 34, padding: "6px 8px", fontSize: 13 }}
             value={companyId ?? ""}
             onChange={(e) => startTransition(async () => {

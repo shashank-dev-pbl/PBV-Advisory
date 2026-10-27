@@ -71,6 +71,7 @@ export default function MasterWizard({ companyId, meName, firmName, initialAnswe
   const nextSaving = saving && nextPending;
   const [uploading, setUploading] = useState<{ key: string; period: string | null; filename: string } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const stepRef = useRef(0);                                 // which step the person last touched, when every step is on one page
   const pending = useRef<{ key: string; name: string; period: string | null; reason: string } | null>(null);
 
   const done = (i: number) => doneSet.includes(i);
@@ -105,7 +106,8 @@ export default function MasterWizard({ companyId, meName, firmName, initialAnswe
     });
   }
   const stepIndex = view ?? cur;
-  const commit = (next: Answers, what: string, why?: string) => { apply(next); persist(next, what, stepIndex, why); };
+  const allMode = done(11) && view === null;                 // a finished master shows every step at once
+  const commit = (next: Answers, what: string, why?: string) => { apply(next); persist(next, what, allMode ? stepRef.current : stepIndex, why); };
   const ackQ = (q: Q) => { setEdit(null); setNextPending(true); commit(setPath(answers, `ack.${q.id}`, true), `Answered: ${"ask" in q ? q.ask : q.id}`); };
   const unack = (id: string, why?: string) => commit(setPath(answers, `ack.${id}`, false), `Reopened an answer`, why);
 
@@ -328,20 +330,25 @@ export default function MasterWizard({ companyId, meName, firmName, initialAnswe
   /* ---------------- panel ---------------- */
   function panel() {
     type Item = { key: string; name: string; owner: Owner; why?: string };
-    const monthly: Item[] = [], quarterly: Item[] = [], once: Item[] = plan.standard.map((s) => ({ key: s.key, name: s.name, owner: s.owner }));
-    for (const r of plan.recurring) (r.schedule === "monthly" ? monthly : quarterly).push({ key: r.key, name: r.name, owner: r.owner });
-    for (const f of plan.filings) ((f.schedule === "monthly" || f.schedule === "quarter_months_1_2") ? monthly : quarterly).push({ key: f.key, name: `${f.name} (filing)`, owner: f.owner });
-    const events = plan.events;
+    // Nothing is listed until the step that creates it has been answered: finished steps, plus the current one once it has an answer or a file.
+    const curStarted = !allMode && visibleQuestions(cur, answers, ctx, has).out.some((q) => q.kind !== "note" && isAnswered(q, answers, has));
+    const shown = (n: number) => done(n - 1) || (n - 1 === cur && curStarted);
+    const ruleStep = (ruleId: string) => parseInt(ruleOf.get(ruleId)?.step ?? "1", 10) || 1;
+    const filingStep = (name: string) => (/GST/i.test(name) ? 4 : /TDS|TCS/i.test(name) ? 6 : /\bPF\b|\bESI|PT\b|professional|payroll/i.test(name) ? 5 : 2);
+    const monthly: Item[] = [], quarterly: Item[] = [], once: Item[] = plan.standard.filter((s) => shown(ruleStep(s.rule_id))).map((s) => ({ key: s.key, name: s.name, owner: s.owner }));
+    for (const r of plan.recurring) if (shown(ruleStep(r.rule_id))) (r.schedule === "monthly" ? monthly : quarterly).push({ key: r.key, name: r.name, owner: r.owner });
+    for (const f of plan.filings) if (shown(filingStep(f.name))) ((f.schedule === "monthly" || f.schedule === "quarter_months_1_2") ? monthly : quarterly).push({ key: f.key, name: `${f.name} (filing)`, owner: f.owner });
+    const events = plan.events.filter((e) => shown(ruleStep(e.rule_id)));
     const ev = events.length;
     const trackFrom = answers.trackingStart;
     const catchN = trackFrom ? Math.max(0, (new Date().getFullYear() - +trackFrom.slice(0, 4)) * 12 + (new Date().getMonth() + 1 - +trackFrom.slice(5))) : 0;
     const grp = (label: string, arr: Item[]) => arr.length ? (<><div className="pg">{label} · {arr.length}</div>{arr.map((x) => <div key={x.key} className={`pi ${fresh.has(x.key) ? "new" : ""}`}><span className="pn" title={x.name}>{x.name}</span><Own owner={x.owner} label={ownLabel(x.owner)} /></div>)}</>) : null;
-    const nothing = !monthly.length && !quarterly.length && !once.length && !ev;
+    const nothing = !monthly.length && !quarterly.length && !once.length && !ev && !(answers.incorporatedOn && catchN > 0 && shown(1));
     return (
       <div className="panel" id="panel"><div className="ph"><div className="t">What this master generates</div><div className="d">Builds up as you answer.</div>
         <div className="counts"><div className="cnt"><b>{monthly.length}</b><span>monthly</span></div><div className="cnt"><b>{quarterly.length}</b><span>quarterly / yearly</span></div><div className="cnt"><b>{once.length}</b><span>one-time</span></div><div className="cnt"><b>{ev}</b><span>timeline events</span></div></div></div>
-        <div className="pl">{nothing && <div className="empty">Nothing yet. Answer the first question to start.</div>}
-          {answers.incorporatedOn && catchN > 0 && <><div className="pg">History</div><div className="pi"><span className="pn">Catch-up: {catchN} months, {monthShort(trackFrom!)} – {monthShort(lastEndedMonth())}</span></div></>}
+        <div className="pl">{nothing && <div className="empty">Nothing yet. It fills in as you answer and upload.</div>}
+          {answers.incorporatedOn && catchN > 0 && shown(1) && <><div className="pg">History</div><div className="pi"><span className="pn">Catch-up: {catchN} months, {monthShort(trackFrom!)} – {monthShort(lastEndedMonth())}</span></div></>}
           {grp("Every month", monthly)}{grp("Every quarter / year", quarterly)}{grp("Once", once)}
           {ev > 0 && <><div className="pg">Data room timeline · {ev}</div>{events.map((e) => <div key={e.key} className={`pi ${fresh.has(e.key) ? "new" : ""}`}><span className="pn">{e.kind === "incorp" ? `Incorporation${e.date ? ` · ${fmtDate(e.date)}` : ""}` : e.title}</span></div>)}</>}
         </div></div>
@@ -398,7 +405,10 @@ export default function MasterWizard({ companyId, meName, firmName, initialAnswe
         <div className="steps">{STEP_DEFS.map((s, n) => {
           const st = done(n) ? "done" : n === cur ? "cur" : "locked";
           return (
-            <div key={n} className={`step ${st}${view === n ? " view" : ""}`} onClick={() => { if (!done(n) && n !== cur) return; setView(n === cur ? null : n); }}>
+            <div key={n} className={`step ${st}${view === n ? " view" : ""}`} onClick={() => {
+              if (allMode) { document.getElementById(`step-${n}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+              if (!done(n) && n !== cur) return; setView(n === cur ? null : n);
+            }}>
               <span className="dot">{done(n) ? "✓" : n + 1}</span>
               <div><div className="sl">{s.t}{st === "locked" && lockSvg}</div><div className="ss">{s.s}</div></div>
             </div>);
@@ -406,7 +416,18 @@ export default function MasterWizard({ companyId, meName, firmName, initialAnswe
 
         <div className="stage">
           {err && <div className="sys warn" style={{ marginLeft: 0 }}>{err}</div>}
-          {i === 11 ? review() : (
+          {allMode ? (
+            <>
+              <div className="sys ok" style={{ marginLeft: 0 }}>The master is complete. Every step is below — change any answer and the checklist follows from next month.</div>
+              {STEP_DEFS.slice(0, 11).map((s, n) => (
+                <section key={n} id={`step-${n}`} className="allstep" onPointerDownCapture={() => { stepRef.current = n; }} onFocusCapture={() => { stepRef.current = n; }}>
+                  <div className="sthead"><div><div className="n">Step {n + 1} of 12</div><h2>{s.t}</h2></div><span className="badge"><span className="achip">Complete ✓</span></span></div>
+                  {visibleQuestions(n, answers, ctx, has).out.map((q) => turn(q, false))}
+                </section>
+              ))}
+              <section id="step-11" className="allstep" onPointerDownCapture={() => { stepRef.current = 11; }}>{review()}</section>
+            </>
+          ) : i === 11 ? review() : (
             <>
               {reviewing && <div className="reviewbar">Reviewing a finished step. Changes here update what&apos;s generated from next month.<button className="b xs" onClick={() => setView(null)}>Back to step {cur + 1}</button></div>}
               <div className="sthead"><div><div className="n">Step {i + 1} of 12</div><h2>{STEP_DEFS[i].t}</h2></div><span className="badge">{saving ? <span className="achip"><span className="spin" />Saving…</span> : done(i) ? <span className="achip">Complete ✓</span> : null}</span></div>
