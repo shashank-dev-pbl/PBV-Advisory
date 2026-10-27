@@ -33,6 +33,9 @@ async function _fill() {
   const cid = user.company_id;
   const reset = await supabase.rpc("dev_reset_company", { p: cid });
   if (reset.error) throw new Error(reset.error.message);
+  // A brand-new test company has no people yet and would stay on "being set up"; the sample company is a finished one.
+  const live = await supabase.from("company").update({ status: "live" }).eq("id", cid);
+  if (live.error) throw new Error(live.error.message);
 
   const [rules, filings, eventDocs, library, access] = await Promise.all([
     supabase.from("master_rule").select("*").eq("active", true).order("sort"),
