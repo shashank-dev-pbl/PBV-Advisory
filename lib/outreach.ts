@@ -1,6 +1,5 @@
-// Read-only view of the LinkedIn bot's queue. The bot (pbv-linkedin-bot) and its app own this data;
-// the portal only reads it, server-side, with the same shared key the extension uses. The key never
-// reaches the browser.
+// Advisory outreach: the leads the LinkedIn extension works through, kept in this project's own database
+// (outreach_queue). Each deployment reads its own project, so dev and prod never share a lead.
 
 export type OutreachItem = {
   id: number;
@@ -48,41 +47,7 @@ export const STAGE_LABEL: Record<string, string> = {
 
 export type OutreachResult =
   | { ok: true; counts: Record<string, number>; items: OutreachItem[] }
-  | { ok: false; reason: "not_configured" | "failed"; detail?: string };
-
-// Production reads the live bot. Dev, preview and local runs never read it: they use their own OUTREACH_DEV_* pair
-// (a separate bot app) or, with none set, sample data. So testing here can never touch live leads.
-export const isProd = () => process.env.VERCEL_ENV === "production";
-export function outreachConfig(): { base: string; key: string } | null {
-  const base = isProd() ? process.env.OUTREACH_API_URL : process.env.OUTREACH_DEV_API_URL;
-  const key = isProd() ? process.env.OUTREACH_API_KEY : process.env.OUTREACH_DEV_API_KEY;
-  return base && key ? { base: base.replace(/\/$/, ""), key } : null;
-}
-
-async function call<T>(cfg: { base: string; key: string }, path: string): Promise<T> {
-  const res = await fetch(`${cfg.base}${path}`, {
-    headers: { "x-extension-key": cfg.key },
-    cache: "no-store",
-  });
-  if (!(res.headers.get("content-type") ?? "").includes("application/json")) throw new Error(`Unexpected reply (status ${res.status})`);
-  const json = await res.json();
-  if (!res.ok) throw new Error(json?.error ?? `HTTP ${res.status}`);
-  return json as T;
-}
-
-export async function loadOutreach(stages: string[]): Promise<OutreachResult> {
-  const cfg = outreachConfig();
-  if (!cfg) return { ok: false, reason: "not_configured" };
-  try {
-    const [{ counts }, { items }] = await Promise.all([
-      call<{ counts: Record<string, number> }>(cfg, "/api/queue?summary=1"),
-      call<{ items: OutreachItem[] }>(cfg, `/api/queue?stage=${encodeURIComponent(stages.join(","))}&limit=200`),
-    ]);
-    return { ok: true, counts, items };
-  } catch (e) {
-    return { ok: false, reason: "failed", detail: e instanceof Error ? e.message : String(e) };
-  }
-}
+  | { ok: false; reason: "failed"; detail?: string };
 
 // The date that matters most for where the lead is now.
 export function lastMove(i: OutreachItem): string {
