@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { pageGate } from "@/lib/gate";
-import { SIDE_EXITS, STAGE_LABEL, demoOutreach, lastMove, loadOutreach } from "@/lib/outreach";
+import { SIDE_EXITS, STAGE_LABEL, demoOutreach, lastMove } from "@/lib/outreach";
+import { loadOutreach } from "@/lib/outreachServer";
 import PageHeader from "../(portal)/PageHeader";
 import Locked from "../(portal)/Locked";
 import Rows from "./Rows";
