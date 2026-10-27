@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { pageGate } from "@/lib/gate";
-import { SIDE_EXITS, STAGE_LABEL, demoOutreach, lastMove, loadOutreach } from "@/lib/outreach";
+import { SIDE_EXITS, STAGE_LABEL, demoOutreach, lastMove, loadOutreach, outreachConfig } from "@/lib/outreach";
 import PageHeader from "../(portal)/PageHeader";
 import Locked from "../(portal)/Locked";
 import Rows from "./Rows";
@@ -25,7 +25,8 @@ export default async function OutreachPage({ searchParams }: { searchParams: Pro
   const all = [...CARDS.flatMap((c) => c.stages), ...SIDE_EXITS] as string[];
   const picked = (sp.s ?? "").split(",").filter((x) => all.includes(x));
   const stage = picked.length ? picked.join(",") : "active";
-  const demo = sp.demo === "1";
+  // Off production with no dev bot connected, the page always shows sample data, never the live leads.
+  const demo = sp.demo === "1" || !outreachConfig() && process.env.VERCEL_ENV !== "production";
   const wanted = picked.length ? picked : ACTIVE;
   const data = demo ? demoOutreach(wanted) : await loadOutreach(wanted);
   const q = (s?: string) => `/outreach?${[s ? `s=${s}` : "", demo ? "demo=1" : ""].filter(Boolean).join("&")}`;
