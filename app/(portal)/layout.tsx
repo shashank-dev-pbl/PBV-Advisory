@@ -5,6 +5,8 @@ import { getSession } from "@/lib/auth";
 import { DEV_BYPASS_AUTH } from "@/lib/devBypass";
 import PortalShell from "./PortalShell";
 import DevStrip from "./DevStrip";
+import DemoBar from "./dev/DemoBar";
+import { devToolsOn } from "@/lib/dev/tools";
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
@@ -34,6 +36,7 @@ export default async function PortalLayout({ children }: { children: React.React
   return (
     <>
       {DEV_BYPASS_AUTH && <DevStrip note={session.devNote} />}
+      {session.company && (session.who === "pba" || session.who === "admin") && devToolsOn(session.company.name) && <DemoBar />}
       <PortalShell
         who={session.who}
         companies={session.companies.map((c) => ({ id: c.id, name: c.name, status: c.status }))}
