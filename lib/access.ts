@@ -6,7 +6,7 @@ export type Who = "founder" | "external" | "pba" | "admin";
 
 export type PageKey =
   | "home" | "dashboard" | "up-once" | "up-month" | "up-qy"
-  | "close" | "filings" | "compliance" | "files" | "dataroom" | "companies" | "people";
+  | "close" | "filings" | "compliance" | "files" | "dataroom" | "companies" | "people" | "outreach";
 
 export const PAGES: Record<PageKey, { label: string; href: string }> = {
   home: { label: "My companies", href: "/home" },
@@ -21,6 +21,7 @@ export const PAGES: Record<PageKey, { label: string; href: string }> = {
   dataroom: { label: "Data room", href: "/dataroom" },
   companies: { label: "Companies", href: "/admin/companies" },
   people: { label: "People & Access", href: "/admin/people" },
+  outreach: { label: "Outreach", href: "/outreach" },
 };
 
 export const ACCESS: Record<PageKey, Who[]> = {
@@ -36,6 +37,7 @@ export const ACCESS: Record<PageKey, Who[]> = {
   dataroom: ["founder", "external", "pba", "admin"],
   companies: ["admin"],
   people: ["admin"],
+  outreach: ["pba", "admin"],
 };
 
 export const LANDING: Record<Who, PageKey> = {
