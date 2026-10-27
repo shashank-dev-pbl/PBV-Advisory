@@ -37,7 +37,7 @@ export function sampleMonths(): string[] { return Array.from({ length: 18 }, (_,
 
 export function sampleRow(i: number, ym: string, cash: { open: number; close: number }) {
   const net = gross[i] - partner[i], t = i / 17;
-  let sub = 0.62 + 0.18 * t, svc = 0.26 - 0.12 * t; if (i === 5 || i === 13) svc += 0.04;
+  const sub = 0.62 + 0.18 * t; let svc = 0.26 - 0.12 * t; if (i === 5 || i === 13) svc += 0.04;
   const proj = 1 - sub - svc, billed = gross[i] * 1.18, coll = billed * eff[i], rec = billed * 1.25, rest = rec - o90[i];
   const heads = Object.fromEntries(Object.entries(SHARE).map(([k, s]) => [k, R(exp[i] * s)])) as Record<keyof typeof SHARE, number>;
   const out = gross[i] * 0.18, itcBase = exp[i] * (SHARE.exp_cloud + SHARE.exp_software + SHARE.exp_rent + SHARE.exp_marketing + SHARE.exp_other * 0.5 + SHARE.exp_contractors * 0.3), itc = itcBase * 0.18;
