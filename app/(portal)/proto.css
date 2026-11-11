@@ -498,6 +498,9 @@
 .p5 .pin.s{width:60px}
 .p5 .ptab td, .p5 .ptab th{text-align:left!important}
 .p5 .ctab td, .p5 .ctab th{text-align:left!important;padding:9px 10px!important;font-size:13px}
+.p5 .ctab tr.rowlink{cursor:pointer}
+.p5 .ctab tr.rowlink:hover td, .p5 .ctab tr.rowlink:focus-visible td{background:#f1ecdd}
+.p5 .ctab tr.rowlink:focus-visible{outline:2px solid #004d00;outline-offset:-2px}
 @media (max-width:1150px){.p5 .ltypes{grid-template-columns:repeat(2,minmax(0,1fr))}
 .p5 .lstats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:700px){.p5 .lgrid, .p5 .ltypes{grid-template-columns:1fr}

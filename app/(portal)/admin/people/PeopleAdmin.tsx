@@ -6,6 +6,7 @@ import { formatMobileInput } from "@/lib/phone";
 import { unwrap } from "@/lib/actionResult";
 import { adminError } from "@/lib/adminError";
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { addPerson, editPerson, type LogRow, type PersonRow } from "../actions";
 import { WHO_LABEL } from "@/lib/access";
@@ -43,8 +44,9 @@ function describe(l: LogRow) {
 }
 
 export default function PeopleAdmin({
-  people, companies, log, adminTypeAllowed,
+  people, companies, log, adminTypeAllowed, focusName,
 }: {
+  focusName: string | null;
   people: PersonRow[];
   companies: { id: string; name: string }[];
   log: LogRow[];
@@ -87,6 +89,11 @@ export default function PeopleAdmin({
 
   return (
     <div className="mx-auto w-full max-w-[1000px] px-5 py-8 md:px-8">
+      {focusName && (
+        <p className="mb-3 text-[13px]" style={{ color: "var(--ink-secondary)" }}>
+          Showing people on <b style={{ color: "var(--ink)" }}>{focusName}</b> · <Link href="/admin/people" style={{ color: "#004d00", textDecoration: "underline", fontWeight: 600 }}>Show everyone</Link>
+        </p>
+      )}
       <div className="mb-4">
         <button onClick={() => setOpen((v) => !v)} className="btn-small" style={{ background: "var(--bottomline-green)", color: "var(--paper)", border: "1px solid var(--bottomline-green)" }}>+ Add person</button>
       </div>
@@ -147,7 +154,7 @@ export default function PeopleAdmin({
           </tr>
         </thead>
         <tbody>
-          {people.map((p) => (
+          {people.filter((p) => !focusName || p.companies.includes(focusName)).map((p) => (
             <tr key={p.id} style={{ borderBottom: "1px solid var(--rule)" }}>
               {editing === p.id ? (
                 <>

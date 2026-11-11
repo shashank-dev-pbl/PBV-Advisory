@@ -6,10 +6,11 @@ import Locked from "../../Locked";
 import PeopleAdmin from "./PeopleAdmin";
 import AdminError from "../AdminError";
 
-export default async function PeoplePage() {
+export default async function PeoplePage({ searchParams }: { searchParams: Promise<{ c?: string }> }) {
   const { session, locked } = await pageGate("people");
   if (locked) return <Locked page="people" who={session.who!} />;
 
+  const { c } = await searchParams;
   let data;
   try {
     data = await Promise.all([listPeople(), listCompanies(), listAccessLog()]);
@@ -22,10 +23,11 @@ export default async function PeoplePage() {
     );
   }
   const [people, companies, log] = data;
+  const focus = companies.find((x) => x.id === c)?.name ?? null;
   return (
     <>
       <PageHeader title="People & Access" sub="Who can sign in, and to what" />
-      <PeopleAdmin people={people} companies={companies.map((c) => ({ id: c.id, name: c.name }))} log={log} adminTypeAllowed={!DEV_BYPASS_AUTH} />
+      <PeopleAdmin focusName={focus} people={people} companies={companies.map((c) => ({ id: c.id, name: c.name }))} log={log} adminTypeAllowed={!DEV_BYPASS_AUTH} />
     </>
   );
 }
