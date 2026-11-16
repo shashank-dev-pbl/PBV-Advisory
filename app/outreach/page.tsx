@@ -5,6 +5,7 @@ import { loadOutreach } from "@/lib/outreachServer";
 import PageHeader from "../(portal)/PageHeader";
 import Locked from "../(portal)/Locked";
 import Rows from "./Rows";
+import AddLead from "./AddLead";
 
 const box = { background: "var(--paper-deep)", border: "1px solid var(--rule)", borderRadius: 10 } as const;
 // "Active" is everything the bot has actually touched; Queued and Skipped are the long tail.
@@ -58,6 +59,7 @@ export default async function OutreachPage({ searchParams }: { searchParams: Pro
                   {STAGE_LABEL[k]} · {data.counts[k] ?? 0}
                 </Link>
               ))}
+              <AddLead demo={demo} />
             </div>
 
             <div className="mt-4 overflow-x-auto" style={box}>
