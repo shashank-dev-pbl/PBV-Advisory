@@ -20,6 +20,7 @@ export default function Drawer({ lead, hits, events, settings, onClose }: { lead
   const [err, setErr] = useState<string | null>(null);
   const [f, setF] = useState({ founderUrl: "", founderName: "", founderTitle: "", companyUrl: "" });
   const [src5, setSrc5] = useState("");
+  const [changing, setChanging] = useState(false);
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -120,9 +121,12 @@ export default function Drawer({ lead, hits, events, settings, onClose }: { lead
           {(lead.founder_candidates ?? []).filter((x) => x.url !== lead.founder_url).length > 0 && (
             <p className="muted" style={{ fontSize: 12, margin: "8px 0 0" }}>Others considered: {(lead.founder_candidates ?? []).filter((x) => x.url !== lead.founder_url).map((x) => `${x.name}${x.title ? ` (${x.title})` : ""}`).join(", ")}</p>
           )}
-          {needsFounder(lead) && ["discovered", "verifying", "ready"].includes(lead.stage) && (
+          {!needsFounder(lead) && !changing && ["discovered", "verifying", "ready"].includes(lead.stage) && (
+            <p style={{ fontSize: 12, margin: "8px 0 0" }}><a href="#" onClick={(e) => { e.preventDefault(); setChanging(true); }}>Change founder</a> <span className="muted">(wrong person or link)</span></p>
+          )}
+          {(needsFounder(lead) || changing) && ["discovered", "verifying", "ready"].includes(lead.stage) && (
             <div style={{ marginTop: 10, padding: 10, background: "#f8f3e6", border: "1px solid var(--o-line)", borderRadius: 8 }}>
-              <b style={{ fontSize: 12.5 }}>Give the founder by hand</b>
+              <b style={{ fontSize: 12.5 }}>{changing ? "Change the founder" : "Give the founder by hand"}</b>
               <div className="field" style={{ display: "grid", gap: 6, marginTop: 6 }}>
                 <input placeholder="Founder's LinkedIn profile link (linkedin.com/in/…)" value={f.founderUrl} onChange={(e) => setF({ ...f, founderUrl: e.target.value })} />
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
@@ -135,8 +139,9 @@ export default function Drawer({ lead, hits, events, settings, onClose }: { lead
                 setErr(null);
                 const r = await giveFounder({ id: lead.id, ...f });
                 if (!r.ok) return setErr(r.error);
-                show("Founder saved"); router.refresh();
+                show("Founder saved"); setChanging(false); router.refresh();
               })}>Save founder</button>
+              {changing && <button className="btn sm" style={{ marginTop: 8, marginLeft: 6 }} onClick={() => setChanging(false)}>Cancel</button>}
             </div>
           )}
         </div>
