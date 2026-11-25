@@ -156,6 +156,11 @@ export function missingFor(l: Lead, key: keyof Templates, s: Settings): string[]
   return used.filter((k) => k !== "hook" && !k.endsWith("Days") && (v[k] === undefined || String(v[k]).trim() === ""));
 }
 
+// Every field any of the four messages needs that this company does not have yet. Empty = safe to approve.
+export function missingAll(l: Lead, s: Settings): string[] {
+  return [...new Set(MESSAGE_KEYS.flatMap((k) => missingFor(l, k, s)))];
+}
+
 // ---- dates (shown in IST, Indian format) ---------------------------------------------------------------------------
 export const IST = "Asia/Kolkata";
 export const fmtDay = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: IST }) : "–");

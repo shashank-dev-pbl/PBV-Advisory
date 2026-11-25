@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { act, aiHook, giveFounder, setRound } from "./actions";
 import {
-  CLOSED, MESSAGE_KEYS, REPLY_TAG, SOURCES, STAGE_LABEL, fmtDay, fmtTime, isActive, missingFor, msgFor, needsFounder, renderTpl, sourceName,
+  CLOSED, MESSAGE_KEYS, REPLY_TAG, SOURCES, STAGE_LABEL, fmtDay, fmtTime, isActive, missingAll, missingFor, msgFor, needsFounder, renderTpl, sourceName,
   type Hit, type Lead, type LeadEvent, type Settings,
 } from "@/lib/outreach";
 import { useToast } from "./Toast";
@@ -93,7 +93,7 @@ export default function Drawer({ lead, hits, events, settings, onClose }: { lead
         </div>
           {lead.last_error?.startsWith("Not sent yet") && <p className="err" style={{ margin: "8px 0 0" }}>{lead.last_error}</p>}
           {isActive(lead) && !["replied", "interested"].includes(lead.stage) && !editing && (
-            <p style={{ fontSize: 12, margin: "8px 0 0" }}><a href="#" onClick={(e) => { e.preventDefault(); setEditing(true); }}>Edit round details</a> <span className="muted">(messages need the round, amount and lead investor)</span></p>
+            <p style={{ fontSize: 12, margin: "8px 0 0" }}><a href="#" style={{ color: "#1f4e79", textDecoration: "underline" }} onClick={(e) => { e.preventDefault(); setEditing(true); }}>Edit round details</a> <span className="muted">(messages need the round, amount and lead investor)</span></p>
           )}
           {editing && (
             <div style={{ marginTop: 10, padding: 10, background: "#f8f3e6", border: "1px solid var(--o-line)", borderRadius: 8 }}>
@@ -149,7 +149,7 @@ export default function Drawer({ lead, hits, events, settings, onClose }: { lead
             <p className="muted" style={{ fontSize: 12, margin: "8px 0 0" }}>Others considered: {(lead.founder_candidates ?? []).filter((x) => x.url !== lead.founder_url).map((x) => `${x.name}${x.title ? ` (${x.title})` : ""}`).join(", ")}</p>
           )}
           {!needsFounder(lead) && !changing && ["discovered", "verifying", "ready"].includes(lead.stage) && (
-            <p style={{ fontSize: 12, margin: "8px 0 0" }}><a href="#" onClick={(e) => { e.preventDefault(); setChanging(true); }}>Change founder</a> <span className="muted">(wrong person or link)</span></p>
+            <p style={{ fontSize: 12, margin: "8px 0 0" }}><a href="#" style={{ color: "#1f4e79", textDecoration: "underline" }} onClick={(e) => { e.preventDefault(); setChanging(true); }}>Change founder</a> <span className="muted">(wrong person or link)</span></p>
           )}
           {(needsFounder(lead) || changing) && ["discovered", "verifying", "ready"].includes(lead.stage) && (
             <div style={{ marginTop: 10, padding: 10, background: "#f8f3e6", border: "1px solid var(--o-line)", borderRadius: 8 }}>
@@ -219,7 +219,8 @@ export default function Drawer({ lead, hits, events, settings, onClose }: { lead
     foot = (
       <div className="df" style={{ flexDirection: "column", alignItems: "stretch" }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {lead.stage === "ready" && !lead.approved && <button className="btn pri" disabled={pending} onClick={() => run("approve", {}, "Approved. Goes out in the next sending window.")}>Approve & queue</button>}
+          {lead.stage === "ready" && !lead.approved && missingAll(lead, settings).length > 0 && <span className="tag warn" title="Fill these in with Edit round details, or edit the messages for this company">Messages need: {missingAll(lead, settings).join(", ")}</span>}
+          {lead.stage === "ready" && !lead.approved && <button className="btn pri" disabled={pending || missingAll(lead, settings).length > 0} onClick={() => run("approve", {}, "Approved. Goes out in the next sending window.")}>Approve & queue</button>}
           {lead.stage === "ready" && lead.approved && <span className="tag good" style={{ alignSelf: "center" }}>Approved</span>}
           {(isActive(lead) && !["replied", "interested"].includes(lead.stage)) && <button className="btn" disabled={pending} onClick={() => run(lead.paused ? "resume" : "pause")}>{lead.paused ? "Resume" : "Pause"} automation</button>}
           {inSequence && <button className="btn" disabled={pending} onClick={() => { const t = window.prompt("Paste the reply they sent:"); if (t) run("mark_replied", { text: t }); }}>Mark as replied (manual)</button>}
