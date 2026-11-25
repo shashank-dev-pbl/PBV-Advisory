@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
       { source: "/api/queue/:id", destination: "/api/outreach/queue/:id" },
       { source: "/api/activity", destination: "/api/outreach/activity" },
       { source: "/api/activity/create-record", destination: "/api/outreach/activity/create-record" },
+      { source: "/api/config", destination: "/api/outreach/config" },
+      { source: "/api/outbox", destination: "/api/outreach/outbox" },
+      { source: "/api/outbox/:id", destination: "/api/outreach/outbox/:id" },
     ];
   },
 };
