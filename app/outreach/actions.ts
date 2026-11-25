@@ -39,6 +39,20 @@ export async function giveFounder(input: { id: number; founderUrl: string; found
   });
 }
 
+// Fill in or correct the round details of a company (messages with an empty field are never sent, so older leads need this).
+export async function setRound(input: { id: number; round: string; amount: string; leadInvestor: string; description: string }): Promise<ActionResult<null>> {
+  return guarded(async () => {
+    const supabase = await staff();
+    if (!input.round.trim() && !input.amount.trim() && !input.leadInvestor.trim() && !input.description.trim()) throw new Error("Fill in at least one field");
+    const { error } = await supabase.rpc("outreach_set_round", {
+      p_id: input.id, p_round: input.round, p_amount: input.amount, p_lead_investor: input.leadInvestor, p_description: input.description,
+    });
+    if (error) throw new Error(error.message);
+    refresh();
+    return null;
+  });
+}
+
 // Add a lead by hand. It skips verification and waits in "Verified – to approve".
 export type AddLeadInput = {
   company: string; website: string; sector: string; hq: string; companyUrl: string; round: string; amount: string; leadInvestor: string; description: string;

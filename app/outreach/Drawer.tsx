@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { act, aiHook, giveFounder } from "./actions";
+import { act, aiHook, giveFounder, setRound } from "./actions";
 import {
   CLOSED, MESSAGE_KEYS, REPLY_TAG, SOURCES, STAGE_LABEL, fmtDay, fmtTime, isActive, missingFor, msgFor, needsFounder, renderTpl, sourceName,
   type Hit, type Lead, type LeadEvent, type Settings,
@@ -21,6 +21,8 @@ export default function Drawer({ lead, hits, events, settings, onClose }: { lead
   const [f, setF] = useState({ founderUrl: "", founderName: "", founderTitle: "", companyUrl: "" });
   const [src5, setSrc5] = useState("");
   const [changing, setChanging] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [r, setR] = useState({ round: lead?.round_name ?? "", amount: lead?.round_amount ?? "", leadInvestor: lead?.lead_investor ?? "", description: lead?.description ?? "" });
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -88,7 +90,32 @@ export default function Drawer({ lead, hits, events, settings, onClose }: { lead
           <div>What they do</div><div>{lead.description || "–"}</div>
           <div>Website</div><div>{lead.website ? <a href={ext(lead.website)!} target="_blank" rel="noreferrer">{lead.website}</a> : "–"}</div>
           <div>Company page</div><div>{lead.linkedin_company_url ? <a href={ext(lead.linkedin_company_url)!} target="_blank" rel="noreferrer">LinkedIn</a> : "–"}</div>
-        </div></div>
+        </div>
+          {lead.last_error?.startsWith("Not sent yet") && <p className="err" style={{ margin: "8px 0 0" }}>{lead.last_error}</p>}
+          {isActive(lead) && !["replied", "interested"].includes(lead.stage) && !editing && (
+            <p style={{ fontSize: 12, margin: "8px 0 0" }}><a href="#" onClick={(e) => { e.preventDefault(); setEditing(true); }}>Edit round details</a> <span className="muted">(messages need the round, amount and lead investor)</span></p>
+          )}
+          {editing && (
+            <div style={{ marginTop: 10, padding: 10, background: "#f8f3e6", border: "1px solid var(--o-line)", borderRadius: 8 }}>
+              <div className="field" style={{ display: "grid", gap: 6 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                  <input placeholder="Round (Seed, Series A…)" value={r.round} onChange={(e) => setR({ ...r, round: e.target.value })} />
+                  <input placeholder="Amount (₹9 Cr or $3.2M)" value={r.amount} onChange={(e) => setR({ ...r, amount: e.target.value })} />
+                </div>
+                <input placeholder="Lead investor" value={r.leadInvestor} onChange={(e) => setR({ ...r, leadInvestor: e.target.value })} />
+                <input placeholder="What they do (optional)" value={r.description} onChange={(e) => setR({ ...r, description: e.target.value })} />
+              </div>
+              <button className="btn pri sm" style={{ marginTop: 8 }} disabled={pending} onClick={() => start(async () => {
+                setErr(null);
+                const res = await setRound({ id: lead.id, ...r });
+                if (!res.ok) return setErr(res.error);
+                show("Round details saved"); setEditing(false); router.refresh();
+              })}>Save round details</button>
+              <button className="btn sm" style={{ marginTop: 8, marginLeft: 6 }} onClick={() => setEditing(false)}>Cancel</button>
+              {err && <p className="err" style={{ margin: "8px 0 0" }}>{err}</p>}
+            </div>
+          )}
+        </div>
 
         <div className="sec"><h5>Verification – {n} of {SOURCES.length} sources (need {c.minSources})</h5>
           {SOURCES.map((s) => {
@@ -185,7 +212,7 @@ export default function Drawer({ lead, hits, events, settings, onClose }: { lead
             ))}
           </div>
         </div>
-        {err && !((needsFounder(lead) || changing) && ["discovered", "verifying", "ready"].includes(lead.stage)) && <p className="err">{err}</p>}
+        {err && !editing && !((needsFounder(lead) || changing) && ["discovered", "verifying", "ready"].includes(lead.stage)) && <p className="err">{err}</p>}
       </div>
     );
 
