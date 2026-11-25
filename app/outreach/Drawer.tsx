@@ -142,6 +142,7 @@ export default function Drawer({ lead, hits, events, settings, onClose }: { lead
                 show("Founder saved"); setChanging(false); router.refresh();
               })}>Save founder</button>
               {changing && <button className="btn sm" style={{ marginTop: 8, marginLeft: 6 }} onClick={() => setChanging(false)}>Cancel</button>}
+              {err && <p className="err" style={{ margin: "8px 0 0" }}>{err}</p>}
             </div>
           )}
         </div>
@@ -184,7 +185,7 @@ export default function Drawer({ lead, hits, events, settings, onClose }: { lead
             ))}
           </div>
         </div>
-        {err && <p className="err">{err}</p>}
+        {err && !((needsFounder(lead) || changing) && ["discovered", "verifying", "ready"].includes(lead.stage)) && <p className="err">{err}</p>}
       </div>
     );
 
