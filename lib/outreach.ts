@@ -136,7 +136,7 @@ export function mergeSettings(raw: { config?: Partial<Cfg> | null; templates?: P
 export function varsOf(l: Lead, c: Cfg): Record<string, string | number> {
   const f = (l.founder_name ?? "").replace(/^Dr\.?\s*/i, "").split(" ")[0] ?? "";
   return {
-    first_name: f, full_name: l.founder_name ?? "", company: l.company_name, round: l.round_name ?? "", amount: l.round_amount ?? "",
+    first_name: f, full_name: l.founder_name ?? "", company: l.company_name, round: l.round_name ?? "", amount: l.round_amount || l.total_raised_text || "",
     lead_investor: l.lead_investor ?? "", investors: l.investors ?? "", sector: l.sector ?? "", city: l.hq ?? "", hook: l.hook ?? "",
     m1DelayDays: c.m1DelayDays, f1Days: c.f1Days, f2Days: c.f2Days,
   };
