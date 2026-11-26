@@ -104,13 +104,13 @@ export type Templates = Record<"note" | "m1" | "f1" | "f2", Tpl>;
 export const MESSAGE_KEYS = ["note", "m1", "f1", "f2"] as const;
 export const DEFAULT_TPL: Templates = {
   note: { name: "Connection request note", when: "Sent with the invite", limit: 300,
-    body: "Hi {{first_name}}, congratulations on {{company}}'s {{round}}. I run Prime Bottomline Advisory – we work with funded founders on finance and capital strategy. Would be good to connect." },
+    body: "Hi {{first_name}}, congratulations on {{company}}'s recent funding. I run Prime Bottomline Advisory – we work with funded founders on finance and capital strategy. Would be good to connect." },
   m1: { name: "Message 1", when: "{{m1DelayDays}} day after connection accepted",
-    body: "Thanks for connecting, {{first_name}}.\n\nSaw the {{amount}} {{round}} led by {{lead_investor}}. {{hook}}\n\nThe months after a raise are when finance usually gets stretched – investor reporting, monthly MIS, compliance, runway planning for the next round. We work as a fractional CFO team for founders at this stage, alongside your existing CA.\n\nOpen to a 20-minute call next week?\n\nSwetha\nCo-founder, Prime Bottomline Advisory" },
+    body: "Thanks for connecting, {{first_name}}.\n\nSaw the {{amount}} raise. {{hook}}\n\nThe months after a raise are when finance usually gets stretched – investor reporting, monthly MIS, compliance, runway planning for the next round. We work as a fractional CFO team for founders at this stage, alongside your existing CA.\n\nOpen to a 20-minute call next week?\n\nSwetha\nCo-founder, Prime Bottomline Advisory" },
   f1: { name: "Follow-up 1", when: "{{f1Days}} days after Message 1, if no reply",
     body: "Hi {{first_name}}, following up on my note. If it helps, I can share the post-raise finance checklist we use with founders – monthly MIS, board pack, runway tracker and compliance calendar. Happy to send it over." },
   f2: { name: "Follow-up 2", when: "{{f2Days}} days after Follow-up 1, if no reply",
-    body: "Hi {{first_name}}, last note from me. If finance support isn't a priority right now, no problem – I'll check back after your next board cycle. All the best with the {{round}}." },
+    body: "Hi {{first_name}}, last note from me. If finance support isn't a priority right now, no problem – I'll check back after your next board cycle. All the best with the raise." },
 };
 export const DEFAULT_PROMPT = `You write one line (max 22 words) about a startup that has just raised funding.
 Input: company description, sector, round, amount, investors, and the text of the news articles that verified the round.
