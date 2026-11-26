@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { act, aiDraft } from "./actions";
-import { REPLY_TAG, fmtDay, msgFor, daysSince, type Lead, type Settings } from "@/lib/outreach";
+import { REPLY_TAG, fmtDay, guessLabel, msgFor, daysSince, type Lead, type Settings } from "@/lib/outreach";
 import { useToast } from "./Toast";
 
 function Reply({ l, s }: { l: Lead; s: Settings }) {
@@ -32,7 +32,7 @@ function Reply({ l, s }: { l: Lead; s: Settings }) {
             <span className="muted">· {l.founder_name}{l.founder_title ? `, ${l.founder_title}` : ""}</span>
             <div className="muted" style={{ fontSize: 12.5 }}>{[l.round_name, l.round_amount, l.lead_investor].filter(Boolean).join(" · ")} · replied {fmtDay(l.replied_at)} ({daysSince(l.replied_at)}d ago)</div>
           </div>
-          <span className={`tag ${REPLY_TAG[l.reply_label ?? ""] ?? ""}`}>AI read: {l.reply_label ?? "Unread"}</span>
+          <span className={`tag ${REPLY_TAG[l.reply_label ?? (l.reply_text ? guessLabel(l.reply_text) : "")] ?? ""}`}>{l.reply_label ? `AI read: ${l.reply_label}` : l.reply_text ? `Quick read: ${guessLabel(l.reply_text)}` : "Unread"}</span>
         </div>
         <div className="reply">{l.reply_text ?? "The extension saw a reply but could not read its text. Open the conversation on LinkedIn."}</div>
         {thread && <details><summary className="muted" style={{ fontSize: 12.5, cursor: "pointer" }}>What we sent</summary><div className="thread">{thread}</div></details>}
